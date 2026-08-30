@@ -1,3 +1,11 @@
+
+mod wyrm;
+
+
+
+
+
 fn main() {
-    println!("Hello, world!");
+    let wyrm = wyrm::Wyrm::new();
+    wyrm.run();
 }

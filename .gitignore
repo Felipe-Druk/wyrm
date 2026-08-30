@@ -3,3 +3,9 @@
 *.o
 *.so
 *.dll
+*.lo
+
+# compilation files
+*.d
+target/
+*.lock
