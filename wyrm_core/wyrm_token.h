@@ -32,3 +32,5 @@ typedef struct {
     TokenType type;
     char* lexeme;
 } WyrmToken;
+
+typedef WyrmToken wyrm_token_t;
