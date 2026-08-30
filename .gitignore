@@ -1,4 +1,5 @@
 # estabdar C and run files
 *.out
 *.o
-
+*.so
+*.dll
