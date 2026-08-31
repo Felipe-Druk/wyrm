@@ -16,6 +16,10 @@ run:
 	@echo "Ejecutando el proyecto..."
 	@cargo run
 
+run-v:
+	@echo "Ejecutando el proyecto en modo verbose..."
+	@cargo run -- --verbose
+
 make clean:
 	@echo "Limpiando el proyecto..."
 	@cargo clean
