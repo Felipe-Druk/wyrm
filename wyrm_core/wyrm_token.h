@@ -18,7 +18,7 @@ typedef enum {
 
     // Operadores
     T_ASSIGN, // = para asignacion de variables
-
+    T_ADD, // + para suma
 
     //Importante 
     T_IDENTIFIER, // Identificador etiqutas 

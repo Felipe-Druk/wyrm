@@ -2,9 +2,29 @@
 #include "token_vector.h"
 
 
-token_vector_t* create_token_vector(int capacity);
+token_vector_t* create_token_vector(size_t capacity);
 
-int push_token(token_vector_t* vector, wyrm_token_t token);
+int double_size_vector(token_vector_t* vector){
+    vector->capacity *= 2;
+    wyrm_token_t* new_tokens = realloc(vector->tokens, vector->capacity * sizeof(wyrm_token_t));
+    if (new_tokens == NULL) {
+        return ERROR_TOKEN_VECTOR;
+    }
+    vector->tokens = new_tokens;
+    return 0;
+}
+
+int push_token(token_vector_t* vector, wyrm_token_t token){
+    if (vector->size >= vector->capacity) {
+        int result = double_size_vector(vector);
+        if (result){
+            return result;
+        }
+    }
+    
+    vector->tokens[vector->size++] = token;
+    return 0;
+}
 
 wyrm_token_t* get_token(token_vector_t* vector, int index);
 
