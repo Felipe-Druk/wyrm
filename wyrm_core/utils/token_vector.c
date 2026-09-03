@@ -2,7 +2,21 @@
 #include "token_vector.h"
 
 
-token_vector_t* create_token_vector(size_t capacity);
+token_vector_t* create_token_vector(size_t capacity){
+    
+    token_vector_t* vector = malloc(sizeof(token_vector_t));
+    if (vector == NULL) {
+        return NULL;
+    }
+    vector->size = 0;
+    vector->capacity = capacity;
+    vector->tokens = malloc(capacity * sizeof(wyrm_token_t));
+    if (vector->tokens == NULL) {
+        free(vector);
+        return NULL;
+    }
+    return vector;
+}
 
 int double_size_vector(token_vector_t* vector){
     vector->capacity *= 2;
@@ -30,4 +44,11 @@ wyrm_token_t* get_token(token_vector_t* vector, int index);
 
 int clear_token_vector(token_vector_t* vector);
 
-int destroy_token_vector(token_vector_t* vector);
+int destroy_token_vector(token_vector_t* vector){
+    if (vector == NULL) {
+        return ERROR_TOKEN_VECTOR;
+    }
+    free(vector->tokens);
+    free(vector);
+    return 0;
+}

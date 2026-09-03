@@ -9,7 +9,7 @@ sombre todo para no lidar con problemas de dimencionamiento y memoria.
 #include "../wyrm_token.h"
 
 
-const int ERROR_TOKEN_VECTOR = -1;
+#define ERROR_TOKEN_VECTOR -1
 
 typedef struct {
     size_t size;
