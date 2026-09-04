@@ -1,5 +1,7 @@
 #include "wyrm.h"
 #include "scanner/scanner.h"
+#include "options.h"
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,11 +17,13 @@ void run_wyrm(const char* input, int flags){
     }
     strcpy(input_copy, input);
 
-    token_vector_t* tokens = scanner_scan(input_copy);
+    scanner_t scanner;
+    scanner.flags = flags;
+    token_vector_t* tokens = scanner_scan(input_copy, &scanner);
     if (tokens == NULL) {
         fprintf(stderr, "Error: No se pudo crear el vector de tokens.\n");
         free(input_copy);
         return;
     }
-    
+
 }

@@ -6,7 +6,7 @@ const int ERROR = -1;
 int rsolve_plus(char* input, int index, token_vector_t* tokens) {
     wyrm_token_t add_token = { .type = T_ADD, .lexeme = "+" };
     int result = push_token(tokens, add_token);
-    return index + 1;
+    return result != ERROR_TOKEN_VECTOR ?  index + 1 : ERROR;
 }
 
 
@@ -16,7 +16,7 @@ int resolver_arigmetic_operator(char* input, int index, token_vector_t* tokens){
 
     switch (current_char) {
         case '+':
-           int new_index = rsolve_plus(input, index, tokens);
+            int new_index = rsolve_plus(input, index, tokens);
             return new_index != ERROR ? new_index : ERROR;
             break;
         case '-':
@@ -30,7 +30,7 @@ int resolver_arigmetic_operator(char* input, int index, token_vector_t* tokens){
         case '%':
             break;
         default:
-            return index; // Error: unrecognized operator
+            return index +1; // si no hay nada en este indice no hacemos nada
     }
 }
 

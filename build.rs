@@ -10,13 +10,12 @@ fn main() {
 
         .file("wyrm_core/scanner/arigmetic_resolver.c")
         .file("wyrm_core/scanner/scanner.c")
+
+        .file("wyrm_core/utils/debuger.c")
         .file("wyrm_core/utils/token_vector.c")
-        
-
-
+    
         // Dependencias o .h
         .include("wyrm_core") 
-        .file("wyrm_core/scanner/arigmetic_resolver.h")
         .include("wyrm_core/scanner")
         .include("wyrm_core/utils")
 
