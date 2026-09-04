@@ -30,7 +30,7 @@ int resolver_arigmetic_operator(char* input, int index, token_vector_t* tokens){
         case '%':
             break;
         default:
-            return index +1; // si no hay nada en este indice no hacemos nada
+            return index; // si no hay nada en este indice no hacemos nada
     }
 }
 

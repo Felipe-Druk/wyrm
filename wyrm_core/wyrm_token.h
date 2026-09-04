@@ -15,10 +15,22 @@ typedef enum {
     T_NAT32, // nat32 = 32 bits natural
     T_NAT64, // nat64 = 64 bits natural
 
-
-    // Operadores
-    T_ASSIGN, // = para asignacion de variables
+    // Operadores arigmeticos
     T_ADD, // + para suma
+    T_SUB, // - para resta
+    T_MUL, // * para multiplicacion
+    T_DIV, // / para division
+    T_POW, // ^ para potencia
+    T_MOD, // % para modulo
+
+    //Operadores varios
+    T_ASSIGN, // = para asignacion de variables
+
+
+    //Literales
+    T_NUMBER, // Numeros enteros o naturales
+    T_STRING, // Cadenas de texto
+    T_FLOAT_NUMBER, // Numeros flotantes
 
     //Importante 
     T_IDENTIFIER, // Identificador etiqutas 
