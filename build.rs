@@ -7,6 +7,7 @@ fn main() {
     cc::Build::new()
         // Todos los .c
         .file("wyrm_core/wyrm.c")
+        .file("wyrm_core/wyrm_token.c")
 
         .file("wyrm_core/scanner/arigmetic_resolver.c")
         .file("wyrm_core/scanner/numerit_resolver.c")

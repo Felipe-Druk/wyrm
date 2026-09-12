@@ -8,3 +8,6 @@
 
 # limitadores
 
+# Operadores
+
+Operadores  [+,-,/,*,^,%] listos

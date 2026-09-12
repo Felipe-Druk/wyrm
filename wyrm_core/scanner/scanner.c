@@ -11,7 +11,7 @@
 void debug_tokens(token_vector_t* tokens) {
     print_debug("Current tokens: ");
     for (size_t i = 0; i < tokens->size; i++) {
-        print_debug("%s \n", tokens->tokens[i].lexeme);
+        print_debug("type: %s  lexeme: %s\n", token_type_to_string(tokens->tokens[i].type), tokens->tokens[i].lexeme);
     }
 }
 

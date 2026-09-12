@@ -1,6 +1,10 @@
 #include "numerit_resolver.h"
 #include <string.h>
 
+const char POINT = '.';
+const char END_OF_STRING = '\0';
+
+
 int is_digit(char c) {
     return c >= '0' && c <= '9';
 }
@@ -10,7 +14,7 @@ int chrage_number(int is_float, char* lexeme, token_vector_t* tokens) {
     number_token.type = is_float ?  T_FLOAT_NUMBER : T_NUMBER;
     number_token.lexeme = lexeme;
     int result = push_token(tokens, number_token);
-    return result != ERROR_TOKEN_VECTOR ? 0 : -1;
+    return result;
 }
 
 int resolver_numerit(char* input, int index, token_vector_t* tokens){
@@ -19,9 +23,9 @@ int resolver_numerit(char* input, int index, token_vector_t* tokens){
     int temp_index = index;
     int valid_number = 1;
 
-    while (input[temp_index] != '\0') {
+    while (input[temp_index] != END_OF_STRING) {
 
-        if (input[temp_index] == '.') {
+        if (input[temp_index] == POINT) {
             if (is_float) {
                 // doble punto
                 valid_number = 0;
