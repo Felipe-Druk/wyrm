@@ -5,8 +5,9 @@
 
 #define INITIALCAPACITY 10
 
-#include "../scanner/arigmetic_resolver.h"
-#include "../scanner/numerit_resolver.h"
+#include "arigmetic_resolver.h"
+#include "numerit_resolver.h"
+#include "types_resolver.h"
 
 void debug_tokens(token_vector_t* tokens) {
     print_debug("Current tokens: ");
@@ -41,6 +42,10 @@ token_vector_t* scanner_scan(char* input, scanner_t* scanner) {
         }
         temp_index = resolver_numerit(input, actual_index, tokens);
         if (temp_index != -1 && temp_index != actual_index) {
+            actual_index = temp_index;
+        }
+        temp_index = resolver_types(input, actual_index, tokens);
+            if (temp_index != -1 && temp_index != actual_index) {
             actual_index = temp_index;
             continue;
         }
