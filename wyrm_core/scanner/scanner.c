@@ -9,6 +9,7 @@
 #include "numerit_resolver.h"
 #include "types_resolver.h"
 #include "identifier_resolver.h"
+#include "limiter_resolver.h"
 
 
 void debug_tokens(token_vector_t* tokens) {
@@ -43,26 +44,23 @@ token_vector_t* scanner_scan(char* input, scanner_t* scanner) {
             continue;
         }
         actual_index = call_resolver(resolver_arigmetic_operator, input, actual_index, tokens);
-
-        temp_index = resolver_numerit(input, actual_index, tokens);
-        if (temp_index != -1 && temp_index != actual_index) {
-            actual_index = temp_index;
-        }
-
-        temp_index = resolver_types(input, actual_index, tokens);
-        if (temp_index != -1 && temp_index != actual_index) {
-            actual_index = temp_index;
-        }
+        actual_index = call_resolver(resolver_numerit,input, actual_index, tokens);
+        actual_index = call_resolver(resolver_types,input, actual_index, tokens);
+        actual_index = call_resolver(resolver_limiter, input, actual_index, tokens);
 
         // Importante que este al final para no confundir con algun tipo de dato
         temp_index = resolver_identidier(input, actual_index, tokens);
             if (temp_index != -1 && temp_index != actual_index) {
             actual_index = temp_index;
-            continue;
+            continue; // el ultimo tiene un continue, para evitarl la llamda a ++ del index,
         }
+        // se llega si hay un caracter descnonocido, es un lugar posible para lanzar error 
         actual_index++;
     }
     
+    wyrm_token_t end_token = {.type = T_EOF, .lexeme = (char)0};
+    push_token(tokens, end_token);
+
     if(debug){
         print_debug("== End Scanner ==\n");
         debug_tokens(tokens);
