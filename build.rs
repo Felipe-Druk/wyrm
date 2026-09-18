@@ -13,6 +13,7 @@ fn main() {
         .file("wyrm_core/scanner/numerit_resolver.c")
         .file("wyrm_core/scanner/types_resolver.c")
         .file("wyrm_core/scanner/scanner.c")
+        .file("wyrm_core/scanner/identifier_resolver.c")
 
         .file("wyrm_core/utils/debuger.c")
         .file("wyrm_core/utils/token_vector.c")

@@ -8,12 +8,19 @@
 #include "arigmetic_resolver.h"
 #include "numerit_resolver.h"
 #include "types_resolver.h"
+#include "identifier_resolver.h"
+
 
 void debug_tokens(token_vector_t* tokens) {
-    print_debug("Current tokens: ");
+    print_debug("Current tokens:\n  ");
     for (size_t i = 0; i < tokens->size; i++) {
         print_debug("type: %s  lexeme: %s\n", token_type_to_string(tokens->tokens[i].type), tokens->tokens[i].lexeme);
     }
+}
+
+size_t call_resolver(int (*resolver)(char *, int, token_vector_t *), char* input, size_t actual_index, token_vector_t* tokens){
+    size_t temp_index = resolver(input, actual_index, tokens);
+    return (temp_index != -1 && temp_index != actual_index) ? temp_index : actual_index;
 }
 
 token_vector_t* scanner_scan(char* input, scanner_t* scanner) {
@@ -21,7 +28,6 @@ token_vector_t* scanner_scan(char* input, scanner_t* scanner) {
     if (tokens == NULL) {
         return NULL;
     }
-    char* word = malloc(sizeof(char) * (strlen(input) + 1));
     size_t actual_index = 0;
     int temp_index = 0;
 
@@ -36,15 +42,20 @@ token_vector_t* scanner_scan(char* input, scanner_t* scanner) {
             actual_index++;
             continue;
         }
-        temp_index = resolver_arigmetic_operator(input, actual_index, tokens);
-        if (temp_index != -1) {
-            actual_index = temp_index;
-        }
+        actual_index = call_resolver(resolver_arigmetic_operator, input, actual_index, tokens);
+
         temp_index = resolver_numerit(input, actual_index, tokens);
         if (temp_index != -1 && temp_index != actual_index) {
             actual_index = temp_index;
         }
+
         temp_index = resolver_types(input, actual_index, tokens);
+        if (temp_index != -1 && temp_index != actual_index) {
+            actual_index = temp_index;
+        }
+
+        // Importante que este al final para no confundir con algun tipo de dato
+        temp_index = resolver_identidier(input, actual_index, tokens);
             if (temp_index != -1 && temp_index != actual_index) {
             actual_index = temp_index;
             continue;
@@ -52,7 +63,10 @@ token_vector_t* scanner_scan(char* input, scanner_t* scanner) {
         actual_index++;
     }
     
-
+    if(debug){
+        print_debug("== End Scanner ==\n");
+        debug_tokens(tokens);
+    }
     scanner->tokens = tokens;
     return tokens;
 }

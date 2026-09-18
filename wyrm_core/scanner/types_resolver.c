@@ -34,7 +34,7 @@ const TokenType t_types[] = {
     T_NAT64
 
 };
-
+ 
 int charge_types(token_vector_t* tokens, size_t type_index) {
     wyrm_token_t type_token = { .type = t_types[type_index], .lexeme = types[type_index] };
     int result = push_token(tokens, type_token);
@@ -55,7 +55,6 @@ int resolver_types(char* input, int index, token_vector_t* tokens){
                     return index + actual_len;
                 }
                 return -1;
-
             }
         }
         i++;
