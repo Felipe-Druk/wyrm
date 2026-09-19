@@ -6,6 +6,7 @@
 #define INITIALCAPACITY 10
 
 #include "arigmetic_resolver.h"
+#include "logical_resolver.h"
 #include "numerit_resolver.h"
 #include "types_resolver.h"
 #include "identifier_resolver.h"
@@ -44,6 +45,7 @@ token_vector_t* scanner_scan(char* input, scanner_t* scanner) {
             continue;
         }
         actual_index = call_resolver(resolver_arigmetic_operator, input, actual_index, tokens);
+        actual_index = call_resolver(resolver_logical_operator,input, actual_index, tokens);
         actual_index = call_resolver(resolver_numerit,input, actual_index, tokens);
         actual_index = call_resolver(resolver_types,input, actual_index, tokens);
         actual_index = call_resolver(resolver_limiter, input, actual_index, tokens);

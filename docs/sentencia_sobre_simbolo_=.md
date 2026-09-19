@@ -34,3 +34,4 @@ Para un igual con retorno vamos a aprovechar un simbolo afin a la asignacion, te
 
 Ahora un se permitira a <- b <- 1; pero si no queremos tener sentencias complejas podemos declarar como siempre de la manera x = 1;
 
+> como extra para mantener el rigor podemos pensar que definimos <-:(a,b) -> b una funcion que toma a y b asigna el valor b en a y luego retorna b

@@ -25,7 +25,7 @@ typedef enum {
 
     //Operadores varios
     T_ASSIGN, // = para asignacion de variables
-
+    T_RASSIGN, // <- para asignar valor y recuperar el retorno
 
     //Literales
     T_NUMBER, // Numeros enteros o naturales

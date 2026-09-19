@@ -21,8 +21,18 @@ int resolve_multiply(char* input, int index, token_vector_t* tokens) {
     return result != ERROR_TOKEN_VECTOR ?  index + 1 : ERROR;
 }
 
-// por ahora no existe "//" asi que solo cargamos el token de divide
+int jump_line(const char* input, int index){
+    size_t new_index = index;
+    while (input[new_index] != '\n' && input[new_index] != '\0' ){
+        new_index++;
+    }
+    return new_index;
+}
+
 int resolve_divide(char* input, int index, token_vector_t* tokens) {
+    if(input[index +1] == '/'){
+        return jump_line(input, index); // simplemente ignoramos la linea si hay un comentario
+    }
     wyrm_token_t divide_token = { .type = T_DIV, .lexeme = "/" };
     int result = push_token(tokens, divide_token);
     return result != ERROR_TOKEN_VECTOR ?  index + 1 : ERROR;
