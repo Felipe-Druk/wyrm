@@ -24,28 +24,27 @@ const TokenType t_types[] = {
 };
 
 int charge_types(token_vector_t *tokens, size_t type_index) {
-  wyrm_token_t type_token = {.type = t_types[type_index],
-                             .lexeme = types[type_index]};
-  int result = push_token(tokens, type_token);
-  return result;
+    wyrm_token_t type_token = {.type = t_types[type_index], .lexeme = types[type_index]};
+    int result = push_token(tokens, type_token);
+    return result;
 }
 
 int resolver_types(char *input, int index, token_vector_t *tokens) {
-  size_t i = 0;
-  size_t actual_len = 0;
-  char nex_char;
-  while (types[i] != NULL) {
-    actual_len = strlen(types[i]);
-    if (!strncmp(input + index, types[i], actual_len)) {
-      nex_char = input[index + actual_len];
-      if (!isalnum(nex_char)) {
-        if (charge_types(tokens, i) != ERROR_TOKEN_VECTOR) {
-          return index + actual_len;
+    size_t i = 0;
+    size_t actual_len = 0;
+    char nex_char;
+    while (types[i] != NULL) {
+        actual_len = strlen(types[i]);
+        if (!strncmp(input + index, types[i], actual_len)) {
+            nex_char = input[index + actual_len];
+            if (!isalnum(nex_char)) {
+                if (charge_types(tokens, i) != ERROR_TOKEN_VECTOR) {
+                    return index + actual_len;
+                }
+                return -1;
+            }
         }
-        return -1;
-      }
+        i++;
     }
-    i++;
-  }
-  return index;
+    return index;
 }

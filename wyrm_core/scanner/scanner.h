@@ -7,8 +7,8 @@ El sacanner deberi a groso modo agarrar un string y devolver tokens.
 Tambien es el responsable de determinar como funciona la sintaxis del lenguaje.
 */
 typedef struct {
-  token_vector_t *tokens;
-  int flags;
+    token_vector_t *tokens;
+    int flags;
 } Scanner;
 
 typedef Scanner scanner_t;

@@ -11,9 +11,9 @@ sombre todo para no lidar con problemas de dimencionamiento y memoria.
 #define ERROR_TOKEN_VECTOR -1
 
 typedef struct {
-  size_t size;
-  size_t capacity;
-  wyrm_token_t *tokens;
+    size_t size;
+    size_t capacity;
+    wyrm_token_t *tokens;
 } TokenVector;
 
 typedef TokenVector token_vector_t;
