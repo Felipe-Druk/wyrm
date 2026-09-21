@@ -19,9 +19,9 @@ void debug_tokens(token_vector_t *tokens) {
     }
 }
 
-size_t call_resolver(int (*resolver)(char *, int, token_vector_t *), char *input, size_t actual_index,
-                     token_vector_t *tokens) {
-    size_t temp_index = resolver(input, actual_index, tokens);
+int call_resolver(int (*resolver)(char *, int, token_vector_t *), char *input, int actual_index,
+                  token_vector_t *tokens) {
+    int temp_index = resolver(input, actual_index, tokens);
     return (temp_index != -1 && temp_index != actual_index) ? temp_index : actual_index;
 }
 
@@ -30,7 +30,7 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
     if (tokens == NULL) {
         return NULL;
     }
-    size_t actual_index = 0;
+    int actual_index = 0;
     int temp_index = 0;
 
     int debug = scanner->flags & (DEBUG_MODE | SCANNER_MODE);
@@ -51,7 +51,7 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
 
         // Importante que este al final para no confundir con algun tipo de dato
         temp_index = resolver_identidier(input, actual_index, tokens);
-        if (temp_index != -1 && temp_index != actual_index) {
+        if (temp_index != -1 && temp_index != (int)actual_index) {
             actual_index = temp_index;
             continue; // el ultimo tiene un continue, para evitarl la llamda a ++ del
                       // index,

@@ -24,7 +24,7 @@ const TokenType t_types[] = {
 };
 
 int charge_types(token_vector_t *tokens, size_t type_index) {
-    wyrm_token_t type_token = {.type = t_types[type_index], .lexeme = types[type_index]};
+    wyrm_token_t type_token = {.type = t_types[type_index], .lexeme = strdup(types[type_index])};
     int result = push_token(tokens, type_token);
     return result;
 }
