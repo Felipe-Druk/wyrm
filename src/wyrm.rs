@@ -12,13 +12,13 @@ pub struct Wyrm {
 }
 
 unsafe extern "C" {
-    fn run_wyrm(input: *const c_char,flags:  c_int);
+    fn run_wyrm(input: *const c_char, flags: c_int);
 }
 
 impl Wyrm {
     /// Crea un nuevo objeto Wyrm
     pub fn new(verbose: bool) -> Self {
-        Wyrm { verbose : verbose }
+        Wyrm { verbose: verbose }
     }
 
     fn input_verbose(&self, input: &str) {
@@ -28,7 +28,14 @@ impl Wyrm {
     fn call_scanner(&self, input: &str) {
         let c_input = CString::new(input).expect("Error al convertir a CString");
         unsafe {
-            run_wyrm(c_input.as_ptr(), if self.verbose { C_VERBOSE_MODE | C_DEBUG_MODE } else { C_DEBUG_MODE });
+            run_wyrm(
+                c_input.as_ptr(),
+                if self.verbose {
+                    C_VERBOSE_MODE | C_DEBUG_MODE
+                } else {
+                    C_DEBUG_MODE
+                },
+            );
         }
     }
 
@@ -44,9 +51,10 @@ impl Wyrm {
         let mut is_running = true;
 
         while is_running {
-
             println!("Wyrm >: ");
-            std::io::stdin().read_line(&mut input).expect("Error al leer la entrada");
+            std::io::stdin()
+                .read_line(&mut input)
+                .expect("Error al leer la entrada");
 
             if self.verbose {
                 self.input_verbose(&input);

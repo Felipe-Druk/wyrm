@@ -1,15 +1,14 @@
 #include "debuger.h"
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
+void print_debug(const char *to_debug, ...) {
 
-void print_debug(const char* to_debug, ...){
-    
-    printf("[DEBUG]: ");
+  printf("[DEBUG]: ");
 
-    va_list arg;
-    va_start(arg, to_debug);
-    vprintf(to_debug, arg);
+  va_list arg;
+  va_start(arg, to_debug);
+  vprintf(to_debug, arg);
 
-    va_end(arg);
+  va_end(arg);
 }
