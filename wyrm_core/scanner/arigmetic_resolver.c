@@ -4,12 +4,14 @@ const int ERROR = -1;
 
 // por ahora no existe "++" asi que solo cargamos el token de add
 int rsolve_plus(char *input, int index, token_vector_t *tokens) {
+    (void)input; // engañmos al linter, por ahora
     wyrm_token_t add_token = {.type = T_ADD, .lexeme = "+"};
     int result = push_token(tokens, add_token);
     return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;
 }
 
 int resolve_minus(char *input, int index, token_vector_t *tokens) {
+    (void)input; // engañmos al linter, por ahora
     wyrm_token_t minus_token = {.type = T_SUB, .lexeme = "-"};
     int result = push_token(tokens, minus_token);
     return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;

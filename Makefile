@@ -25,11 +25,12 @@ help:
 install:
 	@echo "Instalando dependencias de Rust..."
 	rustup component add clippy rustfmt
+	pre-commit install
 
 check:
 	@echo "Comprobando el proyecto..."
 	cargo check
-	cargo clippy
+	cargo clippy -- -D warnings
 
 build:
 	@echo "Compilando el proyecto..."

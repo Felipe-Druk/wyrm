@@ -1,7 +1,7 @@
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
-const VERSION: &str = "0.0.1";
+const VERSION: &str = "0.0.2";
 const EXIT_COMMAND: &str = "exit";
 const C_VERBOSE_MODE: c_int = 1 << 0;
 const C_DEBUG_MODE: c_int = 1 << 1;
@@ -18,7 +18,7 @@ unsafe extern "C" {
 impl Wyrm {
     /// Crea un nuevo objeto Wyrm
     pub fn new(verbose: bool) -> Self {
-        Wyrm { verbose: verbose }
+        Wyrm { verbose }
     }
 
     fn input_verbose(&self, input: &str) {
