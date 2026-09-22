@@ -70,3 +70,123 @@ impl Wyrm {
         println!("Wyrm se despide :D ...");
     }
 }
+
+// Los tests de scanner, parser y intérprete se declaran en este archivo ya que son "unitarios"
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[allow(dead_code)]
+    #[repr(C)]
+    #[derive(Debug, PartialEq)]
+    pub enum TokenType {
+        TInt8 = 0,
+        TInt16,
+        TInt32,
+        TInt64,
+        TNat8,
+        TNat16,
+        TNat32,
+        TNat64,
+        TAdd,
+        TSub,
+        TMul,
+        TDiv,
+        TPow,
+        TMod,
+        TAssign,
+        TRassign,
+        TNumber,
+        TString,
+        TFloatNumber,
+        TIdentifier,
+        TEof,
+        TSemicolon,
+    }
+
+    #[repr(C)]
+    #[derive(Debug)]
+    pub struct WyrmToken {
+        pub t_type: TokenType,
+        pub lexeme: *mut c_char,
+    }
+
+    #[repr(C)]
+    #[derive(Debug)]
+    pub struct TokenVector {
+        pub size: usize,
+        pub capacity: usize,
+        pub tokens: *mut WyrmToken,
+    }
+
+    #[repr(C)]
+    #[derive(Debug)]
+    pub struct Scanner {
+        pub tokens: *mut TokenVector,
+        pub flags: c_int,
+    }
+
+    unsafe extern "C" {
+        pub fn scanner_scan(input: *mut c_char, scanner: *mut Scanner) -> *mut TokenVector;
+    }
+
+    #[test]
+    fn test_scanner_salta_espacios_y_genera_eof() {
+        let codigo = CString::new("   \n \t ").unwrap();
+
+        let mut scanner_state = Scanner {
+            tokens: std::ptr::null_mut(),
+            flags: 0,
+        };
+
+        unsafe {
+            let vector_ptr = scanner_scan(codigo.as_ptr() as *mut c_char, &mut scanner_state);
+            assert!(
+                !vector_ptr.is_null(),
+                "El scanner falló al crear el vector de tokens"
+            );
+            let vector = &*vector_ptr;
+            assert_eq!(vector.size, 1);
+            let primer_token = &*vector.tokens.add(0);
+            assert_eq!(primer_token.t_type, TokenType::TEof);
+        }
+    }
+
+    #[test]
+    fn test_scanner_detecta_suma_generica() {
+        let codigo = CString::new("32 + 1;").unwrap();
+
+        let mut scanner_state = Scanner {
+            tokens: std::ptr::null_mut(),
+            flags: 0,
+        };
+
+        let esperados = [
+            TokenType::TNumber,
+            TokenType::TAdd,
+            TokenType::TNumber,
+            TokenType::TSemicolon,
+            TokenType::TEof,
+        ];
+
+        unsafe {
+            let vector_ptr = scanner_scan(codigo.as_ptr() as *mut c_char, &mut scanner_state);
+            assert!(
+                !vector_ptr.is_null(),
+                "El scanner falló al crear el vector de tokens"
+            );
+            let vector = &*vector_ptr;
+            assert_eq!(vector.size, esperados.len());
+
+            for (i, tipo_esperado) in esperados.iter().enumerate() {
+                let token = &*vector.tokens.add(i);
+                assert_eq!(
+                    &token.t_type, tipo_esperado,
+                    "Error en el token {}: esperado {:?}  recibido {:?}",
+                    i, tipo_esperado, token.t_type
+                );
+            }
+        }
+    }
+}

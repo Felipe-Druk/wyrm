@@ -1,7 +1,7 @@
 # Siempre un Makefile es important para tener ordenado el proyecto, más si vamos a usar C
 
 
-.PHONY: install check build run run-v clean format help pre-commit
+.PHONY: install check build run run-v clean format help pre-commit tests
 
 .DEFAULT_GOAL := help
 
@@ -20,6 +20,8 @@ help:
 	@echo "- run: Ejecuta el programa, si no esta compilado lo compila"
 	@echo "- run-v: Ejecuta el programa con la flag de seguimiento, si no esta compilado lo compila"
 	@echo "- format: Aplica linters al proyecto"
+	@echo "- tests: Ejecuta todos los test"
+	@echo "- pre-commit: Ejecuta los pre-commits sobre todo el proyecto"
 	@echo "- clean: limpia el ejecutable y archivos compilados"
 
 install:
@@ -50,8 +52,12 @@ format:
 	cargo fmt
 	find wyrm_core -type f \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} +
 
+tests:
+	@echo "Ejecutanto tests..."
+	cargo test
+
 pre-commit:
-	@echo "Ejecutando pre-commits"
+	@echo "Ejecutando pre-commits..."
 	pre-commit run --all-files
 
 make clean:
