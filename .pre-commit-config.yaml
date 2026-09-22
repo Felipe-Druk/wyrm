@@ -7,14 +7,6 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-
-
-  - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v10.2.0
-    hooks:
-      - id: cspell
-        additional_dependencies:
-          - "@cspell/dict-es-es"
   
   - repo: https://github.com/crate-ci/typos
     rev: v1.50.2

@@ -1,6 +1,6 @@
 #include "scanner.h"
 #include "../options.h"
-#include "../utils/debuger.h"
+#include "../utils/debugger.h"
 #include <string.h>
 
 #define INITIALCAPACITY 10

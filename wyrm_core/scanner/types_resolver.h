@@ -17,6 +17,6 @@ Este archivo se encargar de resolver todos tipos de datos:
 
 */
 
-// Resive el input string, el vetor de tokens y el indicie actual
+// Resive el input string, el vector de tokens y el indicie actual
 // devuleve el nuevo indice o -1 para error
 int resolver_types(char *input, int index, token_vector_t *tokens);

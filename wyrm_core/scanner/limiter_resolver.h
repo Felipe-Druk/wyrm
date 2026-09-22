@@ -8,6 +8,6 @@ No tenemso ningun otro pero en caso de que exista, solo debemos agregarlo en
 este archivo.
 */
 
-// Resive el input string, el vetor de tokens y el indicie actual
+// Resive el input string, el vector de tokens y el indicie actual
 // devuleve el nuevo indice o -1 para error
 int resolver_limiter(char *input, int index, token_vector_t *tokens);

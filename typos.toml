@@ -57,7 +57,8 @@ compilacion = "compilación"
 compilaciones = "compilaciones"
 contendor = "contendor"
 contendores = "contendores"
-
+responde = "responde"
+inicial = "inicial"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"

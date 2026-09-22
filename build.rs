@@ -12,12 +12,13 @@ fn main() {
         .file("wyrm_core/scanner/identifier_resolver.c")
         .file("wyrm_core/scanner/limiter_resolver.c")
         .file("wyrm_core/scanner/logical_resolver.c")
-        .file("wyrm_core/utils/debuger.c")
+        //utils
+        .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")
         // Dependencias o .h
         .include("wyrm_core")
         .include("wyrm_core/scanner")
         .include("wyrm_core/utils")
-        // Compilacion
+        // Compilación
         .compile("wyrm");
 }
