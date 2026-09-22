@@ -3,7 +3,8 @@ repos:
     hooks:
       - id: make-format-and-check
         name: Validar Calidad (Formateo y Linter)...
-        entry: make format check
+        # Aplicamos el formato, luego nos fijamos si el codigo es bueno y luego limpiamos los residuos
+        entry: make format check clean
         language: system
         pass_filenames: false
         always_run: true

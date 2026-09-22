@@ -150,7 +150,7 @@ Otro operador excelente a tener en cuenta es "%" que retorna el resto de una div
 ## Logicos
 
 ### Evaluar condicion 
-Principalmente son aquellos que devuelven un booleano como respuesta, ejemplo si evaluamos 2 > 4 nos devolvera false, ya que 2 es menor que 4. De los más comunes son los que nos sirven para comparar magnitudes, aqui entran los primeros doubles el "==","<=" y">="  ya que el simbolo "=" esta reservado para ala asigncacion, seria complicado tenerlo para evaluar la igualdad.
+Principalmente son aquellos que devuelven un booleano como respuesta, ejemplo si evaluamos 2 > 4 nos devolverá false, ya que 2 es menor que 4. De los más comunes son los que nos sirven para comparar magnitudes, aquí entran los primeros dobles el "==","<=" y">=" ya que el simbolo "=" esta reservado para ala asigncacion, seria complicado tenerlo para evaluar la igualdad.
 De este modo tendriamos
 
 -   ">" Mayor que 

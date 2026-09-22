@@ -9,14 +9,14 @@
 ```
 
 
-## Que es **Wyrm**? 
+## ¿Que es **Wyrm**? 
 
-**Wyrm** es un lenguaje de programacion fuertemetne tipado pensado para combinar las mejores caractaristicas de C, Go y algunos extras tomados de distintos lenguajes.
-Para la implementación usamos una fuerte base en C (por performance, principalmente) y asistiendo con Rust, en general la combinación fue una idea inicial más tomada por el desafio que por un caracteristica tecnica (es una buena oportuinidad para aprender como combinar lenguajes).
+**Wyrm** es un lenguaje de programación fuertemente tipado pensado para combinar las mejores características de C, Go y algunos extras tomados de distintos lenguajes.
+Para la implementación usamos una fuerte base en C (por performance, principalmente) y asistiendo con Rust, en general la combinación fue una idea inicial más tomada por el desafío que por una característica técnica (es una buena oportuinidad para aprender como combinar lenguajes).
 
 ### Expectativas
 
-En el marco de de la materia "Lenguajes y Compiladores" me encantaria no solo que el legunaje cumpla los requisitos minimos de la materia, sino que tambien logarar algunas metas extra, las cuales serian
+En el marco de de la materia "Lenguajes y Compiladores" me encantaria no solo que el legunaje cumpla los requisitos mínimos de la materia, sino que también lograr algunas metas extra, las cuales serían:
 
     - Soportar funciones lambda
     - Escribir un programa "hello Word!" 100% functional
@@ -30,8 +30,8 @@ Algunos componentes de la sintaxis de **Wyrm**  estan bien definidias mientas qu
 
 ### Definida
 
-El control de tamaños de datos es primordial por eso se definico manejar con tipos como intXX donde XX represntan el numero de bits que se quieren usar. Tambien como diferencial a otros lenguajes usaremos el el dato "natXX" para represantar a los naturales.
-Para no repetrinos hay muchas convciones tomadas en el siguietne [archivo](docs/objetivos_01.md), donde se relatan que operadoes, tipos de datos y opradores.
+El control de tamaños de datos es primordial por eso se definico manejar con tipos como intXX donde XX representan el número de bits que se quieren usar. También como diferencial a otros lenguajes usaremos el dato "natXX" para represantar a los naturales.
+Para no repetirnos hay muchas convenciones tomadas en el siguiente [archivo](docs/objetivos_01.md), donde se relatan que operadoes, tipos de datos y operadores.
 
 
 ### Por definir
@@ -46,6 +46,6 @@ Para no repetrinos hay muchas convciones tomadas en el siguietne [archivo](docs/
 
 ## Extras
 
-El nombre **Wyrm** fue tomado da una palabra en ingles que podia referice a un Dragon. Tambien tiene relacion con la palabra "Worm" (gusano) una forma despectiva de referirse a los dragones en la fantasia. Los dragones y los lenguajes de programacion tienen una relacion estrecha, y como fanatico de los dragones y los lenguajes de programacion me parecio muy acertado el nombre.
+El nombre **Wyrm** fue tomado da una palabra en ingles que podia referice a un Dragón. Tambien tiene relacion con la palabra "Worm" (gusano) una forma despectiva de referirse a los dragones en la fantasia. Los dragones y los lenguajes de programacion tienen una relacion estrecha, y como fanatico de los dragones y los lenguajes de programacion me parecio muy acertado el nombre.
 
 >> Más info de la plabra [**Wyrm**](https://en.wikipedia.org/wiki/Germanic_dragon)

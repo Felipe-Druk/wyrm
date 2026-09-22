@@ -35,7 +35,7 @@ check:
 
 build:
 	@echo "Compilando el proyecto..."
-	cargo build
+	cargo build -vv
 
 run:
 	@echo "Ejecutando el proyecto..."
