@@ -78,7 +78,7 @@ Pasando en limpio hay muchas maneras de istnaciar una variable, y vimos que darl
 
 ### Aproximacion de **Wyrm**
 
-Hay veneficios en tener reservada una palabra como "let" o "var", ya que a la hora de leer un imput al leer una de esas palabras sabemos que estamos en el caso de asignacion de una nueva variable. En cambio si empezamos por el tipo de dato podria ser cualquier cosa despues. 
+Hay veneficios en tener reservada una palabra como "let" o "var", ya que a la hora de leer un input al leer una de esas palabras sabemos que estamos en el caso de asignacion de una nueva variable. En cambio si empezamos por el tipo de dato podria ser cualquier cosa despues. 
 
 Aunque sea un poco más complicado de cara al parset tomaremos la ruta de no reservar una palabra como "var" o "let", la asignacion sera de la siguiente manera 
 
@@ -90,7 +90,7 @@ NOMBRE := VALOR;
 
 Y en el furuto podemos agregar cosas como "const" o "unmut" para declarar variables que no puedan mutar.
 
-Esta manera permite una declaracion de varibles muy simple y compacta, sin peder el control de tipos
+Esta manera permite una declaración de variables muy simple y compacta, sin peder el control de tipos
 
 ## tipos numericos 
 
@@ -120,7 +120,7 @@ nat16 natural = 89;
 
 ### Numeros en punto flotante
 
-Lamentablemente el criterio matematico no se puede mantener en los flotantes, aunque son una represetnacion de los reales tienen bastntes errores de representacion, me encantaria llamarlos real pero a diferencia de int o nat que representan todos los conjuntos dentro de un rango, como los reales entre cualquier rango tenemos infinitos elementos no es posible representar bien este conjunto. Por lo tanto nos quedaremos con float32 y float64
+Lamentablemente el criterio matematico no se puede mantener en los flotantes, aunque son una represetnacion de los reales tienen bastntes errores de representación, me encantaria llamarlos real pero a diferencia de int o nat que representan todos los conjuntos dentro de un rango, como los reales entre cualquier rango tenemos infinitos elementos no es posible representar bien este conjunto. Por lo tanto nos quedaremos con float32 y float64
 
 float32 pi = 3.1415;
 
@@ -192,7 +192,7 @@ func int_to_rune(x int) rune {
 }
 ```
 
-Del mismo modo las llaves {} suelen eglobar el cuerpo de las funciones, o bien son un simbolo para representar mapas. En concreto **Wyrm** tomara las llaves para cuertpos de funcion similar a como trabaja C, pero quizas podriamos aprovecharlos apra separar stacks.
+Del mismo modo las llaves {} suelen eglobar el cuerpo de las funciones, o bien son un simbolo para representar mapas. En concreto **Wyrm** tomara las llaves para cuertpos de función similar a como trabaja C, pero quizas podriamos aprovecharlos apra separar stacks.
 
 Por ultimo los corchetes [] son perfectos para que sean el simbolo de indexar, donde a algun contenedor lo podemos indexar de la manera contenedor[indice]
 

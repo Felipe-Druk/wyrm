@@ -18,7 +18,7 @@ typedef enum {
     // Operadores arigmeticos
     T_ADD, // + para suma
     T_SUB, // - para resta
-    T_MUL, // * para multiplicacion
+    T_MUL, // * para multiplicación
     T_DIV, // / para division
     T_POW, // ^ para potencia
     T_MOD, // % para modulo

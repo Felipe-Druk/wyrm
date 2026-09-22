@@ -13,5 +13,5 @@ typedef struct {
 
 typedef Scanner scanner_t;
 
-// Funcion principal, tomar el texto plano y costruye el arreglo de tokens.
+// Función principal, tomar el texto plano y costruye el arreglo de tokens.
 token_vector_t *scanner_scan(char *input, scanner_t *scanner);

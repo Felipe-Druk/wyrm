@@ -6,7 +6,7 @@ Justo al terminar el escaner me encontre con un debate, como tomar el simbolo "=
 ## Yo igualo o yo defino? 
 
 Posiblemente el problema más grande es que en matematicas el "=" es una sentencia, declaro que la igualdad existe y cumple algunas propiedades como la transitividad (a = b, b = c -> a = c). Pero en programcion se suan para dos cosas, para igualar una variable a un valor u otra variable y tambien cuando defino esa variable se instancia con un valor incial (aveces). 
-Esto hace pensar, ya que al hacer x = 1 y luego x = 12 significa que las declaracines fueron temporales, x efectivamente tenia el valor 1 hasta que le fue cambiado. Esto quiere decir que cuando programamos nunca usamos el simbolo "=" con el rigor matematico que buscamos en **Wyrm**. Y a efectos practicos pedirle al usuario que siempre instancie una nvuea varible cuando quiere cambiar de valor la misma no es lo más eficinete a nivel tecnico.
+Esto hace pensar, ya que al hacer x = 1 y luego x = 12 significa que las declaracines fueron temporales, x efectivamente tenia el valor 1 hasta que le fue cambiado. Esto quiere decir que cuando programamos nunca usamos el simbolo "=" con el rigor matematico que buscamos en **Wyrm**. Y a efectos practicos pedirle al usuario que siempre instancie una nvuea variable cuando quiere cambiar de valor la misma no es lo más eficinete a nivel tecnico.
 
 ## Que deberia hacer el simbolo? 
 
@@ -14,7 +14,7 @@ En principio todos tenemos claro que el simbolo igual deberia asignar el valor a
 
 Podriamos sino tomar otra aproximacion y declarar que una asignacion de valor retorne el valor asignado, rompiendo asi el rigor matemativo pero ganado algunas facilidades como la asignacion en candena "a = b =1;" o comprimier lineas del estilo "while( line = read(file) != EOF)" este ultomo solo es posible si el = teien algun retorno. 
 
-Lneguajes como python tienen el igual sin retorno pero luego añadio el simbolo ":=" para tener un igual con retorno, cosa disitinta a Go que no tiene un igual con retorno y reservo el sombolo ":=" para la declaracion de variables (algo que nos gustaria copiar a futuro), por ultimo C/C++ tienen el operador igual con retorno por lo que no hay un esntandar en la industria es una definicion pura de diseño.
+Lneguajes como python tienen el igual sin retorno pero luego añadio el simbolo ":=" para tener un igual con retorno, cosa disitinta a Go que no tiene un igual con retorno y reservo el sombolo ":=" para la declaración de variables (algo que nos gustaria copiar a futuro), por ultimo C/C++ tienen el operador igual con retorno por lo que no hay un esntandar en la industria es una definición pura de diseño.
 
 Hay un debate interesante en esta [pagina](https://www.reddit.com/r/ProgrammingLanguages/comments/9qx8kv/assignment_as_an_expression_or_a_statement/)
 
@@ -34,4 +34,4 @@ Para un igual con retorno vamos a aprovechar un simbolo afin a la asignacion, te
 
 Ahora un se permitira a <- b <- 1; pero si no queremos tener sentencias complejas podemos declarar como siempre de la manera x = 1;
 
-> como extra para mantener el rigor podemos pensar que definimos <-:(a,b) -> b una funcion que toma a y b asigna el valor b en a y luego retorna b
+> como extra para mantener el rigor podemos pensar que definimos <-:(a,b) -> b una función que toma a y b asigna el valor b en a y luego retorna b

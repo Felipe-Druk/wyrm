@@ -6,7 +6,7 @@ const EXIT_COMMAND: &str = "exit";
 const C_VERBOSE_MODE: c_int = 1 << 0;
 const C_DEBUG_MODE: c_int = 1 << 1;
 
-/// Aplicacion de consola que lee entradas del usuario, y llama a la implementacion de Wyrm en C
+/// Aplicacion de consola que lee entradas del usuario, y llama a la implementación de Wyrm en C
 pub struct Wyrm {
     verbose: bool,
 }
@@ -39,7 +39,7 @@ impl Wyrm {
         }
     }
 
-    /// While infinto que lee entradas del usuario y llama a la implementacion de Wyrm en C, en principio se sale con el comando "exit"
+    /// While infinto que lee entradas del usuario y llama a la implementación de Wyrm en C, en principio se sale con el comando "exit"
     pub fn run(&self) {
         println!("Wyrm Version {}", VERSION);
         println!("Power by DrukDev");

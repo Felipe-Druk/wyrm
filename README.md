@@ -12,14 +12,14 @@
 ## Que es **Wyrm**? 
 
 **Wyrm** es un lenguaje de programacion fuertemetne tipado pensado para combinar las mejores caractaristicas de C, Go y algunos extras tomados de distintos lenguajes.
-Para la implementacion usamos una fuerte base en C (por performance, principalmente) y asistiendo con Rust, en generarl la combinacion fue una idea inicial más tomada por el desafio que por un caracteristica tecnica (es una buena oportuinidad para aprender como combinar lenguajes).
+Para la implementación usamos una fuerte base en C (por performance, principalmente) y asistiendo con Rust, en generarl la combinación fue una idea inicial más tomada por el desafio que por un caracteristica tecnica (es una buena oportuinidad para aprender como combinar lenguajes).
 
 ### Expectativas
 
 En el marco de de la materia "Lenguajes y Compiladores" me encantaria no solo que el legunaje cumpla los requisitos minimos de la materia, sino que tambien logarar algunas metas extra, las cuales serian
 
     - Soportar funciones lambda
-    - Escribir un programa "hello Word!" 100% funcional
+    - Escribir un programa "hello Word!" 100% functional
     - Tener un modulo de string que soporte codigos de color
 
 En el futuro se puden pactar algunas metas extra

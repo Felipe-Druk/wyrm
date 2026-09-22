@@ -50,13 +50,13 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
         actual_index = call_resolver(resolver_limiter, input, actual_index, tokens);
 
         // Importante que este al final para no confundir con algun tipo de dato
-        temp_index = resolver_identidier(input, actual_index, tokens);
+        temp_index = resolver_identifier(input, actual_index, tokens);
         if (temp_index != -1 && temp_index != (int)actual_index) {
             actual_index = temp_index;
             continue; // el ultimo tiene un continue, para evitarl la llamda a ++ del
                       // index,
         }
-        // se llega si hay un caracter descnonocido, es un lugar posible para lanzar
+        // se llega si hay un character descnonocido, es un lugar posible para lanzar
         // error
         actual_index++;
     }
