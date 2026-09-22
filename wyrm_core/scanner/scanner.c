@@ -13,10 +13,12 @@
 #include "types_resolver.h"
 
 void debug_tokens(token_vector_t *tokens) {
-    print_debug("Current tokens:\n  ");
+    print_line("== Current tokens == \n");
     for (size_t i = 0; i < tokens->size; i++) {
-        print_debug("type: %s  lexeme: %s\n", token_type_to_string(tokens->tokens[i].type), tokens->tokens[i].lexeme);
+        print_line_debug("type: %s  lexeme: %s", token_type_to_string(tokens->tokens[i].type),
+                         tokens->tokens[i].lexeme);
     }
+    print_jump_line();
 }
 
 int call_resolver(int (*resolver)(char *, int, token_vector_t *), char *input, int actual_index,
@@ -36,7 +38,7 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
     int debug = scanner->flags & (DEBUG_MODE | SCANNER_MODE);
     while (input[actual_index] != '\0') {
         if (debug) {
-            print_debug("actual_index: %zu, current_char: '%c'\n", actual_index, input[actual_index]);
+            print_line_debug("== actual_index: %zu, current_char: '%c' ==\n", actual_index, input[actual_index]);
             debug_tokens(tokens);
         }
         if (input[actual_index] == ' ' || input[actual_index] == '\n' || input[actual_index] == '\t') {
@@ -65,7 +67,7 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
     push_token(tokens, end_token);
 
     if (debug) {
-        print_debug("== End Scanner ==\n");
+        print_line("== End Scanner ==\n");
         debug_tokens(tokens);
     }
     scanner->tokens = tokens;
