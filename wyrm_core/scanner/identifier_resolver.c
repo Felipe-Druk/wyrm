@@ -23,7 +23,7 @@ int charge_identifier(token_vector_t *tokens, const char *input, size_t new_inde
     return result;
 }
 
-int resolver_identidier(char *input, int index, token_vector_t *tokens) {
+int resolver_identifier(char *input, int index, token_vector_t *tokens) {
     int i = index;
     while (isalpha(input[i]) || input[i] == '_') {
         i++;

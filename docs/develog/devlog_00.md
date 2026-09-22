@@ -2,7 +2,7 @@ Vamos a usar una estrutra de devlog para seguri los avnazces del proyecto, esto 
 
 # Commit inical
 
-Por ahora cubrimos los basico, un makfile el main de rust y un Readme vacio que estare rellenado con las ideas que tengo para la sintaxis asi como la meta del entregable para el TP de Lenguajes y compiladores. El profe inciste en que no usemos LLM's nisquiera en lso readmes asi que em esforzare por lograr una buena ortografia (mi mallor debilidad). Por suerte me considero una persona verborragia asi que escribir los devlog no sera problema. 
+Por ahora cubrimos los basico, un makfile el main de rust y un Readme vacio que estare rellenado con las ideas que tengo para la sintaxis asi como la meta del entregable para el TP de Lenguajes y compiladores. El profe inciste en que no usemos LLM's nisquiera en los readmes asi que em esforzare por lograr una buena ortografia (mi mallor debilidad). Por suerte me considero una persona verborragia asi que escribir los devlog no sera problema. 
 
 # Ideas a furuto 
 

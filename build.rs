@@ -1,4 +1,4 @@
-// Archivo que concecta la implementacion de Wyrm en C
+// Archivo que concecta la implementation de Wyrm en C
 
 fn main() {
     cc::Build::new()

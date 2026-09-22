@@ -20,7 +20,7 @@ un ejemplo simple es C
 int numero = 3;
 
 // sin asginar valor
-char caracter;
+char character;
 ```
 
 Pero el orden puede cambiar, veamos el ejemplo de Go
@@ -29,7 +29,7 @@ Pero el orden puede cambiar, veamos el ejemplo de Go
 var numero int = 2;
 
 // O permite un asignacion especial
-caracter := 'a'
+character := 'a'
 ```
 
 Observamos un cambio en el orden ademas de una palabra especial para indicar que agisnamos una variable "var"
@@ -44,7 +44,7 @@ let numero = 21;
 let numero_con_tipo : i32 = 10;
 
 // y tambien hay que indicar si quermos que la variable sea mutable o no
-let mut caracter_mutante = 'a'
+let mut character_mutante = 'a'
 ```
 
 tnemos 
@@ -132,7 +132,7 @@ bool flag = true;
 
 # Operadores
 
-Hay varios operadores a tener en cuenta no solo los basicos {+,-,*,/} tambien tenemos operadores dobles como ++, --, ** y combinados como !=, <= y otros como ?,%,& que son menos comunes. Asi que separaremos en tres, argimeticos, logicos y especiales.
+Hay various operadores a tener en cuenta no solo los basicos {+,-,*,/} tambien tenemos operadores doubles como ++, --, ** y combinados como !=, <= y otros como ?,%,& que son menos comunes. Asi que separaremos en tres, argimeticos, logicos y especiales.
 
 ## Artmeticos
 
@@ -140,17 +140,17 @@ Los aritmeticos sirven para representar operaciones matematicas comunes, listemo
 
 -   "+" Suma o adicion
 -   "-" Resta o sustracción
--   "*" Multiplicacion (el famoso "por" solemos denotar en papel como una X o un punto)
--   "/" Division operacion contraria a la multiplicacion
+-   "*" multiplicación (el famoso "por" solemos denotar en papel como una X o un punto)
+-   "/" Division operacion contraria a la multiplicación
 
-Luego para denotar el exponente tenemos algunas opciones como "**" o "^" el simbolo "^" suele estar resevado para XOR, pero usar el simbol "^" para XOR nos obligaria a usar {& | ~} basicamente. Sin embargo vamos a arriesgarnos a utilizar el simbolo "^" para los exponentes, luego lidiaremos con como representar XOR para operadores logicos. 
+Luego para denotar el exponente tenemos algunas opciones como "**" o "^" el simbolo "^" suele estar resevado para XOR, pero usar el simbolo "^" para XOR nos obligaria a usar {& | ~} basicamente. Sin embargo vamos a arriesgarnos a utilizar el simbolo "^" para los exponentes, luego lidiaremos con como representar XOR para operadores logicos. 
 
 Otro operador excelente a tener en cuenta es "%" que retorna el resto de una division, es increiblemente util para contadores circulares, y sera incluido en **Wyrm**
 
 ## Logicos
 
 ### Evaluar condicion 
-Principalmente son aquellos que devuelven un booleano como respuesta, ejemplo si evaluamos 2 > 4 nos devolvera false, ya que 2 es menor que 4. De los más comunes son los que nos sirven para comparar magnitudes, aqui entran los primeros dobles el "==","<=" y">="  ya que el simbolo "=" esta reservado para ala asigncacion, seria complicado tenerlo para evaluar la igualdad.
+Principalmente son aquellos que devuelven un booleano como respuesta, ejemplo si evaluamos 2 > 4 nos devolvera false, ya que 2 es menor que 4. De los más comunes son los que nos sirven para comparar magnitudes, aqui entran los primeros doubles el "==","<=" y">="  ya que el simbolo "=" esta reservado para ala asigncacion, seria complicado tenerlo para evaluar la igualdad.
 De este modo tendriamos
 
 -   ">" Mayor que 

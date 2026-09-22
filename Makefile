@@ -1,7 +1,7 @@
-# Siempre un Makefile es importante para tener ordenado el proyecto, más si vamos a usar C
+# Siempre un Makefile es important para tener ordenado el proyecto, más si vamos a usar C
 
 
-.PHONY: install check build run run-v clean format help
+.PHONY: install check build run run-v clean format help pre-commit
 
 .DEFAULT_GOAL := help
 
@@ -26,6 +26,7 @@ install:
 	@echo "Instalando dependencias de Rust..."
 	rustup component add clippy rustfmt
 	pre-commit install
+	pre-commit autoupdate
 
 check:
 	@echo "Comprobando el proyecto..."
@@ -48,6 +49,10 @@ format:
 	@echo "Formato para Rust..."
 	cargo fmt
 	find wyrm_core -type f \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} +
+
+pre-commit:
+	@echo "Ejecutando pre-commits"
+	pre-commit run --all-files
 
 make clean:
 	@echo "Limpiando el proyecto..."
