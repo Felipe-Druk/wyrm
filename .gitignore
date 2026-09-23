@@ -9,3 +9,6 @@
 *.d
 target/
 *.lock
+
+# vscode
+.vscode

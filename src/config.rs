@@ -3,7 +3,6 @@ pub struct Config {
     verbose: bool,
 }
 
-
 impl Config {
     pub fn build(mut args: impl Iterator<Item = String>) -> Self {
         args.next();

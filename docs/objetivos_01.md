@@ -20,7 +20,7 @@ un ejemplo simple es C
 int numero = 3;
 
 // sin asginar valor
-char caracter;
+char character;
 ```
 
 Pero el orden puede cambiar, veamos el ejemplo de Go
@@ -29,7 +29,7 @@ Pero el orden puede cambiar, veamos el ejemplo de Go
 var numero int = 2;
 
 // O permite un asignacion especial
-caracter := 'a'
+character := 'a'
 ```
 
 Observamos un cambio en el orden ademas de una palabra especial para indicar que agisnamos una variable "var"
@@ -44,7 +44,7 @@ let numero = 21;
 let numero_con_tipo : i32 = 10;
 
 // y tambien hay que indicar si quermos que la variable sea mutable o no
-let mut caracter_mutante = 'a'
+let mut character_mutante = 'a'
 ```
 
 tnemos 
@@ -78,7 +78,7 @@ Pasando en limpio hay muchas maneras de istnaciar una variable, y vimos que darl
 
 ### Aproximacion de **Wyrm**
 
-Hay veneficios en tener reservada una palabra como "let" o "var", ya que a la hora de leer un imput al leer una de esas palabras sabemos que estamos en el caso de asignacion de una nueva variable. En cambio si empezamos por el tipo de dato podria ser cualquier cosa despues. 
+Hay veneficios en tener reservada una palabra como "let" o "var", ya que a la hora de leer un input al leer una de esas palabras sabemos que estamos en el caso de asignacion de una nueva variable. En cambio si empezamos por el tipo de dato podria ser cualquier cosa despues. 
 
 Aunque sea un poco más complicado de cara al parset tomaremos la ruta de no reservar una palabra como "var" o "let", la asignacion sera de la siguiente manera 
 
@@ -90,7 +90,7 @@ NOMBRE := VALOR;
 
 Y en el furuto podemos agregar cosas como "const" o "unmut" para declarar variables que no puedan mutar.
 
-Esta manera permite una declaracion de varibles muy simple y compacta, sin peder el control de tipos
+Esta manera permite una declaración de variables muy simple y compacta, sin peder el control de tipos
 
 ## tipos numericos 
 
@@ -120,7 +120,7 @@ nat16 natural = 89;
 
 ### Numeros en punto flotante
 
-Lamentablemente el criterio matematico no se puede mantener en los flotantes, aunque son una represetnacion de los reales tienen bastntes errores de representacion, me encantaria llamarlos real pero a diferencia de int o nat que representan todos los conjuntos dentro de un rango, como los reales entre cualquier rango tenemos infinitos elementos no es posible representar bien este conjunto. Por lo tanto nos quedaremos con float32 y float64
+Lamentablemente el criterio matematico no se puede mantener en los flotantes, aunque son una represetnacion de los reales tienen bastntes errores de representación, me encantaria llamarlos real pero a diferencia de int o nat que representan todos los conjuntos dentro de un rango, como los reales entre cualquier rango tenemos infinitos elementos no es posible representar bien este conjunto. Por lo tanto nos quedaremos con float32 y float64
 
 float32 pi = 3.1415;
 
@@ -132,7 +132,7 @@ bool flag = true;
 
 # Operadores
 
-Hay varios operadores a tener en cuenta no solo los basicos {+,-,*,/} tambien tenemos operadores dobles como ++, --, ** y combinados como !=, <= y otros como ?,%,& que son menos comunes. Asi que separaremos en tres, argimeticos, logicos y especiales.
+Hay various operadores a tener en cuenta no solo los basicos {+,-,*,/} tambien tenemos operadores doubles como ++, --, ** y combinados como !=, <= y otros como ?,%,& que son menos comunes. Asi que separaremos en tres, argimeticos, logicos y especiales.
 
 ## Artmeticos
 
@@ -140,17 +140,17 @@ Los aritmeticos sirven para representar operaciones matematicas comunes, listemo
 
 -   "+" Suma o adicion
 -   "-" Resta o sustracción
--   "*" Multiplicacion (el famoso "por" solemos denotar en papel como una X o un punto)
--   "/" Division operacion contraria a la multiplicacion
+-   "*" multiplicación (el famoso "por" solemos denotar en papel como una X o un punto)
+-   "/" Division operacion contraria a la multiplicación
 
-Luego para denotar el exponente tenemos algunas opciones como "**" o "^" el simbolo "^" suele estar resevado para XOR, pero usar el simbol "^" para XOR nos obligaria a usar {& | ~} basicamente. Sin embargo vamos a arriesgarnos a utilizar el simbolo "^" para los exponentes, luego lidiaremos con como representar XOR para operadores logicos. 
+Luego para denotar el exponente tenemos algunas opciones como "**" o "^" el simbolo "^" suele estar resevado para XOR, pero usar el simbolo "^" para XOR nos obligaria a usar {& | ~} basicamente. Sin embargo vamos a arriesgarnos a utilizar el simbolo "^" para los exponentes, luego lidiaremos con como representar XOR para operadores logicos. 
 
 Otro operador excelente a tener en cuenta es "%" que retorna el resto de una division, es increiblemente util para contadores circulares, y sera incluido en **Wyrm**
 
 ## Logicos
 
 ### Evaluar condicion 
-Principalmente son aquellos que devuelven un booleano como respuesta, ejemplo si evaluamos 2 > 4 nos devolvera false, ya que 2 es menor que 4. De los más comunes son los que nos sirven para comparar magnitudes, aqui entran los primeros dobles el "==","<=" y">="  ya que el simbolo "=" esta reservado para ala asigncacion, seria complicado tenerlo para evaluar la igualdad.
+Principalmente son aquellos que devuelven un booleano como respuesta, ejemplo si evaluamos 2 > 4 nos devolverá false, ya que 2 es menor que 4. De los más comunes son los que nos sirven para comparar magnitudes, aquí entran los primeros dobles el "==","<=" y">=" ya que el simbolo "=" esta reservado para ala asigncacion, seria complicado tenerlo para evaluar la igualdad.
 De este modo tendriamos
 
 -   ">" Mayor que 
@@ -192,7 +192,7 @@ func int_to_rune(x int) rune {
 }
 ```
 
-Del mismo modo las llaves {} suelen eglobar el cuerpo de las funciones, o bien son un simbolo para representar mapas. En concreto **Wyrm** tomara las llaves para cuertpos de funcion similar a como trabaja C, pero quizas podriamos aprovecharlos apra separar stacks.
+Del mismo modo las llaves {} suelen eglobar el cuerpo de las funciones, o bien son un simbolo para representar mapas. En concreto **Wyrm** tomara las llaves para cuertpos de función similar a como trabaja C, pero quizas podriamos aprovecharlos apra separar stacks.
 
 Por ultimo los corchetes [] son perfectos para que sean el simbolo de indexar, donde a algun contenedor lo podemos indexar de la manera contenedor[indice]
 

@@ -1,11 +1,10 @@
-// Archivo que concecta la implementacion de Wyrm en C
+// Archivo que concecta la implementation de Wyrm en C
 
-fn main() { 
+fn main() {
     cc::Build::new()
         // Todos los .c
         .file("wyrm_core/wyrm.c")
         .file("wyrm_core/wyrm_token.c")
-
         .file("wyrm_core/scanner/arigmetic_resolver.c")
         .file("wyrm_core/scanner/numerit_resolver.c")
         .file("wyrm_core/scanner/types_resolver.c")
@@ -13,15 +12,13 @@ fn main() {
         .file("wyrm_core/scanner/identifier_resolver.c")
         .file("wyrm_core/scanner/limiter_resolver.c")
         .file("wyrm_core/scanner/logical_resolver.c")
-
-        .file("wyrm_core/utils/debuger.c")
+        //utils
+        .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")
-    
         // Dependencias o .h
-        .include("wyrm_core") 
+        .include("wyrm_core")
         .include("wyrm_core/scanner")
         .include("wyrm_core/utils")
-
-        // Compilacion
+        // Compilación
         .compile("wyrm");
 }
