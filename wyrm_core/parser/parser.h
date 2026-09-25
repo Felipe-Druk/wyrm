@@ -10,7 +10,7 @@ typedef struct {
 typedef Parser parser_t;
 
 // Crea el parser a partir del vector si falla devuelve un NULL pointer
-parset_t *create_parset(token_vector_t *tokens);
+parser_t *create_parser(token_vector_t *tokens);
 
 // Debe devuelve el nodo raiz listo para ejecutar (Puede disparar errores)
 ast_node_t *parser_parse(parser_t *parser);

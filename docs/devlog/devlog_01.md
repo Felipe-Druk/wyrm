@@ -1,7 +1,7 @@
 
 # Inicia el viaje
 
-Como es el primer develog real vamos a expliar un poco como sera la tematica, la idea es expliar que espero hacer en  una branch nueva, documentar lo más dficil y dar una conclucion.
+Como es el primer devlog real vamos a expliar un poco como sera la tematica, la idea es expliar que espero hacer en  una branch nueva, documentar lo más dficil y dar una conclucion.
 
 Por ahora el plan es tener construido una estrutra de tokens que surgan desde la entrada estandar. La idea de combinar Ruts y C es que la logica profunda este contenida en el mismo C, pero la parte de leer por consola y controlar argumentos se pare en rust, esto porque en el futuro es probable que tengamos que leer archivos y controlar multiples archivos y rust tiene algunas optimizaciones para trabajar. Todavía no se como respondera la libreri "cc" voy a ponerme como objetivo secundario investigar como se compila y se maneja el llamado a funciones de C dentro de codigo rust. 
 

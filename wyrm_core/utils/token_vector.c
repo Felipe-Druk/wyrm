@@ -39,7 +39,12 @@ int push_token(token_vector_t *vector, wyrm_token_t token) {
     return 0;
 }
 
-wyrm_token_t *get_token(token_vector_t *vector, int index);
+wyrm_token_t *get_token(token_vector_t *vector, int index) {
+    if (vector == NULL || index >= vector->size) {
+        return NULL;
+    }
+    return &vector->tokens[index];
+}
 
 int clear_token_vector(token_vector_t *vector);
 

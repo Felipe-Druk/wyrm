@@ -1,7 +1,7 @@
 #include "parser.h"
 #include <stdlib.h>
 
-parset_t *create_parset(token_vector_t *tokens) {
+parser_t *create_parser(token_vector_t *tokens) {
     parser_t *new_parser = malloc(sizeof(parser_t));
     if (new_parser == NULL) {
         return NULL;
@@ -11,32 +11,61 @@ parset_t *create_parset(token_vector_t *tokens) {
     return new_parser;
 }
 
-ast_node_t *primary(parser) {
-    ast_node_t *primary_expr;
-    return primary_expr;
+// puede devolver NULL
+wyrm_token_t *peek(parser_t *parser) { return get_token(parser->tokens, parser->current_index); }
+
+wyrm_token_t *advance(parser_t *parser) {
+    wyrm_token_t *current = peek(parser);
+    if (current->type != T_EOF) {
+        parser->current_index++;
+    }
+    return current;
 }
 
-ast_node_t *power(parser) {
+int match(parser_t *parser, TokenType expected_type_token) {
+    if (peek(parser)->type == expected_type_token) {
+        advance(parser);
+        return 1;
+    }
+    return 0;
+}
+
+ast_node_t *primary(parser_t *parser) {
+    if (match(parser, T_NUMBER) || match(parser, T_FLOAT_NUMBER)) {
+        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
+        return create_number_node(previous->lexeme, previous->type);
+    }
+
+    if (match(parser, T_IDENTIFIER)) {
+        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
+        return create_identifier_node(previous->lexeme);
+    }
+
+    // Futuro error
+    return NULL;
+}
+
+ast_node_t *power(parser_t *parser) {
     ast_node_t *primary_expr = primary(parser);
     return primary_expr;
 }
 
-ast_node_t *unary(parser) {
+ast_node_t *unary(parser_t *parser) {
     ast_node_t *powery_expr = power(parser);
     return powery_expr;
 }
 
-ast_node_t *factor(parser) {
+ast_node_t *factor(parser_t *parser) {
     ast_node_t *unary_expr = unary(parser);
     return unary_expr;
 }
 
-ast_node_t *term(parser) {
+ast_node_t *term(parser_t *parser) {
     ast_node_t *power_expr = factor(parser);
     return power_expr;
 }
 
-ast_node_t *expression(parser) {
+ast_node_t *expression(parser_t *parser) {
     ast_node_t *term_expr = term(parser);
     return term_expr;
 }

@@ -49,6 +49,7 @@ typedef struct ASTNode {
 } ast_node_t;
 
 ast_node_t *create_number_node(char *value, TokenType numeric_type);
+ast_node_t *create_identifier_node(char *value);
 ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t * right);
 ast_node_t *create_unary_node(TokenType operator, ast_node_t * right);
 ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression);

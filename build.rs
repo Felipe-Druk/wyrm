@@ -5,13 +5,17 @@ fn main() {
         // Todos los .c
         .file("wyrm_core/wyrm.c")
         .file("wyrm_core/wyrm_token.c")
-        .file("wyrm_core/scanner/arigmetic_resolver.c")
-        .file("wyrm_core/scanner/numerit_resolver.c")
+        .file("wyrm_core/ast_node.c")
+        // Scanner
+        .file("wyrm_core/scanner/arithmetic_resolver.c")
+        .file("wyrm_core/scanner/numeric_resolver.c")
         .file("wyrm_core/scanner/types_resolver.c")
         .file("wyrm_core/scanner/scanner.c")
         .file("wyrm_core/scanner/identifier_resolver.c")
         .file("wyrm_core/scanner/limiter_resolver.c")
         .file("wyrm_core/scanner/logical_resolver.c")
+        // Parser
+        .file("wyrm_core/parser/parser.c")
         //utils
         .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")
@@ -19,6 +23,7 @@ fn main() {
         .include("wyrm_core")
         .include("wyrm_core/scanner")
         .include("wyrm_core/utils")
+        .include("wyrm_core/parser")
         // Compilación
         .compile("wyrm");
 }
