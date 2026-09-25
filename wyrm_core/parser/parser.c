@@ -58,9 +58,13 @@ ast_node_t *power(parser_t *parser) {
     return primary_expr;
 }
 
+//  cumple con unary -> ( T_SUB ) power
 ast_node_t *unary(parser_t *parser) {
-    ast_node_t *powery_expr = power(parser);
-    return powery_expr;
+    if (match(parser, T_SUB)) {
+        ast_node_t *right_expr = unary(parser); // para resolver cadena de negadores
+        return create_unary_node(T_SUB, right_expr);
+    }
+    return power(parser);
 }
 
 ast_node_t *factor(parser_t *parser) {
