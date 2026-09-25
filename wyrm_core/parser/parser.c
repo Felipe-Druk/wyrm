@@ -67,14 +67,24 @@ ast_node_t *unary(parser_t *parser) {
     return power(parser);
 }
 
+// cumple con factor -> unary ( ( T_MUL | T_DIV | T_MOD ) unary )
 ast_node_t *factor(parser_t *parser) {
     ast_node_t *unary_expr = unary(parser);
+
+    while (match(parser, T_MUL) || match(parser, T_DIV) || match(parser, T_MOD)) {
+        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
+        ast_node_t *right_expr = unary(parser);
+        return create_binary_node(unary_expr, previous->type, right_expr);
+    }
+
     return unary_expr;
 }
 
+// cumple con term -> factor ( ( T_ADD | T_SUB ) factor )
 ast_node_t *term(parser_t *parser) {
-    ast_node_t *power_expr = factor(parser);
-    return power_expr;
+    ast_node_t *factor_expr = factor(parser);
+
+    return factor_expr;
 }
 
 ast_node_t *expression(parser_t *parser) {

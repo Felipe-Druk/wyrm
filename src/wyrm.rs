@@ -561,4 +561,92 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_parser_identifica_factor_expresión() {
+        unsafe {
+            let lexeme_11 = CString::new("11").unwrap();
+            let lexeme_mul = CString::new("*").unwrap();
+            let lexeme_3 = CString::new("3").unwrap();
+
+            let token_11 = WyrmToken {
+                t_type: TokenType::TNumber,
+                lexeme: lexeme_11.as_ptr() as *mut c_char,
+            };
+
+            let token_mul = WyrmToken {
+                t_type: TokenType::TMul,
+                lexeme: lexeme_mul.as_ptr() as *mut c_char,
+            };
+
+            let token_3 = WyrmToken {
+                t_type: TokenType::TNumber,
+                lexeme: lexeme_3.as_ptr() as *mut c_char,
+            };
+
+            let token_eof = WyrmToken {
+                t_type: TokenType::TEof,
+                lexeme: std::ptr::null_mut(),
+            };
+
+            let mut tokens_array = [token_11, token_mul, token_3, token_eof];
+
+            let mut vector = TokenVector {
+                size: 4,
+                capacity: 4,
+                tokens: tokens_array.as_mut_ptr(),
+            };
+
+            let parser_ptr = create_parser(&mut vector as *mut _);
+            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
+
+            let ast_root_ptr = parser_parse(parser_ptr);
+            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
+
+            let ast_root = &*ast_root_ptr;
+            assert_eq!(
+                ast_root.node_type,
+                AstNodeType::AstBinaryExpr,
+                "La raiz no es una operacion bianria"
+            );
+
+            let binary_data = ast_root.ast_node_value.binary_expr;
+            assert_eq!(
+                binary_data.operator,
+                TokenType::TMul,
+                "El operador no es una multiplicasion"
+            );
+
+            assert!(!binary_data.left.is_null(), "No hay nodo izquiedo");
+
+            let left_node = &*binary_data.left;
+            assert_eq!(
+                left_node.node_type,
+                AstNodeType::AstNumberLiteral,
+                "Operador izquierdo no es un numero"
+            );
+
+            let left_val = CStr::from_ptr(left_node.ast_node_value.number_expr.value);
+            assert_eq!(
+                left_val.to_str().unwrap(),
+                "11",
+                "Lexema del nodo izquierdo fallido"
+            );
+
+            assert!(!binary_data.right.is_null(), "El hay nodo derecho");
+            let right_node = &*binary_data.right;
+            assert_eq!(
+                right_node.node_type,
+                AstNodeType::AstNumberLiteral,
+                "El nodo derecho no es un numero"
+            );
+
+            let right_val = CStr::from_ptr(right_node.ast_node_value.number_expr.value);
+            assert_eq!(
+                right_val.to_str().unwrap(),
+                "3",
+                "lexema del nodo derecho fallido"
+            );
+        }
+    }
 }
