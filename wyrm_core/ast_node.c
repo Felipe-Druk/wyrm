@@ -19,3 +19,14 @@ ast_node_t *create_identifier_node(char *value) {
     new_node->ast_node_value.identifier_expr.name = strdup(value);
     return new_node;
 }
+
+ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t *right) {
+    ast_node_t *new_node = malloc(sizeof(ast_node_t));
+
+    new_node->type = AST_BINARY_EXPR;
+    new_node->ast_node_value.binary_expr.left = left;
+    new_node->ast_node_value.binary_expr.operator = operator;
+    new_node->ast_node_value.binary_expr.right = right;
+
+    return new_node;
+}

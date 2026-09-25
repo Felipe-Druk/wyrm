@@ -52,7 +52,7 @@ format:
 	cargo fmt
 	find wyrm_core -type f \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} +
 
-tests:
+tests: clean
 	@echo "Ejecutanto tests..."
 	cargo test
 

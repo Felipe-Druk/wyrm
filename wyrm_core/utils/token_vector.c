@@ -40,7 +40,7 @@ int push_token(token_vector_t *vector, wyrm_token_t token) {
 }
 
 wyrm_token_t *get_token(token_vector_t *vector, int index) {
-    if (vector == NULL || index >= vector->size) {
+    if (vector == NULL || (size_t)index >= vector->size) {
         return NULL;
     }
     return &vector->tokens[index];

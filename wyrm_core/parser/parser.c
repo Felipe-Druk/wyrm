@@ -30,6 +30,7 @@ int match(parser_t *parser, TokenType expected_type_token) {
     return 0;
 }
 
+// cumple con primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER
 ast_node_t *primary(parser_t *parser) {
     if (match(parser, T_NUMBER) || match(parser, T_FLOAT_NUMBER)) {
         wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
@@ -45,8 +46,15 @@ ast_node_t *primary(parser_t *parser) {
     return NULL;
 }
 
+// cumple con power -> primary ( T_POW primary )
 ast_node_t *power(parser_t *parser) {
     ast_node_t *primary_expr = primary(parser);
+
+    if (match(parser, T_POW)) {
+        ast_node_t *right_expr = power(parser); // para resolver cadena de potencias
+        return create_binary_node(primary_expr, T_POW, right_expr);
+    }
+
     return primary_expr;
 }
 

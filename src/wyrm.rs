@@ -135,6 +135,7 @@ mod tests {
         pub current_index: usize,
     }
 
+    #[allow(dead_code)]
     #[repr(C)]
     #[derive(Debug, PartialEq, Clone, Copy)]
     pub enum AstNodeType {
@@ -366,12 +367,12 @@ mod tests {
         unsafe {
             let lexeme_cstr = CString::new("42").unwrap();
 
-            let mut token_number = WyrmToken {
+            let token_number = WyrmToken {
                 t_type: TokenType::TNumber,
                 lexeme: lexeme_cstr.as_ptr() as *mut c_char,
             };
 
-            let mut token_eof = WyrmToken {
+            let token_eof = WyrmToken {
                 t_type: TokenType::TEof,
                 lexeme: std::ptr::null_mut(),
             };
@@ -403,6 +404,96 @@ mod tests {
             // Validamos que el string es "42"
             let c_str_recibido = CStr::from_ptr(number_data.value);
             assert_eq!(c_str_recibido.to_str().unwrap(), "42");
+        }
+    }
+
+    #[test]
+    fn test_parser_identifica_power_expresión() {
+        unsafe {
+            let lexeme_1 = CString::new("1").unwrap();
+            let lexeme_pow = CString::new("^").unwrap();
+            let lexeme_2 = CString::new("2").unwrap();
+
+            // 2. Creamos los tokens simulados para "1 + 2"
+            let token_1 = WyrmToken {
+                t_type: TokenType::TNumber,
+                lexeme: lexeme_1.as_ptr() as *mut c_char,
+            };
+
+            let token_pow = WyrmToken {
+                t_type: TokenType::TPow,
+                lexeme: lexeme_pow.as_ptr() as *mut c_char,
+            };
+
+            let token_2 = WyrmToken {
+                t_type: TokenType::TNumber,
+                lexeme: lexeme_2.as_ptr() as *mut c_char,
+            };
+
+            let token_eof = WyrmToken {
+                t_type: TokenType::TEof,
+                lexeme: std::ptr::null_mut(),
+            };
+
+            // 3. Armamos el vector subyacente
+            let mut tokens_array = [token_1, token_pow, token_2, token_eof];
+
+            let mut vector = TokenVector {
+                size: 4,
+                capacity: 4,
+                tokens: tokens_array.as_mut_ptr(),
+            };
+
+            let parser_ptr = create_parser(&mut vector as *mut _);
+            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
+
+            let ast_root_ptr = parser_parse(parser_ptr);
+            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
+
+            let ast_root = &*ast_root_ptr;
+            assert_eq!(
+                ast_root.node_type,
+                AstNodeType::AstBinaryExpr,
+                "La raiz no es una operacion bianria"
+            );
+
+            let binary_data = ast_root.ast_node_value.binary_expr;
+            assert_eq!(
+                binary_data.operator,
+                TokenType::TPow,
+                "El operador no es exponente"
+            );
+
+            assert!(!binary_data.left.is_null(), "No hay nodo izquiedo");
+
+            let left_node = &*binary_data.left;
+            assert_eq!(
+                left_node.node_type,
+                AstNodeType::AstNumberLiteral,
+                "Operador izquierdo no es un numero"
+            );
+
+            let left_val = CStr::from_ptr(left_node.ast_node_value.number_expr.value);
+            assert_eq!(
+                left_val.to_str().unwrap(),
+                "1",
+                "Lexema del nodo izquierdo fallido"
+            );
+
+            assert!(!binary_data.right.is_null(), "El hay nodo derecho");
+            let right_node = &*binary_data.right;
+            assert_eq!(
+                right_node.node_type,
+                AstNodeType::AstNumberLiteral,
+                "El nodo derecho no es un numero"
+            );
+
+            let right_val = CStr::from_ptr(right_node.ast_node_value.number_expr.value);
+            assert_eq!(
+                right_val.to_str().unwrap(),
+                "2",
+                "lexema del nodo derecho fallido"
+            );
         }
     }
 }
