@@ -16,6 +16,7 @@ fn main() {
         .file("wyrm_core/scanner/logical_resolver.c")
         // Parser
         .file("wyrm_core/parser/parser.c")
+        .file("wyrm_core/parser/debugger_parser.c")
         //utils
         .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")

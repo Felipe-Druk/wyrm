@@ -1,4 +1,6 @@
 #include "parser.h"
+#include "../options.h"
+#include "debugger_parser.h"
 #include <stdlib.h>
 
 parser_t *create_parser(token_vector_t *tokens) {
@@ -8,6 +10,7 @@ parser_t *create_parser(token_vector_t *tokens) {
     }
     new_parser->current_index = 0;
     new_parser->tokens = tokens;
+    new_parser->flags = 0;
     return new_parser;
 }
 
@@ -86,7 +89,7 @@ ast_node_t *term(parser_t *parser) {
 
     while (match(parser, T_ADD) || match(parser, T_SUB)) {
         wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
-        ast_node_t *right_expr = unary(parser);
+        ast_node_t *right_expr = factor(parser);
         expr = create_binary_node(expr, previous->type, right_expr);
     }
     return expr;
@@ -106,6 +109,11 @@ ast_node_t *expression_statement(parser_t *parser) {
 ast_node_t *parser_parse(parser_t *parser) {
     // Arriba los especiales
 
-    // retornamos expresión
-    return expression_statement(parser);
+    //
+    ast_node_t *root = expression_statement(parser);
+    if (parser->flags & (DEBUG_MODE | PARSER_MODE)) {
+        print_line_debug("== END OF PARSER ==");
+        debug_ast(root, 0);
+    }
+    return root;
 }

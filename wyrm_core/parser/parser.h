@@ -5,6 +5,7 @@
 typedef struct {
     token_vector_t *tokens;
     size_t current_index;
+    int flags;
 } Parser;
 
 typedef Parser parser_t;

@@ -737,4 +737,123 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_parser_identifica_multiple_expresión() {
+        unsafe {
+            let lexeme_1 = CString::new("1").unwrap();
+            let lexeme_add = CString::new("+").unwrap();
+            let lexeme_2 = CString::new("2").unwrap();
+            let lexeme_div = CString::new("/").unwrap();
+            let lexeme_3 = CString::new("3").unwrap();
+
+            let token_add = WyrmToken {
+                t_type: TokenType::TAdd,
+                lexeme: lexeme_add.as_ptr() as *mut c_char,
+            };
+            let token_1 = WyrmToken {
+                t_type: TokenType::TNumber,
+                lexeme: lexeme_1.as_ptr() as *mut c_char,
+            };
+            let token_2 = WyrmToken {
+                t_type: TokenType::TNumber,
+                lexeme: lexeme_2.as_ptr() as *mut c_char,
+            };
+            let token_3 = WyrmToken {
+                t_type: TokenType::TNumber,
+                lexeme: lexeme_3.as_ptr() as *mut c_char,
+            };
+            let token_div = WyrmToken {
+                t_type: TokenType::TDiv,
+                lexeme: lexeme_div.as_ptr() as *mut c_char,
+            };
+
+            let token_eof = WyrmToken {
+                t_type: TokenType::TEof,
+                lexeme: std::ptr::null_mut(),
+            };
+
+            let mut tokens_array = [token_1, token_add, token_2, token_div, token_3, token_eof];
+
+            let mut vector = TokenVector {
+                size: 6,
+                capacity: 6,
+                tokens: tokens_array.as_mut_ptr(),
+            };
+
+            let parser_ptr = create_parser(&mut vector as *mut _);
+            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
+
+            let ast_root_ptr = parser_parse(parser_ptr);
+            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
+
+            let ast_root = &*ast_root_ptr;
+            assert_eq!(
+                ast_root.node_type,
+                AstNodeType::AstBinaryExpr,
+                "La raiz no es una operacion bianria"
+            );
+
+            let binary_data = ast_root.ast_node_value.binary_expr;
+            assert_eq!(
+                binary_data.operator,
+                TokenType::TAdd,
+                "El operador no es una adicion"
+            );
+
+            assert!(!binary_data.left.is_null(), "No hay nodo izquiedo");
+
+            let left_node = &*binary_data.left;
+            assert_eq!(
+                left_node.node_type,
+                AstNodeType::AstNumberLiteral,
+                "Operador izquierdo no es un numero"
+            );
+
+            let left_val = CStr::from_ptr(left_node.ast_node_value.number_expr.value);
+            assert_eq!(
+                left_val.to_str().unwrap(),
+                "1",
+                "Lexema del nodo izquierdo fallido"
+            );
+
+            assert!(!binary_data.right.is_null(), "El hay nodo derecho");
+            let right_node = &*binary_data.right;
+            assert_eq!(
+                right_node.node_type,
+                AstNodeType::AstBinaryExpr,
+                "El nodo derecho no es una operacion"
+            );
+
+            let right_binary_data = right_node.ast_node_value.binary_expr;
+
+            let right_left_node = &*right_binary_data.left;
+
+            assert_eq!(
+                right_left_node.node_type,
+                AstNodeType::AstNumberLiteral,
+                "Operador izquierdo del divisor no es un numero"
+            );
+            let right_left_val = CStr::from_ptr(right_left_node.ast_node_value.number_expr.value);
+            assert_eq!(
+                right_left_val.to_str().unwrap(),
+                "2",
+                "Lexema del nodo izquierdo de la division fallido"
+            );
+
+            let right_right_node = &*right_binary_data.right;
+
+            assert_eq!(
+                right_right_node.node_type,
+                AstNodeType::AstNumberLiteral,
+                "Operador derecho del divisor no es un numero"
+            );
+            let right_right_val = CStr::from_ptr(right_right_node.ast_node_value.number_expr.value);
+            assert_eq!(
+                right_right_val.to_str().unwrap(),
+                "3",
+                "Lexema del nodo izquierdo de la division fallido"
+            );
+        }
+    }
 }

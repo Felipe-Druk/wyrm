@@ -26,6 +26,7 @@ void run_wyrm(const char *input, int flags) {
     }
 
     parser_t *parser = create_parser(tokens);
+    parser->flags = flags;
     ast_node_t *root_expr = parser_parse(parser);
     (void)root_expr;
 }
