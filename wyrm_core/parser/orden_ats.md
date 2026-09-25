@@ -24,3 +24,25 @@ power -> primary ( T_POW primary )
 
 primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER
 
+
+**Orden 2**
+
+El orden anterior ignoraba operadores unarios como "-"
+
+statement -> var_decl
+
+var_decl -> "TIPO" T_IDENTIFIER T_ASSIGN expression T_SEMICOLON 
+
+> TIPO es cualquier tipo de dato
+
+expression -> term
+
+term -> factor ( ( T_ADD | T_SUB ) factor )
+
+factor -> unary ( ( T_MUL | T_DIV | T_MOD ) unary )
+
+unary -> ( T_SUB ) power
+
+power -> primary ( T_POW primary )
+
+primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER

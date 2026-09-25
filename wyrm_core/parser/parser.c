@@ -21,8 +21,18 @@ ast_node_t *power(parser) {
     return primary_expr;
 }
 
+ast_node_t *unary(parser) {
+    ast_node_t *powery_expr = power(parser);
+    return powery_expr;
+}
+
+ast_node_t *factor(parser) {
+    ast_node_t *unary_expr = unary(parser);
+    return unary_expr;
+}
+
 ast_node_t *term(parser) {
-    ast_node_t *power_expr = power(parser);
+    ast_node_t *power_expr = factor(parser);
     return power_expr;
 }
 

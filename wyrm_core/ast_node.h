@@ -1,7 +1,13 @@
 #pragma once
 #include "wyrm_token.h"
 
-typedef enum { AST_NUMBER_LITERAL, AST_IDENTIFIER, AST_BINARY_EXPR, AST_VAR_DECLARATION } ast_node_type_t;
+typedef enum {
+    AST_NUMBER_LITERAL,
+    AST_IDENTIFIER,
+    AST_BINARY_EXPR,
+    AST_VAR_DECLARATION,
+    AST_UNARY_EXPR
+} ast_node_type_t;
 
 // Estrutura princiapl del AST, usamos union para "simular" polimorfismo
 typedef struct ASTNode {
@@ -26,6 +32,12 @@ typedef struct ASTNode {
             struct ASTNode *right;
         } binary_expr;
 
+        // Operaciones unarias com  -5 o ~x
+        struct {
+            TokenType operator;
+            struct ASTNode *right;
+        } unary_expr;
+
         // Declaraciones de variables
         struct {
             TokenType var_type;
@@ -38,4 +50,5 @@ typedef struct ASTNode {
 
 ast_node_t *create_number_node(char *value, TokenType numeric_type);
 ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t * right);
+ast_node_t *create_unary_node(TokenType operator, ast_node_t * right);
 ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression);
