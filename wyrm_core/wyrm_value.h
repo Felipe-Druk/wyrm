@@ -16,6 +16,9 @@ typedef enum {
     VAL_INT32, // int32
     VAL_INT64, // int64
 
+    VAL_FLOAT32, // float32
+    VAL_FLOAT64, // float64
+
 } WyrmValueType;
 
 // En general todo lo que pueda retornar un "source" de wyrm, inlcuso si no hay retorno.
@@ -31,6 +34,9 @@ typedef struct {
         int16_t int16_val;
         int32_t int32_val;
         int64_t int64_val;
+
+        _Float32 float32_val;
+        _Float64 float64_val;
     } value;
 } WyrmValue;
 

@@ -17,6 +17,9 @@ fn main() {
         // Parser
         .file("wyrm_core/parser/parser.c")
         .file("wyrm_core/parser/debugger_parser.c")
+        // Interpreter
+        .file("wyrm_core/interpreter/interpreter.c")
+        .file("wyrm_core/interpreter/evaluator_number.c")
         //utils
         .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")
@@ -25,6 +28,7 @@ fn main() {
         .include("wyrm_core/scanner")
         .include("wyrm_core/utils")
         .include("wyrm_core/parser")
+        .include("wyrm_core/interpreter")
         // Compilación
         .compile("wyrm");
 }

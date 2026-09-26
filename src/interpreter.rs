@@ -22,7 +22,15 @@ pub enum WyrmValueType {
     ValInt16,
     ValInt32,
     ValInt64,
+    ValFloat32,
+    ValFloat64,
 }
+
+/*
+
+    VAL_FLOAT32, // float32
+    VAL_FLOAT64, // float64
+*/
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -35,6 +43,8 @@ pub union WyrmValueData {
     pub int16_val: i16,
     pub int32_val: i32,
     pub int64_val: i64,
+    pub float32_val: f32,
+    pub float64_val: f64,
 }
 
 #[repr(C)]
@@ -47,8 +57,62 @@ pub struct WyrmValue {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast_node::*;
+    use crate::token_vector::*;
 
     unsafe extern "C" {
         pub fn interpreter_interpret(interpreter: *mut Interpreter) -> WyrmValue;
+        pub fn create_interpreter(root: *mut AstNode) -> *mut Interpreter;
+    }
+
+    #[test]
+    fn test_interpreter_evalua_ast_number() {
+        let lex_10 = std::ffi::CString::new("10").unwrap();
+        let mut int_node = AstNode {
+            node_type: AstNodeType::AstNumberLiteral,
+            ast_node_value: AstNodeValue {
+                number_expr: NumberExprStruct {
+                    numeric_type: TokenType::TNumber,
+                    value: lex_10.as_ptr() as *mut _,
+                },
+            },
+        };
+        unsafe {
+            let interpreter_ptr = create_interpreter(&mut int_node as *mut _);
+            let resultado = interpreter_interpret(interpreter_ptr);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo no es int64"
+            );
+            assert_eq!(resultado.value.int64_val, 10, "El valor no fue conservado");
+        }
+    }
+
+    #[test]
+    fn test_interpreter_evalua_ast_number_float() {
+        let lex_10 = std::ffi::CString::new("10.0").unwrap();
+        let mut int_node = AstNode {
+            node_type: AstNodeType::AstNumberLiteral,
+            ast_node_value: AstNodeValue {
+                number_expr: NumberExprStruct {
+                    numeric_type: TokenType::TFloatNumber,
+                    value: lex_10.as_ptr() as *mut _,
+                },
+            },
+        };
+        unsafe {
+            let interpreter_ptr = create_interpreter(&mut int_node as *mut _);
+            let resultado = interpreter_interpret(interpreter_ptr);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValFloat64,
+                "El tipo no es float64"
+            );
+            assert_eq!(
+                resultado.value.float64_val, 10.0,
+                "El valor no fue conservado"
+            );
+        }
     }
 }
