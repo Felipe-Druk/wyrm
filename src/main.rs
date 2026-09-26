@@ -1,6 +1,9 @@
 use std::env;
 
 mod config;
+mod parser;
+mod scanner;
+pub mod token_vector;
 mod wyrm;
 
 fn main() {
