@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use crate::token_vector::*;
-use std::os::raw::c_char;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -9,74 +8,13 @@ pub struct Parser {
     pub tokens: *mut TokenVector,
     pub current_index: usize,
 }
-#[allow(clippy::enum_variant_names)]
-#[allow(dead_code)]
-#[repr(C)]
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum AstNodeType {
-    AstNumberLiteral = 0,
-    AstIdentifier,
-    AstBinaryExpr,
-    AstVarDeclaration,
-    AstUnaryExpr,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub union AstNodeValue {
-    pub number_expr: NumberExprStruct,
-    pub identifier_expr: IdentifierExprStruct,
-    pub binary_expr: BinaryExprStruct,
-    pub unary_expr: UnaryExprStruct,
-    pub var_decl_expr: VarDeclExprStruct,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct NumberExprStruct {
-    pub value: *mut c_char,
-    pub numeric_type: TokenType,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct IdentifierExprStruct {
-    pub name: *mut c_char,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct BinaryExprStruct {
-    pub left: *mut AstNode,
-    pub operator: TokenType,
-    pub right: *mut AstNode,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct UnaryExprStruct {
-    pub operator: TokenType,
-    pub right: *mut AstNode,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-pub struct VarDeclExprStruct {
-    pub var_type: TokenType,
-    pub identifier: *mut c_char,
-    pub expression: *mut AstNode,
-}
-
-#[repr(C)]
-pub struct AstNode {
-    pub node_type: AstNodeType,
-    pub ast_node_value: AstNodeValue,
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ast_node::*;
     use std::ffi::{CStr, CString};
+    use std::os::raw::c_char;
 
     unsafe extern "C" {
         pub fn create_parser(tokens: *mut TokenVector) -> *mut Parser;

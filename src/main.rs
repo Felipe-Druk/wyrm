@@ -1,5 +1,6 @@
 use std::env;
 
+pub mod ast_node;
 mod config;
 mod parser;
 mod scanner;
