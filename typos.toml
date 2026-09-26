@@ -65,6 +65,7 @@ fase = "fase"
 fases = "fases"
 simular = "simular"
 expresion = "expresión"
+funcional = "funcional"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"
