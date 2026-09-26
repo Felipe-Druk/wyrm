@@ -1,4 +1,4 @@
-#include "numerit_resolver.h"
+#include "numeric_resolver.h"
 #include <string.h>
 
 const char POINT = '.';

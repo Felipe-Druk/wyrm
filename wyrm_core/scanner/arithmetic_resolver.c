@@ -1,4 +1,4 @@
-#include "arigmetic_resolver.h"
+#include "arithmetic_resolver.h"
 
 const int ERROR = -1;
 

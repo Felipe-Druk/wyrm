@@ -1,6 +1,7 @@
 #include "wyrm.h"
 #include "options.h"
 #include "scanner/scanner.h"
+#include "parser/parser.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,10 +17,16 @@ void run_wyrm(const char *input, int flags) {
 
     scanner_t scanner;
     scanner.flags = flags;
+
     token_vector_t *tokens = scanner_scan(input_copy, &scanner);
     if (tokens == NULL) {
         fprintf(stderr, "Error: No se pudo crear el vector de tokens.\n");
         free(input_copy);
         return;
     }
+
+    parser_t *parser = create_parser(tokens);
+    parser->flags = flags;
+    ast_node_t *root_expr = parser_parse(parser);
+    (void)root_expr;
 }

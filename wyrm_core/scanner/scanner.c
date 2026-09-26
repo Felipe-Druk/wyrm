@@ -5,11 +5,11 @@
 
 #define INITIALCAPACITY 10
 
-#include "arigmetic_resolver.h"
+#include "arithmetic_resolver.h"
 #include "identifier_resolver.h"
 #include "limiter_resolver.h"
 #include "logical_resolver.h"
-#include "numerit_resolver.h"
+#include "numeric_resolver.h"
 #include "types_resolver.h"
 
 void debug_tokens(token_vector_t *tokens) {

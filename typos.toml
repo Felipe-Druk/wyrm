@@ -63,6 +63,10 @@ historial = "historial"
 instale = "instalé"
 fase = "fase"
 fases = "fases"
+simular = "simular"
+expresion = "expresión"
+funcional = "funcional"
+interpretarse = "interpretarse"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"
