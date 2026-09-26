@@ -1,6 +1,6 @@
 # Apurando el paso
 
-Tenemos un parser funcional, no cumple todas las características minimas para la entrega inical, pero hay un buen motivo para avanzar al intérprete ahora.
+Tenemos un parser funcional, no cumple todas las características mínimas para la entrega inicial, pero hay un buen motivo para avanzar al intérprete ahora.
 Si tenemos el flujo "E2E" completo será mucho más fácil testearlo, encontrar bugs y agregar funcionalidad, el plan es copiar los tests del repositorio plox y tenerlos funcionando.
 
 ## Que tendremos en la entrega parcial
