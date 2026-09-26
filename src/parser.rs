@@ -1,12 +1,14 @@
 #![allow(dead_code)]
 
 use crate::token_vector::*;
+use std::os::raw::c_int;
 
 #[repr(C)]
 #[derive(Debug)]
 pub struct Parser {
     pub tokens: *mut TokenVector,
     pub current_index: usize,
+    pub flags: c_int,
 }
 
 #[cfg(test)]

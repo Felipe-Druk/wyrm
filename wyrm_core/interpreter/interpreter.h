@@ -14,4 +14,4 @@ typedef Interpreter interpreter_t;
 interpreter_t *create_interpreter(ast_node_t *root);
 
 // evalua toda el ast y retorna el resultado
-wyrm_value_t Interpreter_ineterpret(interpreter_t *interpreter);
+wyrm_value_t interpreter_interpret(interpreter_t *interpreter);
