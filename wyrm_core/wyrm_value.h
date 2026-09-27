@@ -41,3 +41,20 @@ typedef struct {
 } WyrmValue;
 
 typedef WyrmValue wyrm_value_t;
+
+uint64_t get_cast_nat64(wyrm_value_t value);
+
+int64_t get_cast_int64(wyrm_value_t value);
+
+_Float64 get_cast_float64(wyrm_value_t value);
+
+#define MAKE_WYRM_VAL(X)                                                                                               \
+    _Generic((X),                                                                                                      \
+        uint8_t: (wyrm_value_t){.type = VAL_NAT8, .value.nat8_val = (X)},                                              \
+        uint16_t: (wyrm_value_t){.type = VAL_NAT16, .value.nat16_val = (X)},                                           \
+        uint32_t: (wyrm_value_t){.type = VAL_NAT32, .value.nat32_val = (X)},                                           \
+        int32_t: (wyrm_value_t){.type = VAL_INT32, .value.int32_val = (X)},                                            \
+        int64_t: (wyrm_value_t){.type = VAL_INT64, .value.int64_val = (X)},                                            \
+        uint64_t: (wyrm_value_t){.type = VAL_NAT64, .value.nat64_val = (X)},                                           \
+        _Float64: (wyrm_value_t){.type = VAL_FLOAT64, .value.float64_val = (X)},                                       \
+        default: (wyrm_value_t){.type = VAL_VOID})
