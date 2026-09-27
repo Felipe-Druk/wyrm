@@ -25,6 +25,7 @@ fn main() {
         //utils
         .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")
+        .file("wyrm_core/utils/error.c")
         // Dependencias o .h
         .include("wyrm_core")
         .include("wyrm_core/scanner")

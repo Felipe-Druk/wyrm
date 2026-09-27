@@ -265,4 +265,54 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_interpreter_evalua_division_basica() {
+        let lex_10 = std::ffi::CString::new("10").unwrap();
+        let lex_20 = std::ffi::CString::new("20").unwrap();
+
+        let mut left_node = AstNode {
+            node_type: AstNodeType::AstNumberLiteral,
+            ast_node_value: AstNodeValue {
+                number_expr: NumberExprStruct {
+                    numeric_type: TokenType::TNumber,
+                    value: lex_10.as_ptr() as *mut _,
+                },
+            },
+        };
+        let mut right_node = AstNode {
+            node_type: AstNodeType::AstNumberLiteral,
+            ast_node_value: AstNodeValue {
+                number_expr: NumberExprStruct {
+                    numeric_type: TokenType::TNumber,
+                    value: lex_20.as_ptr() as *mut _,
+                },
+            },
+        };
+
+        let mut root_node = AstNode {
+            node_type: AstNodeType::AstBinaryExpr,
+            ast_node_value: AstNodeValue {
+                binary_expr: BinaryExprStruct {
+                    left: &mut left_node as *mut _,
+                    operator: TokenType::TDiv,
+                    right: &mut right_node as *mut _,
+                },
+            },
+        };
+
+        unsafe {
+            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let resultado = interpreter_interpret(interpreter_ptr);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo resultante de la suma no es int64"
+            );
+            assert_eq!(
+                resultado.value.int64_val, 0,
+                "El cálculo matemático de 10 / 20 falló"
+            );
+        }
+    }
 }

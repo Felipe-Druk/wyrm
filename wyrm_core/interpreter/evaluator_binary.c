@@ -1,6 +1,6 @@
 #include "evaluator_binary.h"
-
 #include "../wyrm_token.h"
+#include "../utils/error.h"
 
 int is_float(WyrmValueType type) { return (type == VAL_FLOAT32) || (type == VAL_FLOAT64); }
 
@@ -35,6 +35,12 @@ wyrm_value_t eval_binary(ast_node_t *node, wyrm_value_t left, wyrm_value_t right
         break;
     case T_MUL:
         EXECUTE_MATH_OP(*);
+        break;
+    case T_DIV:
+        if ((has_float && get_cast_float64(right) == 0.0) || (!has_float && get_cast_nat64(right) == 0)) {
+            panic(ERR_DIV_BY_ZERO, "Dont divide by zero");
+        }
+        EXECUTE_MATH_OP(/);
         break;
 
     default:
