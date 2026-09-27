@@ -19,6 +19,19 @@ wyrm_value_t eval_add(wyrm_value_t a, wyrm_value_t b, int has_float, int has_int
     }
 }
 
+wyrm_value_t eval_sub(wyrm_value_t a, wyrm_value_t b, int has_float, int has_int) {
+    if (has_float) {
+        _Float64 result = get_cast_float64(a) - get_cast_float64(b);
+        return MAKE_WYRM_VAL(result);
+    } else if (has_int) {
+        int64_t result = get_cast_int64(a) - get_cast_int64(b);
+        return MAKE_WYRM_VAL(result);
+    } else {
+        uint64_t result = get_cast_nat64(a) - get_cast_nat64(b);
+        return MAKE_WYRM_VAL(result);
+    }
+}
+
 wyrm_value_t eval_binary(ast_node_t *node, wyrm_value_t left, wyrm_value_t right) {
     if (node->type != AST_BINARY_EXPR) {
         wyrm_value_t error_val = {.type = VAL_VOID}; // TODO: Error
@@ -31,6 +44,8 @@ wyrm_value_t eval_binary(ast_node_t *node, wyrm_value_t left, wyrm_value_t right
     switch (node->ast_node_value.binary_expr.operator) {
     case T_ADD:
         return eval_add(left, right, has_float, has_int);
+    case T_SUB:
+        return eval_sub(left, right, has_float, has_int);
 
     default:
         wyrm_value_t error_val = {.type = VAL_VOID};
