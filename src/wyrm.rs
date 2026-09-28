@@ -199,4 +199,37 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_wyrm_control_de_flujo_if_else() {
+        let input = "
+            int32 valor = 15;
+            int32 resultado = 0;
+
+            if (valor < 10) {
+                resultado = 10;
+            } else if (valor == 15) {
+                resultado = 20;
+            } else {
+                resultado = 30;
+            }
+            
+            resultado;
+        ";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValInt32,
+                "El tipo resultante debe ser int32"
+            );
+            assert_eq!(
+                output.value.int32_val, 20,
+                "El control de flujo no entró en el 'else if' correcto"
+            );
+        }
+    }
 }

@@ -59,6 +59,10 @@ typedef enum {
     // Importante
     T_IDENTIFIER, // Identificador etiqutas
 
+    // If/else
+    T_IF,
+    T_ELSE,
+
     // Limitadores
     T_EOF,       // End of file suele ser 0 char
     T_SEMICOLON, // ; para separar sentencias

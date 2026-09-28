@@ -7,6 +7,7 @@
 #include "evaluator_unary.h"
 #include "evaluator_identifier.h"
 #include "evaluator_block.h"
+#include "evaluator_if.h"
 
 interpreter_t *create_interpreter(ast_node_t *root, environment_t *scope) {
 
@@ -128,6 +129,16 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
         wyrm_value_t expr_value = eval_node(node->ast_node_value.var_decl_expr.expression, scope);
         wyrm_value_t casted_value = cast_value(expr_value, node->ast_node_value.var_decl_expr.var_type);
         result = eval_val_decl(node, scope, casted_value);
+        break;
+    }
+    case AST_ASSIGNMENT: {
+        wyrm_value_t new_val = eval_node(node->ast_node_value.assignment_expr.value, scope);
+        result = eval_assignment(node, scope, new_val);
+        break;
+    }
+    case AST_IF_EXPR: {
+        result = eval_if(node, scope);
+        break;
     }
     default:
         break;

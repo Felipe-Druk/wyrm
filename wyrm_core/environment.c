@@ -59,6 +59,23 @@ wyrm_value_t *environment_get(environment_t *env, const char *name) {
     return NULL;
 }
 
+int environment_assign(environment_t *env, const char *name, wyrm_value_t value) {
+    environment_t *current = env;
+
+    while (current != NULL) {
+        for (size_t i = 0; i < current->count; i++) {
+            if (strcmp(current->entries[i].name, name) == 0) {
+
+                current->entries[i].value.value = value.value;
+                return 1;
+            }
+        }
+        current = current->parent;
+    }
+
+    return 0;
+}
+
 void destroy_environment(environment_t *env) {
     if (env == NULL)
         return;

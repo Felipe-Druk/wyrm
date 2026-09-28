@@ -12,6 +12,7 @@ const size_t INITIAL_CAPACITY = 5;
 ast_node_t *expression(parser_t *parser);
 ast_node_t *expression_statement(parser_t *parser);
 ast_node_t *block_statement(parser_t *parser);
+ast_node_t *if_statement(parser_t *parser);
 
 parser_t *create_parser(token_vector_t *tokens) {
     parser_t *new_parser = malloc(sizeof(parser_t));
@@ -174,6 +175,31 @@ ast_node_t *logical_or(parser_t *parser) {
 // punto de control de la cadena
 ast_node_t *expression(parser_t *parser) { return logical_or(parser); }
 
+ast_node_t *if_statement(parser_t *parser) {
+    if (!match(parser, T_LPAREN)) {
+        panic(ERR_SYNTAX, "Syntax error: Expected '(' after 'if'");
+    }
+
+    ast_node_t *condition = expression(parser);
+
+    if (!match(parser, T_RPAREN)) {
+        panic(ERR_SYNTAX, "Syntax error: Expected ')' after condition");
+    }
+
+    ast_node_t *then_branch = expression_statement(parser);
+    ast_node_t *else_branch = NULL;
+
+    if (match(parser, T_ELSE)) {
+        if (match(parser, T_IF)) {
+            else_branch = if_statement(parser);
+        } else {
+            else_branch = expression_statement(parser);
+        }
+    }
+
+    return create_if_node(condition, then_branch, else_branch);
+}
+
 ast_node_t *block_statement(parser_t *parser) {
     ast_node_t *block = create_block_node(INITIAL_CAPACITY);
 
@@ -185,8 +211,8 @@ ast_node_t *block_statement(parser_t *parser) {
         }
         block->ast_node_value.block_expr.nodes[block->ast_node_value.block_expr.size++] = stmt;
 
-        if ((stmt->type != AST_BLOCK) && !match(parser, T_SEMICOLON) && peek(parser)->type != T_RBRACE &&
-            peek(parser)->type != T_EOF) {
+        if ((stmt->type != AST_BLOCK && stmt->type != AST_IF_EXPR) && !match(parser, T_SEMICOLON) &&
+            peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
             panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
         }
     }
@@ -201,6 +227,10 @@ ast_node_t *block_statement(parser_t *parser) {
 ast_node_t *expression_statement(parser_t *parser) {
     if (match(parser, T_LBRACE)) {
         return block_statement(parser);
+    }
+
+    if (match(parser, T_IF)) {
+        return if_statement(parser);
     }
 
     // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON
@@ -222,6 +252,14 @@ ast_node_t *expression_statement(parser_t *parser) {
 
     ast_node_t *expr = expression(parser);
 
+    // cumple T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression
+    if (expr->type == AST_IDENTIFIER && (match(parser, T_ASSIGN) || match(parser, T_RASSIGN))) {
+        TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
+        ast_node_t *right_expr = expression_statement(parser);
+
+        return create_assignment_node(expr->ast_node_value.identifier_expr.name, assign_op, right_expr);
+    }
+
     return expr;
 }
 
@@ -236,7 +274,8 @@ ast_node_t *parser_parse(parser_t *parser) {
             resize_block(&root->ast_node_value.block_expr);
         }
         root->ast_node_value.block_expr.nodes[root->ast_node_value.block_expr.size++] = actual_node;
-        if ((actual_node->type != AST_BLOCK) && !match(parser, T_SEMICOLON) && peek(parser)->type != T_EOF) {
+        if ((actual_node->type != AST_BLOCK && actual_node->type != AST_IF_EXPR) && !match(parser, T_SEMICOLON) &&
+            peek(parser)->type != T_EOF) {
             panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
         }
     }

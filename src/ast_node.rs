@@ -14,6 +14,8 @@ pub enum AstNodeType {
     AstUnaryExpr,
     AstBlock,
     AstProgram,
+    AstIfExpr,
+    AstAssignment,
 }
 
 #[repr(C)]
@@ -26,6 +28,8 @@ pub union AstNodeValue {
     pub unary_expr: UnaryExprStruct,
     pub var_decl_expr: VarDeclExprStruct,
     pub block_expr: AstBlock,
+    pub if_expr: AstIfExpr,
+    pub assignment_expr: AstAssignment,
 }
 
 #[repr(C)]
@@ -82,4 +86,20 @@ pub struct AstBlock {
     pub size: usize,
     pub capacity: usize,
     pub nodes: *mut *mut AstNode,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct AstIfExpr {
+    pub condition: *mut AstNode,
+    pub then_branch: *mut AstNode,
+    pub else_branch: *mut AstNode,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct AstAssignment {
+    pub name: *mut c_char,
+    pub operator: TokenType,
+    pub value: *mut AstNode,
 }

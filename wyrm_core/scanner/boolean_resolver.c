@@ -3,12 +3,12 @@
 #include <string.h>
 
 const char *bool_keywords[] = {
-    "true", "false", "and", "or", "not", "xor",
+    "true", "false", "and", "or", "not", "xor", "if", "else",
     NULL // Marca el final
 };
 
 // Vector de tokens types, respetando el orden de arriba
-const TokenType bool_tokens[] = {T_TRUE, T_FALSE, T_AND, T_OR, T_NOT, T_XOR};
+const TokenType bool_tokens[] = {T_TRUE, T_FALSE, T_AND, T_OR, T_NOT, T_XOR, T_IF, T_ELSE};
 
 int charge_bool_keyword(token_vector_t *tokens, size_t index) {
     wyrm_token_t token = {.type = bool_tokens[index], .lexeme = strdup(bool_keywords[index])};
