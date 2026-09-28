@@ -13,7 +13,8 @@ typedef enum {
     AST_BLOCK,
     AST_PROGRAM, // especial para raiz del programa
     AST_IF_EXPR,
-    AST_ASSIGNMENT
+    AST_ASSIGNMENT,
+    AST_WHILE_EXPR
 } ast_node_type_t;
 
 typedef struct ASTNode ast_node_t; // declaración para prevenir recursividad
@@ -91,6 +92,13 @@ typedef struct {
 
 typedef AstAssignment ast_assignment_t;
 
+// nodo principal para while (reciclamos para for)
+typedef struct {
+    struct ASTNode *condition;
+    struct ASTNode *body;
+} AstWhileExpr;
+typedef AstWhileExpr ast_while_expr_t;
+
 // Estrutura princiapl del AST, usamos union para "simular" polimorfismo
 struct ASTNode {
     ast_node_type_t type;
@@ -114,6 +122,8 @@ struct ASTNode {
 
         ast_assignment_t assignment_expr;
 
+        ast_while_expr_t while_expr;
+
     } ast_node_value;
 };
 
@@ -126,6 +136,7 @@ ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_
 ast_node_t *create_block_node(size_t capacity);
 ast_node_t *create_if_node(ast_node_t *condition, ast_node_t *then_branch, ast_node_t *else_branch);
 ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_node_t * value);
+ast_node_t *create_while_node(ast_node_t *condition, ast_node_t *body);
 
 int block_is_full(const ast_block_t *block_node);
 

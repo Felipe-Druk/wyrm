@@ -8,6 +8,7 @@
 #include "evaluator_identifier.h"
 #include "evaluator_block.h"
 #include "evaluator_if.h"
+#include "evaluator_loop.h"
 
 interpreter_t *create_interpreter(ast_node_t *root, environment_t *scope) {
 
@@ -138,6 +139,10 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
     }
     case AST_IF_EXPR: {
         result = eval_if(node, scope);
+        break;
+    }
+    case AST_WHILE_EXPR: {
+        result = eval_loop(node, scope);
         break;
     }
     default:

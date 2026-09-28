@@ -175,6 +175,22 @@ ast_node_t *logical_or(parser_t *parser) {
 // punto de control de la cadena
 ast_node_t *expression(parser_t *parser) { return logical_or(parser); }
 
+ast_node_t *while_statement(parser_t *parser) {
+    if (!match(parser, T_LPAREN)) {
+        panic(ERR_SYNTAX, "Syntax error: Expected '(' after 'while'");
+    }
+
+    ast_node_t *condition = expression(parser);
+
+    if (!match(parser, T_RPAREN)) {
+        panic(ERR_SYNTAX, "Syntax error: Expected ')' after condition");
+    }
+
+    ast_node_t *body = expression_statement(parser);
+
+    return create_while_node(condition, body);
+}
+
 ast_node_t *if_statement(parser_t *parser) {
     if (!match(parser, T_LPAREN)) {
         panic(ERR_SYNTAX, "Syntax error: Expected '(' after 'if'");
@@ -211,8 +227,8 @@ ast_node_t *block_statement(parser_t *parser) {
         }
         block->ast_node_value.block_expr.nodes[block->ast_node_value.block_expr.size++] = stmt;
 
-        if ((stmt->type != AST_BLOCK && stmt->type != AST_IF_EXPR) && !match(parser, T_SEMICOLON) &&
-            peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
+        if ((stmt->type != AST_BLOCK && stmt->type != AST_IF_EXPR && stmt->type != AST_WHILE_EXPR) &&
+            !match(parser, T_SEMICOLON) && peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
             panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
         }
     }
@@ -231,6 +247,10 @@ ast_node_t *expression_statement(parser_t *parser) {
 
     if (match(parser, T_IF)) {
         return if_statement(parser);
+    }
+
+    if (match(parser, T_WHILE)) {
+        return while_statement(parser);
     }
 
     // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON
@@ -252,6 +272,9 @@ ast_node_t *expression_statement(parser_t *parser) {
 
     ast_node_t *expr = expression(parser);
 
+    if (expr == NULL) {
+        panic(ERR_SYNTAX, "Syntax error: unexpected term or invalid expression");
+    }
     // cumple T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression
     if (expr->type == AST_IDENTIFIER && (match(parser, T_ASSIGN) || match(parser, T_RASSIGN))) {
         TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
@@ -274,8 +297,9 @@ ast_node_t *parser_parse(parser_t *parser) {
             resize_block(&root->ast_node_value.block_expr);
         }
         root->ast_node_value.block_expr.nodes[root->ast_node_value.block_expr.size++] = actual_node;
-        if ((actual_node->type != AST_BLOCK && actual_node->type != AST_IF_EXPR) && !match(parser, T_SEMICOLON) &&
-            peek(parser)->type != T_EOF) {
+        if ((actual_node->type != AST_BLOCK && actual_node->type != AST_IF_EXPR &&
+             actual_node->type != AST_WHILE_EXPR) &&
+            !match(parser, T_SEMICOLON) && peek(parser)->type != T_EOF) {
             panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
         }
     }
