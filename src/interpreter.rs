@@ -73,7 +73,10 @@ mod tests {
 
     unsafe extern "C" {
         pub fn interpreter_interpret(interpreter: *mut Interpreter) -> WyrmValue;
-        pub fn create_interpreter(root: *mut AstNode) -> *mut Interpreter;
+        pub fn create_interpreter(
+            root: *mut AstNode,
+            scope: *mut std::ffi::c_void,
+        ) -> *mut Interpreter;
     }
 
     #[test]
@@ -89,7 +92,7 @@ mod tests {
             },
         };
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut int_node as *mut _);
+            let interpreter_ptr = create_interpreter(&mut int_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,
@@ -103,7 +106,7 @@ mod tests {
     #[test]
     fn test_interpreter_evalua_ast_number_float() {
         let lex_10 = std::ffi::CString::new("10.0").unwrap();
-        let mut int_node = AstNode {
+        let mut number_node = AstNode {
             node_type: AstNodeType::AstNumberLiteral,
             ast_node_value: AstNodeValue {
                 number_expr: NumberExprStruct {
@@ -113,7 +116,8 @@ mod tests {
             },
         };
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut int_node as *mut _);
+            let interpreter_ptr =
+                create_interpreter(&mut number_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,
@@ -163,7 +167,8 @@ mod tests {
         };
 
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let interpreter_ptr =
+                create_interpreter(&mut root_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,
@@ -213,7 +218,8 @@ mod tests {
         };
 
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let interpreter_ptr =
+                create_interpreter(&mut root_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,
@@ -263,7 +269,8 @@ mod tests {
         };
 
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let interpreter_ptr =
+                create_interpreter(&mut root_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,
@@ -313,7 +320,8 @@ mod tests {
         };
 
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let interpreter_ptr =
+                create_interpreter(&mut root_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,
@@ -363,7 +371,8 @@ mod tests {
         };
 
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let interpreter_ptr =
+                create_interpreter(&mut root_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,
@@ -413,7 +422,8 @@ mod tests {
         };
 
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let interpreter_ptr =
+                create_interpreter(&mut root_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,
@@ -451,7 +461,8 @@ mod tests {
         };
 
         unsafe {
-            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let interpreter_ptr =
+                create_interpreter(&mut root_node as *mut _, std::ptr::null_mut());
             let resultado = interpreter_interpret(interpreter_ptr);
             assert_eq!(
                 resultado.value_type,

@@ -51,6 +51,19 @@ ast_node_t *create_unary_node(TokenType operator, ast_node_t *right) {
     return new_node;
 }
 
+ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression, TokenType assign_op) {
+    ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
+    check_node(new_node, "var_decl");
+
+    new_node->type = AST_VAR_DECLARATION;
+    new_node->ast_node_value.var_decl_expr.expression = expression;
+    new_node->ast_node_value.var_decl_expr.identifier = identifier;
+    new_node->ast_node_value.var_decl_expr.var_type = var_type;
+    new_node->ast_node_value.var_decl_expr.assign_op = assign_op;
+
+    return new_node;
+}
+
 ast_node_t *create_block_node(size_t capacity) {
     if (capacity == 0) {
         return NULL;

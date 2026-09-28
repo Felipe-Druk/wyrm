@@ -46,3 +46,25 @@ unary -> ( T_SUB ) power
 power -> primary ( T_POW primary )
 
 primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER
+
+**Orden 3**
+
+El orden con dos tipos de assignacion
+
+statement -> var_decl
+
+var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON 
+
+> TIPO es cualquier tipo de dato
+
+expression -> term
+
+term -> factor ( ( T_ADD | T_SUB ) factor )
+
+factor -> unary ( ( T_MUL | T_DIV | T_MOD ) unary )
+
+unary -> ( T_SUB ) power
+
+power -> primary ( T_POW primary )
+
+primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER
