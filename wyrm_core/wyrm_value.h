@@ -58,3 +58,9 @@ _Float64 get_cast_float64(wyrm_value_t value);
         uint64_t: (wyrm_value_t){.type = VAL_NAT64, .value.nat64_val = (X)},                                           \
         _Float64: (wyrm_value_t){.type = VAL_FLOAT64, .value.float64_val = (X)},                                       \
         default: (wyrm_value_t){.type = VAL_VOID})
+
+int is_float(WyrmValueType type);
+
+int is_int(WyrmValueType type);
+
+int is_zero(wyrm_value_t value);

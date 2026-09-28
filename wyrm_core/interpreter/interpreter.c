@@ -3,6 +3,7 @@
 
 #include "evaluator_number.h"
 #include "evaluator_binary.h"
+#include "evaluator_unary.h"
 
 interpreter_t *create_interpreter(ast_node_t *root) {
 
@@ -26,12 +27,18 @@ wyrm_value_t eval_node(ast_node_t *node) {
     case AST_NUMBER_LITERAL:
         result = eval_number(node);
         break;
-    case AST_BINARY_EXPR:
+    case AST_BINARY_EXPR: {
         wyrm_value_t left = eval_node(node->ast_node_value.binary_expr.left);
         wyrm_value_t right = eval_node(node->ast_node_value.binary_expr.right);
 
         result = eval_binary(node, left, right);
         break;
+    }
+    case AST_UNARY_EXPR: {
+        wyrm_value_t right = eval_node(node->ast_node_value.unary_expr.right);
+        result = eval_unary(node, right);
+        break;
+    }
     default:
         break;
     }

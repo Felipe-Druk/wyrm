@@ -3,12 +3,6 @@
 #include "../utils/error.h"
 #include <math.h>
 
-int is_float(WyrmValueType type) { return (type == VAL_FLOAT32) || (type == VAL_FLOAT64); }
-
-int is_int(WyrmValueType type) { return (type >= VAL_INT8) && (type <= VAL_INT64); }
-
-int is_zero(wyrm_value_t value) { return (get_cast_float64(value) == 0.0) || (get_cast_nat64(value) == 0); }
-
 #define EXECUTE_MATH_OP(op)                                                                                            \
     do {                                                                                                               \
         if (has_float) {                                                                                               \
@@ -45,8 +39,7 @@ wyrm_value_t eval_pow(wyrm_value_t a, wyrm_value_t b, int has_float, int has_int
 
 wyrm_value_t eval_binary(ast_node_t *node, wyrm_value_t left, wyrm_value_t right) {
     if (node->type != AST_BINARY_EXPR) {
-        wyrm_value_t error_val = {.type = VAL_VOID}; // TODO: Error
-        return error_val;
+        panic(ERR_UNKNOWN_OP, "Missing expresión");
     }
 
     int has_float = is_float(left.type) || is_float(right.type);
@@ -76,7 +69,7 @@ wyrm_value_t eval_binary(ast_node_t *node, wyrm_value_t left, wyrm_value_t right
     case T_POW:
         return eval_pow(left, right, has_float, has_int);
     default:
-        panic(ERR_UNKNOWN_OP, "operator %s unknown", token_type_to_string(node->ast_node_value.binary_expr.operator));
+        panic(ERR_UNKNOWN_OP, "Operator %s unknown", token_type_to_string(node->ast_node_value.binary_expr.operator));
         break;
     }
 }

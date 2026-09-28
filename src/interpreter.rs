@@ -415,4 +415,42 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_interpreter_evalua_negacion_basica() {
+        let lex_20 = std::ffi::CString::new("20").unwrap();
+        let mut right_node = AstNode {
+            node_type: AstNodeType::AstNumberLiteral,
+            ast_node_value: AstNodeValue {
+                number_expr: NumberExprStruct {
+                    numeric_type: TokenType::TNumber,
+                    value: lex_20.as_ptr() as *mut _,
+                },
+            },
+        };
+
+        let mut root_node = AstNode {
+            node_type: AstNodeType::AstUnaryExpr,
+            ast_node_value: AstNodeValue {
+                unary_expr: UnaryExprStruct {
+                    operator: TokenType::TSub,
+                    right: &mut right_node as *mut _,
+                },
+            },
+        };
+
+        unsafe {
+            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let resultado = interpreter_interpret(interpreter_ptr);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo resultante de la negacion no es int64"
+            );
+            assert_eq!(
+                resultado.value.int64_val, -20,
+                "El cálculo matemático de -20 falló"
+            );
+        }
+    }
 }

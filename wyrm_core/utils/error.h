@@ -1,7 +1,7 @@
 #pragma once
 
-// Errores graves que pueden ser disparados, codigos que no se comparten con estandar POSIX
-typedef enum { ERR_DIV_BY_ZERO = 3, ERR_UNKNOWN_OP = 4 } WyrmErrorCode;
+// Errores graves que pueden ser disparados, codigos que no se comparten con estandar POSIX (de 3 a 126)
+typedef enum { ERR_DIV_BY_ZERO = 3, ERR_UNKNOWN_OP = 4, ERR_TYPE_MISMATCH = 5 } WyrmErrorCode;
 
 typedef WyrmErrorCode wyrm_error_code_t;
 

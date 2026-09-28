@@ -22,6 +22,7 @@ fn main() {
         .file("wyrm_core/interpreter/interpreter.c")
         .file("wyrm_core/interpreter/evaluator_number.c")
         .file("wyrm_core/interpreter/evaluator_binary.c")
+        .file("wyrm_core/interpreter/evaluator_unary.c")
         //utils
         .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")

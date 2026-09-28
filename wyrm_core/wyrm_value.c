@@ -89,3 +89,9 @@ _Float64 get_cast_float64(wyrm_value_t value) {
         return 0;
     }
 }
+
+int is_float(WyrmValueType type) { return (type == VAL_FLOAT32) || (type == VAL_FLOAT64); }
+
+int is_int(WyrmValueType type) { return (type >= VAL_INT8) && (type <= VAL_INT64); }
+
+int is_zero(wyrm_value_t value) { return (get_cast_float64(value) == 0.0) || (get_cast_nat64(value) == 0); }
