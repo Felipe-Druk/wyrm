@@ -1,6 +1,11 @@
 use std::env;
 
+pub mod ast_node;
 mod config;
+mod interpreter;
+mod parser;
+mod scanner;
+pub mod token_vector;
 mod wyrm;
 
 fn main() {
