@@ -30,7 +30,7 @@ void debug_ast(ast_node_t *node, int level) {
         debug_ast(node->ast_node_value.var_decl_expr.expression, level + 1);
         break;
     case AST_ASSIGNMENT:
-        print_line_debug("VarAssignment(%s)", node->ast_node_value.var_decl_expr.identifier);
+        print_line_debug("VarAssignment(%s)", node->ast_node_value.assignment_expr.name);
         debug_ast(node->ast_node_value.assignment_expr.value, level + 1);
         break;
     case AST_PROGRAM:
@@ -49,6 +49,11 @@ void debug_ast(ast_node_t *node, int level) {
         if (node->ast_node_value.if_expr.else_branch) {
             debug_ast(node->ast_node_value.if_expr.else_branch, level + 1);
         }
+        break;
+    case AST_WHILE_EXPR:
+        print_line_debug("WhileExpr");
+        debug_ast(node->ast_node_value.while_expr.condition, level + 1);
+        debug_ast(node->ast_node_value.while_expr.body, level + 1);
         break;
     }
 }

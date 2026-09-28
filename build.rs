@@ -29,6 +29,7 @@ fn main() {
         .file("wyrm_core/interpreter/evaluator_bool.c")
         .file("wyrm_core/interpreter/evaluator_block.c")
         .file("wyrm_core/interpreter/evaluator_if.c")
+        .file("wyrm_core/interpreter/evaluator_loop.c")
         //utils
         .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")

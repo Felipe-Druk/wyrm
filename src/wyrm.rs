@@ -232,4 +232,28 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_wyrm_bucle_while_conteo() {
+        let input = "int32 contador = 0;
+         while (contador < 5) {
+             contador = contador + 1;
+         }
+        contador";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValInt32,
+                "El tipo resultante debe ser int32"
+            );
+            assert_eq!(
+                output.value.int32_val, 5,
+                "El contador debería haber sumado hasta 5"
+            );
+        }
+    }
 }

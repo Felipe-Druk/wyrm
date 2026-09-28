@@ -51,6 +51,9 @@ pub enum TokenType {
     // If/else
     TIf,
     TElse,
+    // loops
+    TWhile,
+    TFor,
     // Limitadores
     TEof,
     TSemicolon,

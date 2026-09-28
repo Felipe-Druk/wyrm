@@ -16,6 +16,7 @@ pub enum AstNodeType {
     AstProgram,
     AstIfExpr,
     AstAssignment,
+    AstWhileExpr,
 }
 
 #[repr(C)]
@@ -30,6 +31,7 @@ pub union AstNodeValue {
     pub block_expr: AstBlock,
     pub if_expr: AstIfExpr,
     pub assignment_expr: AstAssignment,
+    pub while_expr: AstWhileExpr,
 }
 
 #[repr(C)]
@@ -72,6 +74,7 @@ pub struct VarDeclExprStruct {
     pub var_type: TokenType,
     pub identifier: *mut c_char,
     pub expression: *mut AstNode,
+    pub assign_op: TokenType,
 }
 
 #[repr(C)]
@@ -102,4 +105,11 @@ pub struct AstAssignment {
     pub name: *mut c_char,
     pub operator: TokenType,
     pub value: *mut AstNode,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct AstWhileExpr {
+    pub condition: *mut AstNode,
+    pub body: *mut AstNode,
 }

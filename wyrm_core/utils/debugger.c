@@ -11,6 +11,7 @@ void print_debug(const char *to_debug, ...) {
     vprintf(to_debug, arg);
 
     va_end(arg);
+    fflush(stdout);
 }
 
 void print_line(const char *to_debug, ...) {
@@ -21,6 +22,7 @@ void print_line(const char *to_debug, ...) {
     vprintf(to_debug, arg);
 
     va_end(arg);
+    fflush(stdout);
 }
 
 void print_line_debug(const char *to_debug, ...) {
@@ -30,6 +32,7 @@ void print_line_debug(const char *to_debug, ...) {
     vprintf(to_debug, arg);
 
     va_end(arg);
+    fflush(stdout);
 }
 
 void print_jump_line() { printf("\n"); }

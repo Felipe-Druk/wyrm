@@ -121,3 +121,12 @@ ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_nod
     new_node->ast_node_value.assignment_expr.value = value;
     return new_node;
 }
+
+ast_node_t *create_while_node(ast_node_t *condition, ast_node_t *body) {
+    ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
+    check_node(new_node, "While");
+    new_node->type = AST_WHILE_EXPR;
+    new_node->ast_node_value.while_expr.condition = condition;
+    new_node->ast_node_value.while_expr.body = body;
+    return new_node;
+}
