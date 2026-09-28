@@ -1,14 +1,19 @@
 #pragma once
 #include "wyrm_token.h"
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef enum {
     AST_NUMBER_LITERAL,
+    AST_BOOL_LITERAL,
     AST_IDENTIFIER,
     AST_BINARY_EXPR,
     AST_VAR_DECLARATION,
     AST_UNARY_EXPR,
-    AST_BLOCK
+    AST_BLOCK,
+    AST_PROGRAM, // especial para raiz del programa
+    AST_IF_EXPR,
+    AST_ASSIGNMENT
 } ast_node_type_t;
 
 typedef struct ASTNode ast_node_t; // declaración para prevenir recursividad
@@ -20,6 +25,13 @@ typedef struct {
 } AstNumberLiteral;
 
 typedef AstNumberLiteral ast_number_literal_t;
+
+// Almacena literales booleanos
+typedef struct {
+    bool value; // Byte de 0 o 1
+} AstBoolLiteral;
+
+typedef AstBoolLiteral ast_bool_literal_t;
 
 // Etiqueta el valor para el valor de variable
 typedef struct {
@@ -62,12 +74,31 @@ typedef struct {
 
 typedef AstBlock ast_block_t;
 
+typedef struct {
+    struct ASTNode *condition;
+    struct ASTNode *then_branch;
+    struct ASTNode *else_branch; // Puede ser NULL u nodo AST_IF_EXPR
+} AstIfExpr;
+
+typedef AstIfExpr ast_if_expr_t;
+
+// para cambiar el valor de una variable ya reservada
+typedef struct {
+    char *name;            // nombre de la variable a reasignar
+    TokenType operator;    // opredor de asignacion
+    struct ASTNode *value; // nuevo valor
+} AstAssignment;
+
+typedef AstAssignment ast_assignment_t;
+
 // Estrutura princiapl del AST, usamos union para "simular" polimorfismo
 struct ASTNode {
     ast_node_type_t type;
 
     union {
         ast_number_literal_t number_expr;
+
+        ast_bool_literal_t bool_expr;
 
         ast_identifier_t identifier_expr;
 
@@ -79,15 +110,22 @@ struct ASTNode {
 
         ast_block_t block_expr;
 
+        ast_if_expr_t if_expr;
+
+        ast_assignment_t assignment_expr;
+
     } ast_node_value;
 };
 
 ast_node_t *create_number_node(char *value, TokenType numeric_type);
+ast_node_t *create_bool_node(bool value);
 ast_node_t *create_identifier_node(char *value);
 ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t * right);
 ast_node_t *create_unary_node(TokenType operator, ast_node_t * right);
 ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression, TokenType assign_op);
 ast_node_t *create_block_node(size_t capacity);
+ast_node_t *create_if_node(ast_node_t *condition, ast_node_t *then_branch, ast_node_t *else_branch);
+ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_node_t * value);
 
 int block_is_full(const ast_block_t *block_node);
 

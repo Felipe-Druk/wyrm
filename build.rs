@@ -16,6 +16,7 @@ fn main() {
         .file("wyrm_core/scanner/identifier_resolver.c")
         .file("wyrm_core/scanner/limiter_resolver.c")
         .file("wyrm_core/scanner/logical_resolver.c")
+        .file("wyrm_core/scanner/boolean_resolver.c")
         // Parser
         .file("wyrm_core/parser/parser.c")
         .file("wyrm_core/parser/debugger_parser.c")
@@ -25,6 +26,9 @@ fn main() {
         .file("wyrm_core/interpreter/evaluator_binary.c")
         .file("wyrm_core/interpreter/evaluator_unary.c")
         .file("wyrm_core/interpreter/evaluator_identifier.c")
+        .file("wyrm_core/interpreter/evaluator_bool.c")
+        .file("wyrm_core/interpreter/evaluator_block.c")
+        .file("wyrm_core/interpreter/evaluator_if.c")
         //utils
         .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")

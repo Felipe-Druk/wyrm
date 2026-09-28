@@ -29,5 +29,8 @@ void environment_set(environment_t *env, const char *name, wyrm_value_t value, T
 // devuelve un puntero al valor de la variable, o NULL si no existe
 wyrm_value_t *environment_get(environment_t *env, const char *name);
 
+// carga el valor en una variable ya existente, sino devuelve 0
+int environment_assign(environment_t *env, const char *name, wyrm_value_t value);
+
 // limpia el scope
 void destroy_environment(environment_t *env);

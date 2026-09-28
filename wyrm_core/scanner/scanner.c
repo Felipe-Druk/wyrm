@@ -11,6 +11,7 @@
 #include "logical_resolver.h"
 #include "numeric_resolver.h"
 #include "types_resolver.h"
+#include "boolean_resolver.h"
 
 void debug_tokens(token_vector_t *tokens) {
     print_line("== Current tokens == \n");
@@ -49,7 +50,13 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
         actual_index = call_resolver(resolver_logical_operator, input, actual_index, tokens);
         actual_index = call_resolver(resolver_numerit, input, actual_index, tokens);
         actual_index = call_resolver(resolver_types, input, actual_index, tokens);
-        actual_index = call_resolver(resolver_limiter, input, actual_index, tokens);
+        actual_index = call_resolver(resolver_boolean, input, actual_index, tokens);
+        int temp_limiter = call_resolver(resolver_limiter, input, actual_index, tokens);
+
+        if (temp_limiter != -1 && temp_limiter != actual_index) {
+            actual_index = temp_limiter;
+            continue;
+        }
 
         // Importante que este al final para no confundir con algun tipo de dato
         temp_index = resolver_identifier(input, actual_index, tokens);

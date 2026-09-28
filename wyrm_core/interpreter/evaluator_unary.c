@@ -11,6 +11,17 @@ wyrm_value_t eval_sub(wyrm_value_t value) {
     }
 }
 
+wyrm_value_t eval_not(wyrm_value_t value) {
+    if (value.type != VAL_BOOL) {
+        panic(ERR_TYPE_MISMATCH, "The 'not' operator can only be applied to booleans");
+    }
+
+    wyrm_value_t result;
+    result.type = VAL_BOOL;
+    result.value.bool_val = !value.value.bool_val;
+    return result;
+}
+
 wyrm_value_t eval_unary(ast_node_t *node, wyrm_value_t right) {
     if (node->type != AST_UNARY_EXPR) {
         panic(ERR_UNKNOWN_OP, "Missing expresión");
@@ -19,6 +30,8 @@ wyrm_value_t eval_unary(ast_node_t *node, wyrm_value_t right) {
     switch (node->ast_node_value.unary_expr.operator) {
     case T_SUB:
         return eval_sub(right);
+    case T_NOT:
+        return eval_not(right);
     default:
         panic(ERR_UNKNOWN_OP, "Operator %s unknown", token_type_to_string(node->ast_node_value.unary_expr.operator));
     }

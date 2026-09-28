@@ -18,6 +18,18 @@ typedef enum {
     // Flotantes
     T_FLOAT32, // float32 = 32 bits flotante
     T_FLOAT64, // float32 = 64 bits flotante
+
+    // Booleanos
+    T_BOOL, // bool 1 byte
+
+    // Palabras para booleanos
+    T_TRUE,  // "true" sentencia verdadera
+    T_FALSE, // "false" sentencia falsa
+    T_NOT,   // "not" niega la sentencia unario
+    T_AND,   // "and" compuerta logica donde las dos deben ser veraderas
+    T_OR,    // "or" compuerta logica solo una debe ser veradera
+    T_XOR,   // "xor" compuerta logica donde las dos deben ser distintas
+
     // Operadores arigmeticos
     T_ADD, // + para suma
     T_SUB, // - para resta
@@ -25,6 +37,15 @@ typedef enum {
     T_DIV, // / para division
     T_POW, // ^ para potencia
     T_MOD, // % para modulo
+
+    // Operadores logicos
+
+    T_EQUAL,         // == para comparar igualdad
+    T_NOT_EQUAL,     // ~= para comparar igualdad
+    T_LESS,          // < para comparar igualdad
+    T_GREATER,       // > para comparar igualdad
+    T_LESS_EQUAL,    // <= para comparar igualdad
+    T_GREATER_EQUAL, // >= para comparar igualdad
 
     // Operadores varios
     T_ASSIGN,  // = para asignacion de variables
@@ -38,13 +59,22 @@ typedef enum {
     // Importante
     T_IDENTIFIER, // Identificador etiqutas
 
+    // If/else
+    T_IF,
+    T_ELSE,
+
     // Limitadores
     T_EOF,       // End of file suele ser 0 char
     T_SEMICOLON, // ; para separar sentencias
+    T_LPAREN,    // ( encapsula sentencias junto con su cierre
+    T_RPAREN,    // )
+    T_LBRACE,    // { encapsula "scopes" o bloques de ejecucion
+    T_RBRACE,    // }
+
 } TokenType;
 
 #define MIN_TYPE T_INT8
-#define MAX_TYPE T_FLOAT64
+#define MAX_TYPE T_BOOL
 
 // Un token es un par de tipo y lexema.
 // El lexema es un string que representa el token en el codigo fuente.

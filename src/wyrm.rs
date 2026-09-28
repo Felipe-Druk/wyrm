@@ -124,4 +124,112 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_wyrm_trabaja_booleanos() {
+        let input = format!("bool falso = false; falso ~= true");
+        let wyrm = Wyrm::new(false);
+
+        unsafe {
+            let resultado = wyrm.call_wyrm(&input);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValBool,
+                "El tipo resultantado  no es booleano"
+            );
+            assert_eq!(resultado.value.bool_val, true, "El cálculo no es true");
+        }
+    }
+
+    #[test]
+    fn test_wyrm_trabaja_bloques() {
+        let input = "int32 x = (5 + 3) * 2;
+                    { 
+                        bool y = true; 
+                    } 
+                    int32 z = 10;";
+        let wyrm = Wyrm::new(false);
+
+        let resultado = wyrm.call_wyrm(&input);
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValVoid,
+            "El tipo resultantado vacio"
+        );
+    }
+
+    #[test]
+    fn test_wyrm_respeta_parentecis() {
+        let input = format!("(2+2) / 2");
+        let wyrm = Wyrm::new(false);
+
+        unsafe {
+            let resultado = wyrm.call_wyrm(&input);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo resultante de la suma no es int64"
+            );
+            assert_eq!(resultado.value.int64_val, 2, "El resultado no es 2");
+        }
+    }
+
+    #[test]
+    fn test_wyrm_aisla_variables_en_scope_local() {
+        let input = "
+            int32 x = 5;
+            {
+                int32 x = 100;
+            }
+            x;
+        ";
+        let wyrm = Wyrm::new(false);
+
+        let resultado = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt32,
+                "El tipo resultante debe ser int32"
+            );
+            assert_eq!(
+                resultado.value.int32_val, 5,
+                "La variable global fue sobreescrita"
+            );
+        }
+    }
+
+    #[test]
+    fn test_wyrm_control_de_flujo_if_else() {
+        let input = "
+            int32 valor = 15;
+            int32 resultado = 0;
+
+            if (valor < 10) {
+                resultado = 10;
+            } else if (valor == 15) {
+                resultado = 20;
+            } else {
+                resultado = 30;
+            }
+            
+            resultado;
+        ";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValInt32,
+                "El tipo resultante debe ser int32"
+            );
+            assert_eq!(
+                output.value.int32_val, 20,
+                "El control de flujo no entró en el 'else if' correcto"
+            );
+        }
+    }
 }

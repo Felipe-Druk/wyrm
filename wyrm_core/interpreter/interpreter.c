@@ -2,9 +2,12 @@
 #include <stdlib.h>
 
 #include "evaluator_number.h"
+#include "evaluator_bool.h"
 #include "evaluator_binary.h"
 #include "evaluator_unary.h"
 #include "evaluator_identifier.h"
+#include "evaluator_block.h"
+#include "evaluator_if.h"
 
 interpreter_t *create_interpreter(ast_node_t *root, environment_t *scope) {
 
@@ -90,6 +93,9 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
     case AST_NUMBER_LITERAL:
         result = eval_number(node);
         break;
+    case AST_BOOL_LITERAL:
+        result = eval_bool(node);
+        break;
     case AST_BINARY_EXPR: {
         wyrm_value_t left = eval_node(node->ast_node_value.binary_expr.left, scope);
         wyrm_value_t right = eval_node(node->ast_node_value.binary_expr.right, scope);
@@ -103,12 +109,17 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
         break;
     }
     case AST_BLOCK: {
-        wyrm_value_t final_val = {.type = VAL_VOID};
+        result = eval_block(node, scope);
+        break;
+    }
+    case AST_PROGRAM: {
+        wyrm_value_t final_val = {0};
+        final_val.type = VAL_VOID;
+
         for (size_t i = 0; i < node->ast_node_value.block_expr.size; i++) {
             final_val = eval_node(node->ast_node_value.block_expr.nodes[i], scope);
         }
-        result = final_val;
-        break;
+        return final_val;
     }
     case AST_IDENTIFIER: {
         result = eval_identifier(node, scope);
@@ -118,6 +129,16 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
         wyrm_value_t expr_value = eval_node(node->ast_node_value.var_decl_expr.expression, scope);
         wyrm_value_t casted_value = cast_value(expr_value, node->ast_node_value.var_decl_expr.var_type);
         result = eval_val_decl(node, scope, casted_value);
+        break;
+    }
+    case AST_ASSIGNMENT: {
+        wyrm_value_t new_val = eval_node(node->ast_node_value.assignment_expr.value, scope);
+        result = eval_assignment(node, scope, new_val);
+        break;
+    }
+    case AST_IF_EXPR: {
+        result = eval_if(node, scope);
+        break;
     }
     default:
         break;

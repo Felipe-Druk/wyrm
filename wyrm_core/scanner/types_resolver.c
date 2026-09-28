@@ -10,6 +10,12 @@ const char *types[] = {
     // Naturales
     "nat8", "nat16", "nat32", "nat64",
 
+    // Flotantes
+    "float32", "float64",
+
+    // Booleanos
+    "bool",
+
     NULL // marca el final del vector
 };
 
@@ -19,7 +25,13 @@ const TokenType t_types[] = {
     T_INT8, T_INT16, T_INT32, T_INT64,
 
     // Naturales
-    T_NAT8, T_NAT16, T_NAT32, T_NAT64
+    T_NAT8, T_NAT16, T_NAT32, T_NAT64,
+
+    // Flotantes
+    T_FLOAT32, T_FLOAT64,
+
+    // Booleanos
+    T_BOOL
 
 };
 

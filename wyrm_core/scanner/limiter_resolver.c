@@ -1,14 +1,35 @@
 #include "limiter_resolver.h"
-
-#define LEXEME_SEMICOLON ";"
-const char SEMICOLON = ';';
+#include <string.h>
 
 int resolver_limiter(char *input, int index, token_vector_t *tokens) {
     char actual_char = input[index];
-    if (actual_char == SEMICOLON) {
-        wyrm_token_t type_token = {.type = T_SEMICOLON, .lexeme = LEXEME_SEMICOLON};
-        int result = push_token(tokens, type_token);
-        return result == ERROR_TOKEN_VECTOR ? -1 : index + 1;
+    wyrm_token_t limiter_token;
+
+    switch (actual_char) {
+    case ';':
+        limiter_token.type = T_SEMICOLON;
+        limiter_token.lexeme = strdup(";");
+        break;
+    case '(':
+        limiter_token.type = T_LPAREN;
+        limiter_token.lexeme = strdup("(");
+        break;
+    case ')':
+        limiter_token.type = T_RPAREN;
+        limiter_token.lexeme = strdup(")");
+        break;
+    case '{':
+        limiter_token.type = T_LBRACE;
+        limiter_token.lexeme = strdup("{");
+        break;
+    case '}':
+        limiter_token.type = T_RBRACE;
+        limiter_token.lexeme = strdup("}");
+        break;
+    default:
+        return index; // no hay limitador
     }
-    return index;
+
+    int result = push_token(tokens, limiter_token);
+    return result == ERROR_TOKEN_VECTOR ? -1 : index + 1;
 }

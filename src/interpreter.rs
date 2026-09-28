@@ -25,6 +25,7 @@ pub enum WyrmValueType {
     ValInt64,
     ValFloat32,
     ValFloat64,
+    ValBool,
 }
 
 #[repr(C)]
@@ -40,6 +41,7 @@ pub union WyrmValueData {
     pub int64_val: i64,
     pub float32_val: f32,
     pub float64_val: f64,
+    pub bool_val: bool,
 }
 
 #[repr(C)]
@@ -57,6 +59,7 @@ impl fmt::Display for WyrmValue {
                 WyrmValueType::ValInt64 => write!(f, "{}", self.value.int64_val),
                 WyrmValueType::ValNat64 => write!(f, "{}", self.value.nat64_val),
                 WyrmValueType::ValFloat64 => write!(f, "{}", self.value.float64_val),
+                WyrmValueType::ValBool => write!(f, "{}", self.value.bool_val),
 
                 WyrmValueType::ValVoid => write!(f, "void"),
                 _ => write!(f, "<tipo desconocido>"),

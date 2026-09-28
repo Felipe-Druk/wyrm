@@ -7,22 +7,29 @@ use std::os::raw::c_char;
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum AstNodeType {
     AstNumberLiteral = 0,
+    AstBoolLiteral,
     AstIdentifier,
     AstBinaryExpr,
     AstVarDeclaration,
     AstUnaryExpr,
     AstBlock,
+    AstProgram,
+    AstIfExpr,
+    AstAssignment,
 }
 
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union AstNodeValue {
     pub number_expr: NumberExprStruct,
+    pub bool_expr: BoolExprStruct,
     pub identifier_expr: IdentifierExprStruct,
     pub binary_expr: BinaryExprStruct,
     pub unary_expr: UnaryExprStruct,
     pub var_decl_expr: VarDeclExprStruct,
     pub block_expr: AstBlock,
+    pub if_expr: AstIfExpr,
+    pub assignment_expr: AstAssignment,
 }
 
 #[repr(C)]
@@ -30,6 +37,12 @@ pub union AstNodeValue {
 pub struct NumberExprStruct {
     pub value: *mut c_char,
     pub numeric_type: TokenType,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct BoolExprStruct {
+    pub value: bool,
 }
 
 #[repr(C)]
@@ -73,4 +86,20 @@ pub struct AstBlock {
     pub size: usize,
     pub capacity: usize,
     pub nodes: *mut *mut AstNode,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct AstIfExpr {
+    pub condition: *mut AstNode,
+    pub then_branch: *mut AstNode,
+    pub else_branch: *mut AstNode,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct AstAssignment {
+    pub name: *mut c_char,
+    pub operator: TokenType,
+    pub value: *mut AstNode,
 }

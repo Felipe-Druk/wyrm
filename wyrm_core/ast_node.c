@@ -20,6 +20,16 @@ ast_node_t *create_number_node(char *value, TokenType numeric_type) {
     return new_node;
 }
 
+ast_node_t *create_bool_node(bool value) {
+    ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
+    check_node(new_node, "Bool");
+
+    new_node->type = AST_BOOL_LITERAL;
+    new_node->ast_node_value.bool_expr.value = value;
+
+    return new_node;
+}
+
 ast_node_t *create_identifier_node(char *value) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Identifier");
@@ -89,4 +99,25 @@ void resize_block(ast_block_t *block_node) {
     if (block_node->nodes == NULL) {
         panic(ERR_OUT_MEMORY, "Fatal error: out of memory of block resize");
     }
+}
+
+ast_node_t *create_if_node(ast_node_t *condition, ast_node_t *then_branch, ast_node_t *else_branch) {
+    ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
+    check_node(new_node, "IfElse");
+    new_node->type = AST_IF_EXPR;
+    new_node->ast_node_value.if_expr.condition = condition;
+    new_node->ast_node_value.if_expr.then_branch = then_branch;
+    new_node->ast_node_value.if_expr.else_branch = else_branch;
+    return new_node;
+}
+
+ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_node_t *value) {
+    ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
+    check_node(new_node, "Assignment");
+
+    new_node->type = AST_ASSIGNMENT;
+    new_node->ast_node_value.assignment_expr.name = strdup(name);
+    new_node->ast_node_value.assignment_expr.operator = operator;
+    new_node->ast_node_value.assignment_expr.value = value;
+    return new_node;
 }

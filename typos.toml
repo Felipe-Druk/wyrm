@@ -70,6 +70,7 @@ interpretarse = "interpretarse"
 excede = "excede"
 momento = "momento"
 pase = "pase"
+falso = "falso"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"
