@@ -20,6 +20,29 @@ int is_zero(wyrm_value_t value) { return (get_cast_float64(value) == 0.0) || (ge
         }                                                                                                              \
     } while (0)
 
+// no funciona la macro para el operador %
+wyrm_value_t eval_mod(wyrm_value_t a, wyrm_value_t b, int has_float, int has_int) {
+    if (has_float) {
+        return MAKE_WYRM_VAL((_Float64)fmod(get_cast_float64(a), get_cast_float64(b)));
+    } else if (has_int) {
+        return MAKE_WYRM_VAL(get_cast_int64(a) % get_cast_int64(b));
+    } else {
+        return MAKE_WYRM_VAL(get_cast_nat64(a) % get_cast_nat64(b));
+    }
+}
+
+// no funciona la macro para el operador ^,
+wyrm_value_t eval_pow(wyrm_value_t a, wyrm_value_t b, int has_float, int has_int) {
+    double result = pow(get_cast_float64(a), get_cast_float64(b)); // pow usa por defecto double
+    if (has_float) {
+        return MAKE_WYRM_VAL((_Float64)result);
+    } else if (has_int) {
+        return MAKE_WYRM_VAL((int64_t)result);
+    } else {
+        return MAKE_WYRM_VAL((uint64_t)result);
+    }
+}
+
 wyrm_value_t eval_binary(ast_node_t *node, wyrm_value_t left, wyrm_value_t right) {
     if (node->type != AST_BINARY_EXPR) {
         wyrm_value_t error_val = {.type = VAL_VOID}; // TODO: Error
@@ -49,14 +72,9 @@ wyrm_value_t eval_binary(ast_node_t *node, wyrm_value_t left, wyrm_value_t right
         if (is_zero(right)) {
             panic(ERR_DIV_BY_ZERO, "You cannot perform x '%' 0");
         }
-        if (has_float) {
-            return MAKE_WYRM_VAL((_Float64)fmod(get_cast_float64(left), get_cast_float64(right)));
-        } else if (has_int) {
-            return MAKE_WYRM_VAL(get_cast_int64(left) % get_cast_int64(right));
-        } else {
-            return MAKE_WYRM_VAL(get_cast_nat64(left) % get_cast_nat64(right));
-        }
-        break;
+        return eval_mod(left, right, has_float, has_int);
+    case T_POW:
+        return eval_pow(left, right, has_float, has_int);
     default:
         panic(ERR_UNKNOWN_OP, "operator %s unknown", token_type_to_string(node->ast_node_value.binary_expr.operator));
         break;

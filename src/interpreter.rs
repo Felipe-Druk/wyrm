@@ -207,7 +207,7 @@ mod tests {
             assert_eq!(
                 resultado.value_type,
                 WyrmValueType::ValInt64,
-                "El tipo resultante de la suma no es int64"
+                "El tipo resultante de la resta no es int64"
             );
             assert_eq!(
                 resultado.value.int64_val, -10,
@@ -257,7 +257,7 @@ mod tests {
             assert_eq!(
                 resultado.value_type,
                 WyrmValueType::ValInt64,
-                "El tipo resultante de la suma no es int64"
+                "El tipo resultante de la multiplicación  no es int64"
             );
             assert_eq!(
                 resultado.value.int64_val, 200,
@@ -307,7 +307,7 @@ mod tests {
             assert_eq!(
                 resultado.value_type,
                 WyrmValueType::ValInt64,
-                "El tipo resultante de la suma no es int64"
+                "El tipo resultante de la division no es int64"
             );
             assert_eq!(
                 resultado.value.int64_val, 0,
@@ -357,11 +357,61 @@ mod tests {
             assert_eq!(
                 resultado.value_type,
                 WyrmValueType::ValInt64,
-                "El tipo resultante de la suma no es int64"
+                "El tipo resultante del modulo no es int64"
             );
             assert_eq!(
                 resultado.value.int64_val, 10,
                 "El cálculo matemático de 10 % 20 falló"
+            );
+        }
+    }
+
+    #[test]
+    fn test_interpreter_evalua_potencia_basica() {
+        let lex_2 = std::ffi::CString::new("2").unwrap();
+        let lex_3 = std::ffi::CString::new("3").unwrap();
+
+        let mut left_node = AstNode {
+            node_type: AstNodeType::AstNumberLiteral,
+            ast_node_value: AstNodeValue {
+                number_expr: NumberExprStruct {
+                    numeric_type: TokenType::TNumber,
+                    value: lex_2.as_ptr() as *mut _,
+                },
+            },
+        };
+        let mut right_node = AstNode {
+            node_type: AstNodeType::AstNumberLiteral,
+            ast_node_value: AstNodeValue {
+                number_expr: NumberExprStruct {
+                    numeric_type: TokenType::TNumber,
+                    value: lex_3.as_ptr() as *mut _,
+                },
+            },
+        };
+
+        let mut root_node = AstNode {
+            node_type: AstNodeType::AstBinaryExpr,
+            ast_node_value: AstNodeValue {
+                binary_expr: BinaryExprStruct {
+                    left: &mut left_node as *mut _,
+                    operator: TokenType::TPow,
+                    right: &mut right_node as *mut _,
+                },
+            },
+        };
+
+        unsafe {
+            let interpreter_ptr = create_interpreter(&mut root_node as *mut _);
+            let resultado = interpreter_interpret(interpreter_ptr);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo resultante de la potencia  no es int64"
+            );
+            assert_eq!(
+                resultado.value.int64_val, 8,
+                "El cálculo matemático de 2 ^ 3 falló"
             );
         }
     }
