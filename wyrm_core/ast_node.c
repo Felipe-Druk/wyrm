@@ -20,6 +20,16 @@ ast_node_t *create_number_node(char *value, TokenType numeric_type) {
     return new_node;
 }
 
+ast_node_t *create_bool_node(bool value) {
+    ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
+    check_node(new_node, "Bool");
+
+    new_node->type = AST_BOOL_LITERAL;
+    new_node->ast_node_value.bool_expr.value = value;
+
+    return new_node;
+}
+
 ast_node_t *create_identifier_node(char *value) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Identifier");

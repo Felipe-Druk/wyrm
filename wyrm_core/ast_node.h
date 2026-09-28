@@ -1,9 +1,11 @@
 #pragma once
 #include "wyrm_token.h"
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef enum {
     AST_NUMBER_LITERAL,
+    AST_BOOL_LITERAL,
     AST_IDENTIFIER,
     AST_BINARY_EXPR,
     AST_VAR_DECLARATION,
@@ -20,6 +22,13 @@ typedef struct {
 } AstNumberLiteral;
 
 typedef AstNumberLiteral ast_number_literal_t;
+
+// Almacena literales booleanos
+typedef struct {
+    bool value; // Byte de 0 o 1
+} AstBoolLiteral;
+
+typedef AstBoolLiteral ast_bool_literal_t;
 
 // Etiqueta el valor para el valor de variable
 typedef struct {
@@ -69,6 +78,8 @@ struct ASTNode {
     union {
         ast_number_literal_t number_expr;
 
+        ast_bool_literal_t bool_expr;
+
         ast_identifier_t identifier_expr;
 
         ast_binary_expr_t binary_expr;
@@ -83,6 +94,7 @@ struct ASTNode {
 };
 
 ast_node_t *create_number_node(char *value, TokenType numeric_type);
+ast_node_t *create_bool_node(bool value);
 ast_node_t *create_identifier_node(char *value);
 ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t * right);
 ast_node_t *create_unary_node(TokenType operator, ast_node_t * right);

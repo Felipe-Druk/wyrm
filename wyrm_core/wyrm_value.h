@@ -19,6 +19,8 @@ typedef enum {
     VAL_FLOAT32, // float32
     VAL_FLOAT64, // float64
 
+    VAL_BOOL,
+
 } WyrmValueType;
 
 // En general todo lo que pueda retornar un "source" de wyrm, inlcuso si no hay retorno.
@@ -37,6 +39,7 @@ typedef struct {
 
         _Float32 float32_val;
         _Float64 float64_val;
+        bool bool_val;
     } value;
 } WyrmValue;
 
@@ -57,6 +60,7 @@ _Float64 get_cast_float64(wyrm_value_t value);
         int64_t: (wyrm_value_t){.type = VAL_INT64, .value.int64_val = (X)},                                            \
         uint64_t: (wyrm_value_t){.type = VAL_NAT64, .value.nat64_val = (X)},                                           \
         _Float64: (wyrm_value_t){.type = VAL_FLOAT64, .value.float64_val = (X)},                                       \
+        bool: (wyrm_value_t){.type = VAL_FLOAT64, .value.bool_val = (X)},                                              \
         default: (wyrm_value_t){.type = VAL_VOID})
 
 int is_float(WyrmValueType type);

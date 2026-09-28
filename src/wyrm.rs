@@ -124,4 +124,20 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_wyrm_trabaja_booleanos() {
+        let input = format!("bool falso = false; falso ~= true");
+        let wyrm = Wyrm::new(false);
+
+        unsafe {
+            let resultado = wyrm.call_wyrm(&input);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValBool,
+                "El tipo resultantado  no es booleano"
+            );
+            assert_eq!(resultado.value.bool_val, true, "El cálculo no es true");
+        }
+    }
 }

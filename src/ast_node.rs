@@ -7,6 +7,7 @@ use std::os::raw::c_char;
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum AstNodeType {
     AstNumberLiteral = 0,
+    AstBoolLiteral,
     AstIdentifier,
     AstBinaryExpr,
     AstVarDeclaration,
@@ -18,6 +19,7 @@ pub enum AstNodeType {
 #[derive(Clone, Copy)]
 pub union AstNodeValue {
     pub number_expr: NumberExprStruct,
+    pub bool_expr: BoolExprStruct,
     pub identifier_expr: IdentifierExprStruct,
     pub binary_expr: BinaryExprStruct,
     pub unary_expr: UnaryExprStruct,
@@ -30,6 +32,12 @@ pub union AstNodeValue {
 pub struct NumberExprStruct {
     pub value: *mut c_char,
     pub numeric_type: TokenType,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct BoolExprStruct {
+    pub value: bool,
 }
 
 #[repr(C)]

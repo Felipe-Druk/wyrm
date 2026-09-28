@@ -4,6 +4,7 @@
 #include "../utils/error.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 const size_t INITIAL_CAPACITY = 5;
 
@@ -44,6 +45,13 @@ ast_node_t *primary(parser_t *parser) {
         return create_number_node(previous->lexeme, previous->type);
     }
 
+    if (match(parser, T_TRUE)) {
+        return create_bool_node(true);
+    }
+    if (match(parser, T_FALSE)) {
+        return create_bool_node(false);
+    }
+
     if (match(parser, T_IDENTIFIER)) {
         wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
         return create_identifier_node(previous->lexeme);
@@ -67,9 +75,10 @@ ast_node_t *power(parser_t *parser) {
 
 //  cumple con unary -> ( T_SUB ) power
 ast_node_t *unary(parser_t *parser) {
-    if (match(parser, T_SUB)) {
+    if (match(parser, T_SUB) || match(parser, T_NOT)) {
+        TokenType operator = get_token(parser->tokens, parser->current_index - 1)->type;
         ast_node_t *right_expr = unary(parser); // para resolver cadena de negadores
-        return create_unary_node(T_SUB, right_expr);
+        return create_unary_node(operator, right_expr);
     }
     return power(parser);
 }
@@ -99,10 +108,58 @@ ast_node_t *term(parser_t *parser) {
     return expr;
 }
 
-ast_node_t *expression(parser_t *parser) {
-    ast_node_t *term_expr = term(parser);
-    return term_expr;
+// cumple con comparison -> term ( ( T_LESS | T_GREATER | T_LESS_EQUAL | T_GREATER_EQUAL ) term )
+ast_node_t *comparison(parser_t *parser) {
+    ast_node_t *expr = term(parser);
+
+    while (match(parser, T_LESS) || match(parser, T_GREATER) || match(parser, T_LESS_EQUAL) ||
+           match(parser, T_GREATER_EQUAL)) {
+        TokenType operator = get_token(parser->tokens, parser->current_index - 1)->type;
+        ast_node_t *right_expr = term(parser);
+        expr = create_binary_node(expr, operator, right_expr);
+    }
+    return expr;
 }
+
+// cumple con equality -> comparison ( ( T_EQUAL | T_NOT_EQUAL ) comparison )
+ast_node_t *equality(parser_t *parser) {
+    ast_node_t *expr = comparison(parser);
+
+    while (match(parser, T_EQUAL) || match(parser, T_NOT_EQUAL)) {
+        TokenType operator = get_token(parser->tokens, parser->current_index - 1)->type;
+        ast_node_t *right_expr = comparison(parser);
+        expr = create_binary_node(expr, operator, right_expr);
+    }
+    return expr;
+}
+
+// cumple con logical_and -> equality ( T_AND equality )
+ast_node_t *logical_and(parser_t *parser) {
+    ast_node_t *expr = equality(parser);
+
+    while (match(parser, T_AND)) {
+        TokenType operator = get_token(parser->tokens, parser->current_index - 1)->type;
+        ast_node_t *right_expr = equality(parser);
+        expr = create_binary_node(expr, operator, right_expr);
+    }
+    return expr;
+}
+
+// cumple con logical_or -> logical_and ( ( T_OR | T_XOR ) logical_and )
+ast_node_t *logical_or(parser_t *parser) {
+    ast_node_t *expr = logical_and(parser);
+
+    while (match(parser, T_OR) || match(parser, T_XOR)) {
+        TokenType operator = get_token(parser->tokens, parser->current_index - 1)->type;
+        ast_node_t *right_expr = logical_and(parser);
+        expr = create_binary_node(expr, operator, right_expr);
+    }
+    return expr;
+}
+
+// punto de control de la cadena
+ast_node_t *expression(parser_t *parser) { return logical_or(parser); }
+
 ast_node_t *expression_statement(parser_t *parser) {
 
     // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON

@@ -10,6 +10,9 @@ void debug_ast(ast_node_t *node, int level) {
     case AST_NUMBER_LITERAL:
         print_line_debug("NumberLiteral(%s)", node->ast_node_value.number_expr.value);
         break;
+    case AST_BOOL_LITERAL:
+        print_line_debug("BoolLiteral(%i)", node->ast_node_value.bool_expr.value);
+        break;
     case AST_IDENTIFIER:
         print_line_debug("Identifier(%s)", node->ast_node_value.identifier_expr.name);
         break;

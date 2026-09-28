@@ -3,6 +3,7 @@
 const char *token_type_to_string(TokenType type) {
     // codigo bastante feo, en le futuro intentare mejorarlo.
     switch (type) {
+        // tipos
     case T_INT8:
         return "T_INT8";
     case T_INT16:
@@ -19,6 +20,26 @@ const char *token_type_to_string(TokenType type) {
         return "T_NAT32";
     case T_NAT64:
         return "T_NAT64";
+    case T_FLOAT32:
+        return "T_FLOAT32";
+    case T_FLOAT64:
+        return "T_FLOAT64";
+    case T_BOOL:
+        return "T_BOOL";
+        // sentencias boolenas
+    case T_TRUE:
+        return "T_TRUE";
+    case T_FALSE:
+        return "T_FALSE";
+    case T_NOT:
+        return "T_NOT";
+    case T_AND:
+        return "T_AND";
+    case T_OR:
+        return "T_OR";
+    case T_XOR:
+        return "T_XOR";
+        // operadores arigmeticos
     case T_ADD:
         return "T_ADD";
     case T_SUB:
@@ -31,6 +52,19 @@ const char *token_type_to_string(TokenType type) {
         return "T_POW";
     case T_MOD:
         return "T_MOD";
+        // operadores logicos
+    case T_EQUAL:
+        return "T_EQUAL";
+    case T_NOT_EQUAL:
+        return "T_NOT_EQUAL";
+    case T_LESS:
+        return "T_LESS";
+    case T_GREATER:
+        return "T_GREATER";
+    case T_LESS_EQUAL:
+        return "T_LESS_EQUAL";
+    case T_GREATER_EQUAL:
+        return "T_GREATER_EQUAL";
     case T_ASSIGN:
         return "T_ASSIGN";
     case T_NUMBER:

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "evaluator_number.h"
+#include "evaluator_bool.h"
 #include "evaluator_binary.h"
 #include "evaluator_unary.h"
 #include "evaluator_identifier.h"
@@ -89,6 +90,9 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
     switch (node->type) {
     case AST_NUMBER_LITERAL:
         result = eval_number(node);
+        break;
+    case AST_BOOL_LITERAL:
+        result = eval_bool(node);
         break;
     case AST_BINARY_EXPR: {
         wyrm_value_t left = eval_node(node->ast_node_value.binary_expr.left, scope);
