@@ -1,7 +1,10 @@
 #include "parser.h"
 #include "../options.h"
 #include "debugger_parser.h"
+#include "../utils/error.h"
 #include <stdlib.h>
+
+const size_t INITIAL_CAPACITY = 5;
 
 parser_t *create_parser(token_vector_t *tokens) {
     parser_t *new_parser = malloc(sizeof(parser_t));
@@ -109,8 +112,19 @@ ast_node_t *expression_statement(parser_t *parser) {
 ast_node_t *parser_parse(parser_t *parser) {
     // Arriba los especiales
 
-    //
-    ast_node_t *root = expression_statement(parser);
+    ast_node_t *root = create_block_node(INITIAL_CAPACITY);
+
+    while (peek(parser)->type != T_EOF) {
+        ast_node_t *actual_node = expression_statement(parser);
+        if (block_is_full(&root->ast_node_value.block_expr)) {
+            resize_block(&root->ast_node_value.block_expr);
+        }
+        root->ast_node_value.block_expr.nodes[root->ast_node_value.block_expr.size++] = actual_node;
+        if (!match(parser, T_SEMICOLON) && peek(parser)->type != T_EOF) {
+            panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
+        }
+    }
+
     if (parser->flags & (DEBUG_MODE | PARSER_MODE)) {
         print_line_debug("== END OF PARSER ==");
         debug_ast(root, 0);

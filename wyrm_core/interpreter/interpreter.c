@@ -39,6 +39,14 @@ wyrm_value_t eval_node(ast_node_t *node) {
         result = eval_unary(node, right);
         break;
     }
+    case AST_BLOCK: {
+        wyrm_value_t final_val = {.type = VAL_VOID};
+        for (size_t i = 0; i < node->ast_node_value.block_expr.size; i++) {
+            final_val = eval_node(node->ast_node_value.block_expr.nodes[i]);
+        }
+        result = final_val;
+        break;
+    }
     default:
         break;
     }

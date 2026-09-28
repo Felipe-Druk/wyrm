@@ -34,7 +34,7 @@ impl Wyrm {
                 if self.verbose {
                     C_VERBOSE_MODE | C_DEBUG_MODE
                 } else {
-                    C_DEBUG_MODE
+                    0
                 },
             )
         }
@@ -77,4 +77,25 @@ impl Wyrm {
 // solo tests de flujo completo
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_wyrm_respeta_punt_y_coma() {
+        let input = format!("2+3; 3+6");
+        let wyrm = Wyrm::new(false);
+
+        unsafe {
+            let resultado = wyrm.call_wyrm(&input);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo resultante de la suma no es int64"
+            );
+            assert_eq!(
+                resultado.value.int64_val, 9,
+                "El cálculo matemático de 6 + 3 estuvo al final"
+            );
+        }
+    }
+}

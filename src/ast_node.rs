@@ -11,6 +11,7 @@ pub enum AstNodeType {
     AstBinaryExpr,
     AstVarDeclaration,
     AstUnaryExpr,
+    AstBlock,
 }
 
 #[repr(C)]
@@ -21,6 +22,7 @@ pub union AstNodeValue {
     pub binary_expr: BinaryExprStruct,
     pub unary_expr: UnaryExprStruct,
     pub var_decl_expr: VarDeclExprStruct,
+    pub block_expr: AstBlock,
 }
 
 #[repr(C)]
@@ -63,4 +65,12 @@ pub struct VarDeclExprStruct {
 pub struct AstNode {
     pub node_type: AstNodeType,
     pub ast_node_value: AstNodeValue,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct AstBlock {
+    pub size: usize,
+    pub capacity: usize,
+    pub nodes: *mut *mut AstNode,
 }

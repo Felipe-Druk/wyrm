@@ -23,6 +23,34 @@ mod tests {
         pub fn parser_parse(parser: *mut Parser) -> *mut AstNode;
     }
 
+    unsafe fn parse_primer_nodo(vector: &mut TokenVector) -> *const AstNode {
+        unsafe {
+            let parser_ptr = create_parser(vector);
+            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
+
+            let ast_root_ptr = parser_parse(parser_ptr);
+            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
+
+            let ast_root = &*ast_root_ptr;
+            assert_eq!(
+                ast_root.node_type,
+                AstNodeType::AstBlock,
+                "La raíz no es un bloque"
+            );
+
+            let block_data = ast_root.ast_node_value.block_expr;
+            assert!(block_data.size >= 1, "El bloque no tiene sentencias");
+
+            let primer_nodo_ptr = *block_data.nodes;
+            assert!(
+                !primer_nodo_ptr.is_null(),
+                "El puntero de la sentencia es nulo"
+            );
+
+            primer_nodo_ptr
+        }
+    }
+
     // Test de parser, si ocurre un bug se agrea un tests
     #[test]
     fn test_parser_identifica_numero() {
@@ -47,12 +75,7 @@ mod tests {
                 tokens: tokens_array.as_mut_ptr(),
             };
 
-            let parser_ptr = create_parser(&mut vector as *mut _);
-            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
-
-            let ast_root_ptr = parser_parse(parser_ptr);
-            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
-
+            let ast_root_ptr = parse_primer_nodo(&mut vector);
             let ast_root = &*ast_root_ptr;
             assert_eq!(
                 ast_root.node_type,
@@ -104,13 +127,9 @@ mod tests {
                 tokens: tokens_array.as_mut_ptr(),
             };
 
-            let parser_ptr = create_parser(&mut vector as *mut _);
-            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
-
-            let ast_root_ptr = parser_parse(parser_ptr);
-            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
-
+            let ast_root_ptr = parse_primer_nodo(&mut vector);
             let ast_root = &*ast_root_ptr;
+
             assert_eq!(
                 ast_root.node_type,
                 AstNodeType::AstBinaryExpr,
@@ -186,13 +205,9 @@ mod tests {
                 tokens: tokens_array.as_mut_ptr(),
             };
 
-            let parser_ptr = create_parser(&mut vector as *mut _);
-            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
-
-            let ast_root_ptr = parser_parse(parser_ptr);
-            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
-
+            let ast_root_ptr = parse_primer_nodo(&mut vector);
             let ast_root = &*ast_root_ptr;
+
             assert_eq!(
                 ast_root.node_type,
                 AstNodeType::AstUnaryExpr,
@@ -259,13 +274,9 @@ mod tests {
                 tokens: tokens_array.as_mut_ptr(),
             };
 
-            let parser_ptr = create_parser(&mut vector as *mut _);
-            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
-
-            let ast_root_ptr = parser_parse(parser_ptr);
-            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
-
+            let ast_root_ptr = parse_primer_nodo(&mut vector);
             let ast_root = &*ast_root_ptr;
+
             assert_eq!(
                 ast_root.node_type,
                 AstNodeType::AstBinaryExpr,
@@ -347,19 +358,14 @@ mod tests {
                 tokens: tokens_array.as_mut_ptr(),
             };
 
-            let parser_ptr = create_parser(&mut vector as *mut _);
-            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
-
-            let ast_root_ptr = parser_parse(parser_ptr);
-            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
-
+            let ast_root_ptr = parse_primer_nodo(&mut vector);
             let ast_root = &*ast_root_ptr;
+
             assert_eq!(
                 ast_root.node_type,
                 AstNodeType::AstBinaryExpr,
                 "La raiz no es una operacion bianria"
             );
-
             let binary_data = ast_root.ast_node_value.binary_expr;
             assert_eq!(
                 binary_data.operator,
@@ -443,13 +449,9 @@ mod tests {
                 tokens: tokens_array.as_mut_ptr(),
             };
 
-            let parser_ptr = create_parser(&mut vector as *mut _);
-            assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
-
-            let ast_root_ptr = parser_parse(parser_ptr);
-            assert!(!ast_root_ptr.is_null(), "El parser devolvió un árbol nulo");
-
+            let ast_root_ptr = parse_primer_nodo(&mut vector);
             let ast_root = &*ast_root_ptr;
+
             assert_eq!(
                 ast_root.node_type,
                 AstNodeType::AstBinaryExpr,
