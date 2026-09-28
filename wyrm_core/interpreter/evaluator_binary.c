@@ -133,6 +133,7 @@ wyrm_value_t eval_binary(ast_node_t *node, wyrm_value_t left, wyrm_value_t right
         if (is_zero(right)) {
             panic(ERR_DIV_BY_ZERO, "You cannot perform x '%' 0");
         }
+
         return eval_mod(left, right, has_float, has_int);
     case T_POW:
         return eval_pow(left, right, has_float, has_int);

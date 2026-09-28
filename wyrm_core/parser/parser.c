@@ -8,6 +8,11 @@
 
 const size_t INITIAL_CAPACITY = 5;
 
+// definimos funciones privadas para resolver llamados recursivos
+ast_node_t *expression(parser_t *parser);
+ast_node_t *expression_statement(parser_t *parser);
+ast_node_t *block_statement(parser_t *parser);
+
 parser_t *create_parser(token_vector_t *tokens) {
     parser_t *new_parser = malloc(sizeof(parser_t));
     if (new_parser == NULL) {
@@ -40,16 +45,25 @@ int match(parser_t *parser, TokenType expected_type_token) {
 
 // cumple con primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER
 ast_node_t *primary(parser_t *parser) {
-    if (match(parser, T_NUMBER) || match(parser, T_FLOAT_NUMBER)) {
-        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
-        return create_number_node(previous->lexeme, previous->type);
-    }
 
     if (match(parser, T_TRUE)) {
         return create_bool_node(true);
     }
     if (match(parser, T_FALSE)) {
         return create_bool_node(false);
+    }
+
+    if (match(parser, T_LPAREN)) {
+        ast_node_t *expr = expression(parser);
+        if (!match(parser, T_RPAREN)) {
+            panic(ERR_SYNTAX, "Syntax error: Expected ')' after expression");
+        }
+        return expr;
+    }
+
+    if (match(parser, T_NUMBER) || match(parser, T_FLOAT_NUMBER)) {
+        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
+        return create_number_node(previous->lexeme, previous->type);
     }
 
     if (match(parser, T_IDENTIFIER)) {
@@ -160,7 +174,34 @@ ast_node_t *logical_or(parser_t *parser) {
 // punto de control de la cadena
 ast_node_t *expression(parser_t *parser) { return logical_or(parser); }
 
+ast_node_t *block_statement(parser_t *parser) {
+    ast_node_t *block = create_block_node(INITIAL_CAPACITY);
+
+    while (peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
+        ast_node_t *stmt = expression_statement(parser);
+
+        if (block_is_full(&block->ast_node_value.block_expr)) {
+            resize_block(&block->ast_node_value.block_expr);
+        }
+        block->ast_node_value.block_expr.nodes[block->ast_node_value.block_expr.size++] = stmt;
+
+        if ((stmt->type != AST_BLOCK) && !match(parser, T_SEMICOLON) && peek(parser)->type != T_RBRACE &&
+            peek(parser)->type != T_EOF) {
+            panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
+        }
+    }
+
+    if (!match(parser, T_RBRACE)) {
+        panic(ERR_SYNTAX, "Syntax error: Expected '}' to close the block");
+    }
+
+    return block;
+}
+
 ast_node_t *expression_statement(parser_t *parser) {
+    if (match(parser, T_LBRACE)) {
+        return block_statement(parser);
+    }
 
     // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON
     TokenType actual_type = peek(parser)->type;
@@ -194,7 +235,7 @@ ast_node_t *parser_parse(parser_t *parser) {
             resize_block(&root->ast_node_value.block_expr);
         }
         root->ast_node_value.block_expr.nodes[root->ast_node_value.block_expr.size++] = actual_node;
-        if (!match(parser, T_SEMICOLON) && peek(parser)->type != T_EOF) {
+        if ((actual_node->type != AST_BLOCK) && !match(parser, T_SEMICOLON) && peek(parser)->type != T_EOF) {
             panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
         }
     }

@@ -140,4 +140,37 @@ mod tests {
             assert_eq!(resultado.value.bool_val, true, "El cálculo no es true");
         }
     }
+
+    #[test]
+    fn test_wyrm_trabaja_bloques() {
+        let input = "int32 x = (5 + 3) * 2;
+                    { 
+                        bool y = true; 
+                    } 
+                    int32 z = 10;";
+        let wyrm = Wyrm::new(false);
+
+        let resultado = wyrm.call_wyrm(&input);
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValVoid,
+            "El tipo resultantado vacio"
+        );
+    }
+
+    #[test]
+    fn test_wyrm_respeta_parentecis() {
+        let input = format!("(2+2) / 2");
+        let wyrm = Wyrm::new(false);
+
+        unsafe {
+            let resultado = wyrm.call_wyrm(&input);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo resultante de la suma no es int64"
+            );
+            assert_eq!(resultado.value.int64_val, 2, "El resultado no es 2");
+        }
+    }
 }

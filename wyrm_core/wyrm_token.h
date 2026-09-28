@@ -62,6 +62,11 @@ typedef enum {
     // Limitadores
     T_EOF,       // End of file suele ser 0 char
     T_SEMICOLON, // ; para separar sentencias
+    T_LPAREN,    // ( encapsula sentencias junto con su cierre
+    T_RPAREN,    // )
+    T_LBRACE,    // { encapsula "scopes" o bloques de ejecucion
+    T_RBRACE,    // }
+
 } TokenType;
 
 #define MIN_TYPE T_INT8
