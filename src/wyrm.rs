@@ -1,3 +1,4 @@
+use crate::interpreter::*;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
@@ -12,7 +13,7 @@ pub struct Wyrm {
 }
 
 unsafe extern "C" {
-    fn run_wyrm(input: *const c_char, flags: c_int);
+    fn run_wyrm(input: *const c_char, flags: c_int) -> WyrmValue;
 }
 
 impl Wyrm {
@@ -25,7 +26,7 @@ impl Wyrm {
         println!("Entrada recibida: {}", input);
     }
 
-    fn call_wyrm(&self, input: &str) {
+    fn call_wyrm(&self, input: &str) -> WyrmValue {
         let c_input = CString::new(input).expect("Error al convertir a CString");
         unsafe {
             run_wyrm(
@@ -35,7 +36,7 @@ impl Wyrm {
                 } else {
                     C_DEBUG_MODE
                 },
-            );
+            )
         }
     }
 
@@ -60,7 +61,9 @@ impl Wyrm {
                 self.input_verbose(&input);
             }
 
-            self.call_wyrm(&input);
+            let result = self.call_wyrm(&input);
+
+            println!("{}", result);
 
             if input == EXIT_COMMAND {
                 is_running = false;

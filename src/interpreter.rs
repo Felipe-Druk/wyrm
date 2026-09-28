@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::ast_node::AstNode;
+use std::fmt;
 use std::os::raw::c_int;
 
 #[repr(C)]
@@ -26,12 +27,6 @@ pub enum WyrmValueType {
     ValFloat64,
 }
 
-/*
-
-    VAL_FLOAT32, // float32
-    VAL_FLOAT64, // float64
-*/
-
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub union WyrmValueData {
@@ -52,6 +47,22 @@ pub union WyrmValueData {
 pub struct WyrmValue {
     pub value_type: WyrmValueType,
     pub value: WyrmValueData,
+}
+
+// para mayor comodidad dentro de consola leemos el valor sin el tipo
+impl fmt::Display for WyrmValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        unsafe {
+            match self.value_type {
+                WyrmValueType::ValInt64 => write!(f, "{}", self.value.int64_val),
+                WyrmValueType::ValNat64 => write!(f, "{}", self.value.nat64_val),
+                WyrmValueType::ValFloat64 => write!(f, "{}", self.value.float64_val),
+
+                WyrmValueType::ValVoid => write!(f, "void"),
+                _ => write!(f, "<tipo desconocido>"),
+            }
+        }
+    }
 }
 
 #[cfg(test)]

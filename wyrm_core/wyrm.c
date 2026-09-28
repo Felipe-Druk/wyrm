@@ -2,31 +2,32 @@
 #include "options.h"
 #include "scanner/scanner.h"
 #include "parser/parser.h"
+#include "interpreter/interpreter.h"
+#include "utils/error.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-void run_wyrm(const char *input, int flags) {
+wyrm_value_t run_wyrm(const char *input, int flags) {
     char *input_copy = malloc(sizeof(char) * (strlen(input) + 1));
     if (input_copy == NULL) {
-        fprintf(stderr, "Error: No se pudo asignar memoria para la copia de entrada.\n");
-        return;
+        panic(1, "Could not allocate memory for the input copy");
     }
-    strcpy(input_copy, input);
 
+    strcpy(input_copy, input);
     scanner_t scanner;
     scanner.flags = flags;
 
     token_vector_t *tokens = scanner_scan(input_copy, &scanner);
     if (tokens == NULL) {
-        fprintf(stderr, "Error: No se pudo crear el vector de tokens.\n");
         free(input_copy);
-        return;
+        panic(1, "Could not create the token vector");
     }
 
     parser_t *parser = create_parser(tokens);
     parser->flags = flags;
-    ast_node_t *root_expr = parser_parse(parser);
-    (void)root_expr;
+    ast_node_t *root_ast = parser_parse(parser);
+    interpreter_t *interpreter = create_interpreter(root_ast);
+    return interpreter_interpret(interpreter);
 }
