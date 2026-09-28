@@ -12,6 +12,8 @@ pub enum TokenType {
     TNat16,
     TNat32,
     TNat64,
+    TFloat32,
+    TFloat64,
     TAdd,
     TSub,
     TMul,

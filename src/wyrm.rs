@@ -98,4 +98,30 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_wyrm_instancia_variables() {
+        let input = format!("int32 entero = 54;");
+        let input2 = format!("entero;");
+        let wyrm = Wyrm::new(false);
+
+        unsafe {
+            let resultado = wyrm.call_wyrm(&input);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValVoid,
+                "El no es vacio"
+            );
+            let resultado2 = wyrm.call_wyrm(&input2);
+            assert_eq!(
+                resultado2.value_type,
+                WyrmValueType::ValInt32,
+                "El la variable no es int32"
+            );
+            assert_eq!(
+                resultado2.value.int64_val, 54,
+                "La variable no tiene el valor correcto"
+            );
+        }
+    }
 }

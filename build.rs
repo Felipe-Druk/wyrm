@@ -7,6 +7,7 @@ fn main() {
         .file("wyrm_core/wyrm_token.c")
         .file("wyrm_core/ast_node.c")
         .file("wyrm_core/wyrm_value.c")
+        .file("wyrm_core/environment.c")
         // Scanner
         .file("wyrm_core/scanner/arithmetic_resolver.c")
         .file("wyrm_core/scanner/numeric_resolver.c")
@@ -23,6 +24,7 @@ fn main() {
         .file("wyrm_core/interpreter/evaluator_number.c")
         .file("wyrm_core/interpreter/evaluator_binary.c")
         .file("wyrm_core/interpreter/evaluator_unary.c")
+        .file("wyrm_core/interpreter/evaluator_identifier.c")
         //utils
         .file("wyrm_core/utils/debugger.c")
         .file("wyrm_core/utils/token_vector.c")

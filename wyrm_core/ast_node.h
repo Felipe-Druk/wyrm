@@ -49,6 +49,7 @@ typedef struct {
     TokenType var_type;
     char *identifier;           // Nombre de la variable
     struct ASTNode *expression; // Lo que guardaremos en la variable
+    TokenType assign_op;        // Con que operador se isntancio
 } AstVarDecl;
 
 typedef AstVarDecl ast_var_decl_t;
@@ -85,7 +86,7 @@ ast_node_t *create_number_node(char *value, TokenType numeric_type);
 ast_node_t *create_identifier_node(char *value);
 ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t * right);
 ast_node_t *create_unary_node(TokenType operator, ast_node_t * right);
-ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression);
+ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression, TokenType assign_op);
 ast_node_t *create_block_node(size_t capacity);
 
 int block_is_full(const ast_block_t *block_node);

@@ -15,6 +15,9 @@ typedef enum {
     T_NAT32, // nat32 = 32 bits natural
     T_NAT64, // nat64 = 64 bits natural
 
+    // Flotantes
+    T_FLOAT32, // float32 = 32 bits flotante
+    T_FLOAT64, // float32 = 64 bits flotante
     // Operadores arigmeticos
     T_ADD, // + para suma
     T_SUB, // - para resta
@@ -39,6 +42,9 @@ typedef enum {
     T_EOF,       // End of file suele ser 0 char
     T_SEMICOLON, // ; para separar sentencias
 } TokenType;
+
+#define MIN_TYPE T_INT8
+#define MAX_TYPE T_FLOAT64
 
 // Un token es un par de tipo y lexema.
 // El lexema es un string que representa el token en el codigo fuente.

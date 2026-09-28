@@ -3,6 +3,7 @@
 #include "debugger_parser.h"
 #include "../utils/error.h"
 #include <stdlib.h>
+#include <string.h>
 
 const size_t INITIAL_CAPACITY = 5;
 
@@ -102,15 +103,31 @@ ast_node_t *expression(parser_t *parser) {
     ast_node_t *term_expr = term(parser);
     return term_expr;
 }
-
 ast_node_t *expression_statement(parser_t *parser) {
+
+    // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON
+    TokenType actual_type = peek(parser)->type;
+    if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
+        advance(parser);
+        if (!match(parser, T_IDENTIFIER)) {
+            panic(ERR_SYNTAX, "Syntax error: you variable need a name");
+        }
+        char *var_name = strdup(get_token(parser->tokens, parser->current_index - 1)->lexeme);
+
+        if (!match(parser, T_ASSIGN) && !match(parser, T_RASSIGN)) {
+            panic(ERR_SYNTAX, "Syntax error: missing '='' or '<-' symbol");
+        }
+        TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
+        ast_node_t *expr = expression_statement(parser);
+        return create_var_decl_node(actual_type, var_name, expr, assign_op);
+    }
+
     ast_node_t *expr = expression(parser);
 
     return expr;
 }
 
 ast_node_t *parser_parse(parser_t *parser) {
-    // Arriba los especiales
 
     ast_node_t *root = create_block_node(INITIAL_CAPACITY);
 

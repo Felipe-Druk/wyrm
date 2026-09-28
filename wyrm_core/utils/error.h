@@ -6,7 +6,8 @@ typedef enum {
     ERR_UNKNOWN_OP = 4,
     ERR_TYPE_MISMATCH = 5,
     ERR_SYNTAX = 6,
-    ERR_OUT_MEMORY = 7
+    ERR_OUT_MEMORY = 7,
+    ERR_UNDEFINED_VAR = 8
 } WyrmErrorCode;
 
 typedef WyrmErrorCode wyrm_error_code_t;
