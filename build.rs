@@ -34,4 +34,6 @@ fn main() {
         .include("wyrm_core/interpreter")
         // Compilación
         .compile("wyrm");
+
+    println!("cargo:rustc-link-lib=m");
 }
