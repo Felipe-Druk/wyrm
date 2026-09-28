@@ -6,6 +6,7 @@
 #include "evaluator_binary.h"
 #include "evaluator_unary.h"
 #include "evaluator_identifier.h"
+#include "evaluator_block.h"
 
 interpreter_t *create_interpreter(ast_node_t *root, environment_t *scope) {
 
@@ -107,12 +108,17 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
         break;
     }
     case AST_BLOCK: {
-        wyrm_value_t final_val = {.type = VAL_VOID};
+        result = eval_block(node, scope);
+        break;
+    }
+    case AST_PROGRAM: {
+        wyrm_value_t final_val = {0};
+        final_val.type = VAL_VOID;
+
         for (size_t i = 0; i < node->ast_node_value.block_expr.size; i++) {
             final_val = eval_node(node->ast_node_value.block_expr.nodes[i], scope);
         }
-        result = final_val;
-        break;
+        return final_val;
     }
     case AST_IDENTIFIER: {
         result = eval_identifier(node, scope);

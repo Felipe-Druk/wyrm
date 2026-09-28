@@ -10,7 +10,8 @@ typedef enum {
     AST_BINARY_EXPR,
     AST_VAR_DECLARATION,
     AST_UNARY_EXPR,
-    AST_BLOCK
+    AST_BLOCK,
+    AST_PROGRAM // especial para raiz del programa
 } ast_node_type_t;
 
 typedef struct ASTNode ast_node_t; // declaración para prevenir recursividad

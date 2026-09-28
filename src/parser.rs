@@ -34,7 +34,7 @@ mod tests {
             let ast_root = &*ast_root_ptr;
             assert_eq!(
                 ast_root.node_type,
-                AstNodeType::AstBlock,
+                AstNodeType::AstProgram,
                 "La raíz no es un bloque"
             );
 

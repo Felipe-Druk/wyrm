@@ -13,6 +13,7 @@ pub enum AstNodeType {
     AstVarDeclaration,
     AstUnaryExpr,
     AstBlock,
+    AstProgram,
 }
 
 #[repr(C)]

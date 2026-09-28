@@ -228,6 +228,7 @@ ast_node_t *expression_statement(parser_t *parser) {
 ast_node_t *parser_parse(parser_t *parser) {
 
     ast_node_t *root = create_block_node(INITIAL_CAPACITY);
+    root->type = AST_PROGRAM;
 
     while (peek(parser)->type != T_EOF) {
         ast_node_t *actual_node = expression_statement(parser);

@@ -173,4 +173,30 @@ mod tests {
             assert_eq!(resultado.value.int64_val, 2, "El resultado no es 2");
         }
     }
+
+    #[test]
+    fn test_wyrm_aisla_variables_en_scope_local() {
+        let input = "
+            int32 x = 5;
+            {
+                int32 x = 100;
+            }
+            x;
+        ";
+        let wyrm = Wyrm::new(false);
+
+        let resultado = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValInt32,
+                "El tipo resultante debe ser int32"
+            );
+            assert_eq!(
+                resultado.value.int32_val, 5,
+                "La variable global fue sobreescrita"
+            );
+        }
+    }
 }
