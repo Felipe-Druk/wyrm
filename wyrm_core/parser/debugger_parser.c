@@ -55,5 +55,16 @@ void debug_ast(ast_node_t *node, int level) {
         debug_ast(node->ast_node_value.while_expr.condition, level + 1);
         debug_ast(node->ast_node_value.while_expr.body, level + 1);
         break;
+    case AST_FUNCTION_DECL:
+        print_line_debug("FunctionDecl(%s)\n", node->ast_node_value.function_decl.name);
+        debug_ast(node->ast_node_value.function_decl.function.body, level + 1);
+        break;
+
+    case AST_CALL:
+        print_line_debug("FunctionCall(%s)\n", node->ast_node_value.call_expr.name);
+        for (size_t i = 0; i < node->ast_node_value.call_expr.arg_count; i++) {
+            debug_ast(node->ast_node_value.call_expr.args[i], level + 1);
+        }
+        break;
     }
 }

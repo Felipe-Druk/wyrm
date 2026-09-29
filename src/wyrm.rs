@@ -2,7 +2,7 @@ use crate::interpreter::*;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
-const VERSION: &str = "0.0.2";
+const VERSION: &str = "0.0.3";
 const EXIT_COMMAND: &str = "exit";
 const C_VERBOSE_MODE: c_int = 1 << 0;
 const C_DEBUG_MODE: c_int = 1 << 1;
@@ -49,9 +49,8 @@ impl Wyrm {
         }
 
         let mut input = String::new();
-        let mut is_running = true;
 
-        while is_running {
+        loop {
             println!("Wyrm >: ");
             std::io::stdin()
                 .read_line(&mut input)
@@ -61,16 +60,16 @@ impl Wyrm {
                 self.input_verbose(&input);
             }
 
+            if input.trim() == EXIT_COMMAND {
+                println!("Wyrm se despide :D ...");
+                break;
+            }
+
             let result = self.call_wyrm(&input);
 
             println!("{}", result);
-
-            if input == EXIT_COMMAND {
-                is_running = false;
-            }
-            input = "".to_string();
+            input.clear();
         }
-        println!("Wyrm se despide :D ...");
     }
 }
 
@@ -240,6 +239,34 @@ mod tests {
              contador = contador + 1;
          }
         contador";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValInt32,
+                "El tipo resultante debe ser int32"
+            );
+            assert_eq!(
+                output.value.int32_val, 5,
+                "El contador debería haber sumado hasta 5"
+            );
+        }
+    }
+
+    #[test]
+    fn test_wyrm_fusion_conteo() {
+        let input = "
+        int32 contador(nat32 x){
+            int32 actual = 0;
+            while (actual < x) {
+                actual = actual + 1;
+            }
+            actual
+        }        
+         contador(5)";
 
         let wyrm = Wyrm::new(false);
         let output = wyrm.call_wyrm(input);

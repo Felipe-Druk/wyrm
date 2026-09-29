@@ -2,6 +2,14 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include "wyrm_token.h"
+
+/*
+Como se decicido que cada "bloque" tenga un retorno si o si, esta estrutura representa los posibles valores de esos
+retornos. Agrgar VAL_VOID nos ayuda a conectar expresiones sin retorno con las que si tienen, tenemos más contrtol y
+mejor modularidad. Siguiendo una logcia más matematica, la unidad minima de Wyrm sera el conjunto vacio o void
+*/
 
 typedef enum {
     VAL_VOID, // cuando no hay retorno
@@ -19,12 +27,34 @@ typedef enum {
     VAL_FLOAT32, // float32
     VAL_FLOAT64, // float64
 
-    VAL_BOOL,
+    VAL_BOOL, // bool
+
+    VAL_FUNCTION // function()
 
 } WyrmValueType;
 
-// En general todo lo que pueda retornar un "source" de wyrm, inlcuso si no hay retorno.
+struct ASTNode; // esto parece un error queda como TODO crear el tipo "scope"
+
+typedef struct WyrmValue wyrm_value_t; // declaración para prevenir recursividad
+
 typedef struct {
+    WyrmValueType type; // tipo esperado
+    char *name;         // nombre del parametro
+} WyrmFunctionArg;
+
+typedef WyrmFunctionArg wyrm_function_arg_t;
+
+typedef struct {
+    WyrmValueType returned;    // tipo del retorno
+    size_t arg_count;          // cantidad de argumetnos
+    wyrm_function_arg_t *args; // argumetnos de la función
+    struct ASTNode *body;      // bloque a ejecutar "cuerpo de la función"
+} WyrmFunction;
+
+typedef WyrmFunction wyrm_function_t;
+
+// En general todo lo que pueda retornar un "source" de wyrm, inlcuso si no hay retorno.
+struct WyrmValue {
     WyrmValueType type;
     union {
         uint8_t nat8_val;
@@ -40,16 +70,17 @@ typedef struct {
         _Float32 float32_val;
         _Float64 float64_val;
         bool bool_val;
+        wyrm_function_t wyrm_function_val;
     } value;
-} WyrmValue;
-
-typedef WyrmValue wyrm_value_t;
+};
 
 uint64_t get_cast_nat64(wyrm_value_t value);
 
 int64_t get_cast_int64(wyrm_value_t value);
 
 _Float64 get_cast_float64(wyrm_value_t value);
+
+WyrmValueType token_to_val_type(TokenType t);
 
 #define MAKE_WYRM_VAL(X)                                                                                               \
     _Generic((X),                                                                                                      \

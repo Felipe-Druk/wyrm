@@ -2,6 +2,13 @@
 #include "wyrm_token.h"
 #include <stddef.h>
 #include <stdbool.h>
+#include "wyrm_value.h"
+
+/*
+El AST se contruye mediante nodos, cada nodo puede tener una cantidad de hijos no dfeinida, y tienen sus maneras
+especiales de resolves. El objetivo es no tener que agregar muchos más nodos, si agreramos demaciados evidenciamos que
+son demaciado especificos y poco reutilizables, por lo tanto poco escalables
+*/
 
 typedef enum {
     AST_NUMBER_LITERAL,
@@ -14,8 +21,12 @@ typedef enum {
     AST_PROGRAM, // especial para raiz del programa
     AST_IF_EXPR,
     AST_ASSIGNMENT,
-    AST_WHILE_EXPR
+    AST_WHILE_EXPR,
+    AST_FUNCTION_DECL,
+    AST_CALL
 } ast_node_type_t;
+
+struct ASTNode;
 
 typedef struct ASTNode ast_node_t; // declaración para prevenir recursividad
 
@@ -99,6 +110,21 @@ typedef struct {
 } AstWhileExpr;
 typedef AstWhileExpr ast_while_expr_t;
 
+// nodo para declarar una funsion
+typedef struct {
+    char *name; // Nombre de la función
+    wyrm_function_t function;
+} AstFunctionDecl;
+typedef AstFunctionDecl ast_function_decl_t;
+
+// nodo que llama a la función con el nombre, y le manda los argumetos
+typedef struct {
+    char *name;            // nombre de la función a invocar
+    size_t arg_count;      // cantidad de argumentos enviados
+    struct ASTNode **args; // argumentos  como expresiones
+} AstCallExpr;
+typedef AstCallExpr ast_call_expr_t;
+
 // Estrutura princiapl del AST, usamos union para "simular" polimorfismo
 struct ASTNode {
     ast_node_type_t type;
@@ -124,6 +150,10 @@ struct ASTNode {
 
         ast_while_expr_t while_expr;
 
+        ast_function_decl_t function_decl;
+
+        ast_call_expr_t call_expr;
+
     } ast_node_value;
 };
 
@@ -137,6 +167,8 @@ ast_node_t *create_block_node(size_t capacity);
 ast_node_t *create_if_node(ast_node_t *condition, ast_node_t *then_branch, ast_node_t *else_branch);
 ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_node_t * value);
 ast_node_t *create_while_node(ast_node_t *condition, ast_node_t *body);
+ast_node_t *create_function_decl_node(char *name, wyrm_function_t function);
+ast_node_t *create_call_node(char *name, size_t arg_count, ast_node_t **args);
 
 int block_is_full(const ast_block_t *block_node);
 

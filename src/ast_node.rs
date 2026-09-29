@@ -1,3 +1,4 @@
+use crate::interpreter::WyrmFunction;
 use crate::token_vector::TokenType;
 use std::os::raw::c_char;
 
@@ -17,6 +18,8 @@ pub enum AstNodeType {
     AstIfExpr,
     AstAssignment,
     AstWhileExpr,
+    AstFunctionDecl,
+    AstCall,
 }
 
 #[repr(C)]
@@ -32,6 +35,8 @@ pub union AstNodeValue {
     pub if_expr: AstIfExpr,
     pub assignment_expr: AstAssignment,
     pub while_expr: AstWhileExpr,
+    pub function_decl: AstFunctionDecl,
+    pub call_expr: AstCallExpr,
 }
 
 #[repr(C)]
@@ -112,4 +117,19 @@ pub struct AstAssignment {
 pub struct AstWhileExpr {
     pub condition: *mut AstNode,
     pub body: *mut AstNode,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct AstFunctionDecl {
+    pub name: *mut c_char,
+    pub function_def: WyrmFunction,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct AstCallExpr {
+    pub name: *mut c_char,
+    pub arg_count: usize,
+    pub args: *mut *mut AstNode,
 }

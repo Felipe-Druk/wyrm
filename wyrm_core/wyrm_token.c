@@ -65,20 +65,46 @@ const char *token_type_to_string(TokenType type) {
         return "T_LESS_EQUAL";
     case T_GREATER_EQUAL:
         return "T_GREATER_EQUAL";
+    // varios
     case T_ASSIGN:
         return "T_ASSIGN";
+    case T_RASSIGN:
+        return "T_RASSIGN";
+    // literales
     case T_NUMBER:
         return "T_NUMBER";
     case T_STRING:
         return "T_STRING";
     case T_FLOAT_NUMBER:
         return "T_FLOAT_NUMBER";
+    // imporatne
     case T_IDENTIFIER:
         return "T_IDENTIFIER";
+    case T_COOMA:
+        return "T_COOMA";
+    // if else
+    case T_IF:
+        return "T_IF";
+    case T_ELSE:
+        return "T_ELSE";
+    // loops
+    case T_WHILE:
+        return "T_WHILE";
+    case T_FOR:
+        return "T_FOR";
+    // limiadores
     case T_EOF:
         return "T_EOF";
     case T_SEMICOLON:
         return "T_SEMICOLON";
+    case T_LPAREN:
+        return "T_LBRACE";
+    case T_RPAREN:
+        return "T_RPAREN";
+    case T_LBRACE:
+        return "T_LBRACE";
+    case T_RBRACE:
+        return "T_RBRACE";
     default:
         return "UNKNOWN_TOKEN_TYPE";
     }
