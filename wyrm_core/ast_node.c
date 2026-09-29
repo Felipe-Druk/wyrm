@@ -130,3 +130,22 @@ ast_node_t *create_while_node(ast_node_t *condition, ast_node_t *body) {
     new_node->ast_node_value.while_expr.body = body;
     return new_node;
 }
+
+ast_node_t *create_function_decl_node(char *name, wyrm_function_t function) {
+    ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
+    check_node(new_node, "FunctionDecl");
+    new_node->type = AST_FUNCTION_DECL;
+    new_node->ast_node_value.function_decl.name = strdup(name);
+    new_node->ast_node_value.function_decl.function = function;
+    return new_node;
+}
+
+ast_node_t *create_call_node(char *name, size_t arg_count, ast_node_t **args) {
+    ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
+    check_node(new_node, "FunctionCall");
+    new_node->type = AST_CALL;
+    new_node->ast_node_value.call_expr.name = strdup(name);
+    new_node->ast_node_value.call_expr.arg_count = arg_count;
+    new_node->ast_node_value.call_expr.args = args;
+    return new_node;
+}

@@ -2,7 +2,7 @@
 
 use crate::ast_node::AstNode;
 use std::fmt;
-use std::os::raw::c_int;
+use std::os::raw::{c_char, c_int};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -26,6 +26,7 @@ pub enum WyrmValueType {
     ValFloat32,
     ValFloat64,
     ValBool,
+    ValFunction,
 }
 
 #[repr(C)]
@@ -42,6 +43,7 @@ pub union WyrmValueData {
     pub float32_val: f32,
     pub float64_val: f64,
     pub bool_val: bool,
+    pub function_val: WyrmFunction,
 }
 
 #[repr(C)]
@@ -49,6 +51,22 @@ pub union WyrmValueData {
 pub struct WyrmValue {
     pub value_type: WyrmValueType,
     pub value: WyrmValueData,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct WyrmFunctionArg {
+    pub arg_type: WyrmValueType,
+    pub name: *mut c_char,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct WyrmFunction {
+    pub returned: WyrmValueType,
+    pub arg_count: usize,
+    pub args: *mut WyrmFunctionArg,
+    pub body: *mut AstNode,
 }
 
 // para mayor comodidad dentro de consola leemos el valor sin el tipo

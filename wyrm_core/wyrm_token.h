@@ -1,6 +1,11 @@
 
 #pragma once
 
+/*
+Token principal, representan simobolos y palbreas que Wyrm conoce, lo ideal es intentar no agregar dmeadiso tipos
+nativos. Queda como todo crear la amenra de isntanciar "structs" de wyrm, y libreiras extra.
+*/
+
 // El tipo del token nos indicara como consumir su "lexme"
 typedef enum {
     // Enteros
@@ -58,6 +63,7 @@ typedef enum {
 
     // Importante
     T_IDENTIFIER, // Identificador etiqutas
+    T_COOMA,
 
     // If/else
     T_IF,

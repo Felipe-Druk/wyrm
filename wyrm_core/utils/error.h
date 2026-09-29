@@ -1,5 +1,11 @@
 #pragma once
 
+/*
+Se agrego muy tarde el manejo de errores, queda pendiente extender todos los tipos de error e impemetnar una manera de
+disparar errores para "arriba". Por ahora solo termina al ejecucion y lanza un codigo de error, es lo mejor ya que
+cancela cualquier cosa si hay algo inesperado
+*/
+
 // Errores graves que pueden ser disparados, codigos que no se comparten con estandar POSIX (de 3 a 126)
 typedef enum {
     ERR_DIV_BY_ZERO = 3,

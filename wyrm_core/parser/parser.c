@@ -13,6 +13,8 @@ ast_node_t *expression(parser_t *parser);
 ast_node_t *expression_statement(parser_t *parser);
 ast_node_t *block_statement(parser_t *parser);
 ast_node_t *if_statement(parser_t *parser);
+ast_node_t *function_declaration(parser_t *parser, TokenType actual_type, char *name);
+ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type, char *name);
 
 parser_t *create_parser(token_vector_t *tokens) {
     parser_t *new_parser = malloc(sizeof(parser_t));
@@ -69,6 +71,27 @@ ast_node_t *primary(parser_t *parser) {
 
     if (match(parser, T_IDENTIFIER)) {
         wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
+        char *name = strdup(previous->lexeme);
+        if (match(parser, T_LPAREN)) {
+            size_t capacity = 4;
+            size_t arg_count = 0;
+            ast_node_t **args = malloc(sizeof(ast_node_t *) * capacity);
+            if (peek(parser)->type != T_RPAREN) {
+                do {
+                    if (arg_count >= capacity) {
+                        capacity *= 2;
+                        args = realloc(args, sizeof(ast_node_t *) * capacity);
+                    }
+                    args[arg_count++] = expression(parser);
+                } while (match(parser, T_COOMA));
+            }
+
+            if (!match(parser, T_RPAREN)) {
+                panic(ERR_SYNTAX, "Syntax error: Expected ')' after arguments");
+            }
+
+            return create_call_node(name, arg_count, args);
+        }
         return create_identifier_node(previous->lexeme);
     }
 
@@ -216,6 +239,60 @@ ast_node_t *if_statement(parser_t *parser) {
     return create_if_node(condition, then_branch, else_branch);
 }
 
+ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type, char *name) {
+    if (!match(parser, T_ASSIGN) && !match(parser, T_RASSIGN)) {
+        panic(ERR_SYNTAX, "Syntax error: missing '=' or '<-' symbol");
+    }
+    TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
+    ast_node_t *expr = expression_statement(parser);
+    return create_var_decl_node(actual_type, name, expr, assign_op);
+}
+
+ast_node_t *function_declaration(parser_t *parser, TokenType actual_type, char *name) {
+    size_t capacity = 4;
+    wyrm_function_t func_def;
+    func_def.returned = token_to_val_type(actual_type);
+    func_def.arg_count = 0;
+    func_def.args = malloc(sizeof(wyrm_function_arg_t) * capacity);
+
+    if (peek(parser)->type != T_RPAREN) {
+        do {
+            TokenType arg_type = peek(parser)->type;
+            if (arg_type >= MIN_TYPE && arg_type <= MAX_TYPE) {
+                advance(parser);
+            } else {
+                panic(ERR_SYNTAX, "Syntax error: Expected type for argument");
+            }
+
+            if (!match(parser, T_IDENTIFIER)) {
+                panic(ERR_SYNTAX, "Syntax error: Expected name for argument");
+            }
+
+            if (func_def.arg_count >= capacity) {
+                capacity *= 2;
+                func_def.args = realloc(func_def.args, sizeof(wyrm_function_arg_t) * capacity);
+            }
+
+            func_def.args[func_def.arg_count].type = token_to_val_type(actual_type);
+            func_def.args[func_def.arg_count].name =
+                strdup(get_token(parser->tokens, parser->current_index - 1)->lexeme);
+            func_def.arg_count++;
+
+        } while (match(parser, T_COOMA));
+    }
+
+    if (!match(parser, T_RPAREN)) {
+        panic(ERR_SYNTAX, "Syntax error: Expected ')' after parameters");
+    }
+
+    if (!match(parser, T_LBRACE)) {
+        panic(ERR_SYNTAX, "Syntax error: Expected '{' to start function body");
+    }
+    func_def.body = block_statement(parser);
+
+    return create_function_decl_node(name, func_def);
+}
+
 ast_node_t *block_statement(parser_t *parser) {
     ast_node_t *block = create_block_node(INITIAL_CAPACITY);
 
@@ -227,9 +304,12 @@ ast_node_t *block_statement(parser_t *parser) {
         }
         block->ast_node_value.block_expr.nodes[block->ast_node_value.block_expr.size++] = stmt;
 
-        if ((stmt->type != AST_BLOCK && stmt->type != AST_IF_EXPR && stmt->type != AST_WHILE_EXPR) &&
-            !match(parser, T_SEMICOLON) && peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
-            panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
+        if (stmt->type != AST_BLOCK && stmt->type != AST_IF_EXPR && stmt->type != AST_WHILE_EXPR &&
+            stmt->type != AST_FUNCTION_DECL) {
+
+            if (!match(parser, T_SEMICOLON) && peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
+                panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
+            }
         }
     }
 
@@ -258,18 +338,16 @@ ast_node_t *expression_statement(parser_t *parser) {
     if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
         advance(parser);
         if (!match(parser, T_IDENTIFIER)) {
-            panic(ERR_SYNTAX, "Syntax error: you variable need a name");
+            panic(ERR_SYNTAX, "Syntax error: variable or function needs a name");
         }
-        char *var_name = strdup(get_token(parser->tokens, parser->current_index - 1)->lexeme);
+        char *name = strdup(get_token(parser->tokens, parser->current_index - 1)->lexeme);
 
-        if (!match(parser, T_ASSIGN) && !match(parser, T_RASSIGN)) {
-            panic(ERR_SYNTAX, "Syntax error: missing '='' or '<-' symbol");
+        if (match(parser, T_LPAREN)) {
+            return function_declaration(parser, actual_type, name);
+        } else {
+            return variable_declaration(parser, actual_type, name);
         }
-        TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
-        ast_node_t *expr = expression_statement(parser);
-        return create_var_decl_node(actual_type, var_name, expr, assign_op);
     }
-
     ast_node_t *expr = expression(parser);
 
     if (expr == NULL) {
@@ -297,10 +375,13 @@ ast_node_t *parser_parse(parser_t *parser) {
             resize_block(&root->ast_node_value.block_expr);
         }
         root->ast_node_value.block_expr.nodes[root->ast_node_value.block_expr.size++] = actual_node;
-        if ((actual_node->type != AST_BLOCK && actual_node->type != AST_IF_EXPR &&
-             actual_node->type != AST_WHILE_EXPR) &&
-            !match(parser, T_SEMICOLON) && peek(parser)->type != T_EOF) {
-            panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
+
+        if (actual_node->type != AST_BLOCK && actual_node->type != AST_IF_EXPR && actual_node->type != AST_WHILE_EXPR &&
+            actual_node->type != AST_FUNCTION_DECL) {
+
+            if (!match(parser, T_SEMICOLON) && peek(parser)->type != T_EOF) {
+                panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
+            }
         }
     }
 

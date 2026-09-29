@@ -48,6 +48,7 @@ pub enum TokenType {
     TFloatNumber,
     // importante
     TIdentifier,
+    TComma,
     // If/else
     TIf,
     TElse,
