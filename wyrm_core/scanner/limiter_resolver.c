@@ -26,6 +26,10 @@ int resolver_limiter(char *input, int index, token_vector_t *tokens) {
         limiter_token.type = T_RBRACE;
         limiter_token.lexeme = strdup("}");
         break;
+    case ',':
+        limiter_token.type = T_COOMA;
+        limiter_token.lexeme = strdup(","); // TODO error
+        break;
     default:
         return index; // no hay limitador
     }

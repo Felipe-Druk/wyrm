@@ -74,12 +74,23 @@ impl fmt::Display for WyrmValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         unsafe {
             match self.value_type {
+                // Enteros
+                WyrmValueType::ValInt8 => write!(f, "{}", self.value.int8_val),
+                WyrmValueType::ValInt16 => write!(f, "{}", self.value.int16_val),
+                WyrmValueType::ValInt32 => write!(f, "{}", self.value.int32_val),
                 WyrmValueType::ValInt64 => write!(f, "{}", self.value.int64_val),
+                // Naturales
+                WyrmValueType::ValNat8 => write!(f, "{}", self.value.nat8_val),
+                WyrmValueType::ValNat16 => write!(f, "{}", self.value.nat16_val),
+                WyrmValueType::ValNat32 => write!(f, "{}", self.value.nat32_val),
                 WyrmValueType::ValNat64 => write!(f, "{}", self.value.nat64_val),
+                // Flotantes
+                WyrmValueType::ValFloat32 => write!(f, "{}", self.value.float32_val),
                 WyrmValueType::ValFloat64 => write!(f, "{}", self.value.float64_val),
+                // booleanos
                 WyrmValueType::ValBool => write!(f, "{}", self.value.bool_val),
 
-                WyrmValueType::ValVoid => write!(f, "void"),
+                WyrmValueType::ValVoid => write!(f, "∅"),
                 _ => write!(f, "<tipo desconocido>"),
             }
         }

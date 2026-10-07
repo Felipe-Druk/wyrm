@@ -63,7 +63,6 @@ typedef enum {
 
     // Importante
     T_IDENTIFIER, // Identificador etiqutas
-    T_COOMA,
 
     // If/else
     T_IF,
@@ -78,6 +77,7 @@ typedef enum {
     T_RPAREN,    // )
     T_LBRACE,    // { encapsula "scopes" o bloques de ejecucion
     T_RBRACE,    // }
+    T_COOMA,
 
 } TokenType;
 

@@ -48,7 +48,6 @@ pub enum TokenType {
     TFloatNumber,
     // importante
     TIdentifier,
-    TComma,
     // If/else
     TIf,
     TElse,
@@ -62,6 +61,7 @@ pub enum TokenType {
     TRparen,
     TLbrace,
     TRbrace,
+    TComma,
 }
 
 #[repr(C)]

@@ -4,6 +4,12 @@
 #include "wyrm_value.h"
 #include <stddef.h>
 
+/*
+Esturtura para representar bloques de ejecucion, dentro de estos se pueden declarar variables, ejecutar codigo e
+instanciar nuevos bloques. Con esta estrutura y definiendo un nodo padre, se pueden resolver "aboles" de ejcucion de
+manera correcta
+*/
+
 // las variable del scope
 typedef struct {
     char *name;         // El nombre de la variable
