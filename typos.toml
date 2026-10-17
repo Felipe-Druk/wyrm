@@ -86,6 +86,11 @@ automatico = "automático"
 definitivo = "definitivo"
 requiere = "requiere"
 conveniente = "conveniente"
+separacion = "separación"
+controlable = "controlable"
+patron = "patrón"
+tradicional = "tradicional"
+patrones = "patrones"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"

@@ -493,3 +493,524 @@ Esta sintaxis es útil, pero no está exenta de problemas. Por ejemplo, a nivel 
 El mayor desafío técnico es que implementar esto requiere cambiar internamente los tests y, casi con total seguridad, aplicar una refactorización profunda en el parser.
 
 ## Tests 2
+
+```rs
+#[test]
+    fn test_wyrm_instancia_variables() {
+        let input = format!("int32 entero = 54;");
+        let input2 = format!("entero;");
+        let wyrm = Wyrm::new(false);
+
+        unsafe {
+            let resultado = wyrm.call_wyrm(&input);
+            assert_eq!(
+                resultado.value_type,
+                WyrmValueType::ValVoid,
+                "El no es vacio"
+            );
+            let resultado2 = wyrm.call_wyrm(&input2);
+            assert_eq!(
+                resultado2.value_type,
+                WyrmValueType::ValInt32,
+                "El la variable no es int32"
+            );
+            assert_eq!(
+                resultado2.value.int64_val, 54,
+                "La variable no tiene el valor correcto"
+            );
+        }
+    }
+```
+
+Por suerte este test es simple, declara una variable con el nombre "entero" y guarda un valor, luego se llama a la variable.
+La idea es simular dos llamados para asegurar que el valor sobrevive internamente, esto se logra con un "scope" global implementado un siglenton, patrón de diseño que guarda recursos que solo deben reservar una vez. 
+
+Lo único de valor que sacar es que ese scope no se destruye al salir, es una parte fundamental del para prevenir los leeks de memoria.
+
+## Tests 3
+
+```rs
+#[test]
+fn test_wyrm_trabaja_booleanos() {
+    let input = format!("bool falso = false; falso ~= true");
+    let wyrm = Wyrm::new(false);
+
+    unsafe {
+        let resultado = wyrm.call_wyrm(&input);
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValBool,
+            "El tipo resultantado  no es booleano"
+        );
+        assert_eq!(resultado.value.bool_val, true, "El cálculo no es true");
+    }
+}
+```
+
+Un test rápido que evalúa una operación booleana básica que corresponde a "not equal", con esto validamos que **Wyrm** es capaz de guardar valores booleanos y luego operar de manera correcta con las constantes `true` y `false`.
+
+Estaría bueno agregar un test para todos los operadores con resultado bool 
+
+## Tests 4
+
+```rs
+#[test]
+    fn test_wyrm_trabaja_bloques() {
+        let input = "int32 x = (5 + 3) * 2;
+                    { 
+                        bool y = true; 
+                    } 
+                    int32 z = 10;";
+        let wyrm = Wyrm::new(false);
+
+        let resultado = wyrm.call_wyrm(&input);
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValVoid,
+            "El tipo resultantado vacio"
+        );
+    }
+```
+
+Test simple, en realidad no evaluamos nada con el interior del bloque, solo verificamos que nada "rompa" con el input. Muchos tests se hicieron siguiendo **TDD**, lo que nos obliga a hacer tests pequeños y no realizar ningún commit hasta tenerlo en verde.
+Test que no comprueba mucho, pero resulta útil para el flujo de desarrollo.
+
+## Tests 5
+
+```rs
+#[test]
+fn test_wyrm_respeta_parentecis() {
+    let input = format!("(2+2) / 2");
+    let wyrm = Wyrm::new(false);
+
+    unsafe {
+        let resultado = wyrm.call_wyrm(&input);
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValInt64,
+            "El tipo resultante de la suma no es int64"
+        );
+        assert_eq!(resultado.value.int64_val, 2, "El resultado no es 2");
+    }
+}
+```
+
+Se valida si el paréntesis funciona, si separa los términos y el resultado es 2 y no 3 (que sería 2 + 2/2). La separación de terminos es vital porque nos deja controlar como y en que onda se resuelven los terminos en una operacion.
+
+Un posible test extra seria hacer lo mismo pero con operaciones booleanas.
+
+## Tests 6
+
+```rs
+#[test]
+fn test_wyrm_aisla_variables_en_scope_local() {
+    let input = "
+        int32 x = 5;
+        {
+            int32 x = 100;
+        }
+        x;
+    ";
+    let wyrm = Wyrm::new(false);
+
+    let resultado = wyrm.call_wyrm(input);
+
+    unsafe {
+        assert_eq!(
+            resultado.value_type,   
+            WyrmValueType::ValInt32,
+            "El tipo resultante debe ser int32"
+        );
+        assert_eq!(
+            resultado.value.int32_val, 5,
+            "La variable global fue sobreescrita"
+        );
+    }
+}
+```
+
+Ya probamos que podemos trabajar con distintos bloques/scopes, este test prueba si se respeta el orden de declaración. Primero `x` se declara en el scope "padre" y luego en un scope "hijo" declaramos otro `x` con un valor de 100, ahora y dentro de todo el scope hijo `x` apunta a 100.
+
+```mermaid
+graph TD
+    %% estilos
+    classDef padre fill:blue,stroke:lightblue,stroke-width:2px,color:#fff;
+    classDef hijo fill:darkgreen,stroke:lightgreen,stroke-width:2px,color:#fff;
+
+    %% Nodos
+    subgraph Scope_Padre [Entorno Padree]
+        G_X["int64 x = 5"]:::padre
+        G_X_Final["x = 5 (Valor Final)"]:::padre
+    end
+
+    %% Solución: Envolver en comillas dobles para escapar las llaves
+    subgraph Scope_Hijo ["Entorno Hijo { }"]
+        Sombra["int64 x = 12; x hijo"]:::hijo
+    end
+
+    %% Relaciones y flujo
+    Scope_Padre -->|1. Abre bloque| Scope_Hijo
+    G_X -.-> G_X_Final
+    Sombra -->|3. Se aísla localmente| Sombra
+    
+
+    Scope_Hijo -->|4. Destruye entorno al cerrar llave| Retorno_Padre((Regresa al Padre))
+    Retorno_Padre --> G_X_Final
+```
+
+> Primera vez usando mermaid
+
+Sin embargo, esto no prueba que pasa si llamaos a X padre antes de instanciar x hijo, deberíamos agregar un test del estilo;
+
+```C
+int64 x = 11 // padre
+{
+    x = 66 // quiero interactuar con el x padre
+    int64 x = 33 // ahora declaro el x hijo
+}
+// al salir x hijo "muere" pero x padre deberia ser 66
+```
+
+# Tests 7
+
+```rs
+#[test]
+fn test_wyrm_control_de_flujo_if_else() {
+    let input = "
+        int32 valor = 15;
+        int32 resultado = 0;
+
+        if (valor < 10) {
+            resultado = 10;
+        } else if (valor == 15) {
+            resultado = 20;
+        } else {
+            resultado = 30;
+        }
+        
+        resultado;
+    ";
+
+    let wyrm = Wyrm::new(false);
+    let output = wyrm.call_wyrm(input);
+
+    unsafe {
+        assert_eq!(
+            output.value_type,
+            WyrmValueType::ValInt32,
+            "El tipo resultante debe ser int32"
+        );
+        assert_eq!(
+            output.value.int32_val, 20,
+            "El control de flujo no entró en el 'else if' correcto"
+        );
+    }
+}
+``` 
+
+Test principal del flujo **TDD** para bloques `if, else if, else` y como paso extra se validan operadores de compracion.
+
+## if/else
+
+Es difícil pensar un lenguaje de programación sin sentencias `if/else`, pero había alternativas a considerar. Dentro del paradigma funcial para resolver este tipo de flujos donde la instrucción siguiente depende del valor o formato de "algo", se utilizan las estructuras `match`, `match case` o `switch/match`.   
+Como siempre revisemos como resuelven los lenguajes de referencia 
+
+### C
+C es un lenguaje de la "vieja escuela" para resolver bloques cuenta con sentencias `if/else` y `switch/case`, los dos sirven para lo mismo, en base auna condición el código toma uno u otro camino, solo que hay algunas diferencias.
+
+Para `if/else` sirve cuando la condicion a evaluar no es de "igualdad" sino que se define por rangos:
+
+```C
+int edad = 32;
+
+if (edad > 60 ){
+    //..  codigo si se cumple que la esad es mayor a 60
+} else if (edad >= 18 ){
+    // .. aca solo se entra si no es mayor a 60 y es mayor igual a 18
+} else {
+    // si no se cumple ningun caso 
+}
+// tambien podriamos no poner el ultimo else para ejecutar un coddigo final
+```
+
+El flujo es muy controlable y aunque sea mal visto si anidamos if podemos llegar a definir múltiples comportamientos, aparte de ser nuestra mejor defensa ante "bad arguments"
+
+```C
+float dividir(int x, int y){
+    if (y == 0){
+        exit(1);  // nos protejemos ante un mal argumento
+    }
+    return (float)x/y;
+}
+```
+
+En cambio cuando tenemos que elegir un "camino" según un parámetro, podemos usar `switch/case`
+
+```C
+switch (dia) {
+        case 1: // se evalua dia == 1
+            printf("Lunes\n");
+            break;
+        case 2:
+            printf("Martes\n"); // Este se imprimirá
+            break;
+        case 3:
+            printf("Miércoles\n");
+            break;
+        //...
+        default:
+            // el caso si nada se cumple
+            printf("Día no fuera de rango\n");
+    }
+
+// es muy comun combinar con un enumm
+
+enum DiasDeLaSemana {
+    LUNES,    // se guarda 0 por defecto
+    MARTES,   // 1
+    MIERCOLES,// 2
+    JUEVES,   // 3
+    VIERNES   // 4
+};
+
+//asi podemos evaluar directo 
+
+switch (dia) {
+        case LUNES: // se evalua dia == 1
+            printf("Lunes\n");
+            break; // break es super importante sino no termina de evaluar cada sentencia
+        case MARTES:
+            printf("Martes\n");
+            break;
+        case MIERCOLES:
+            printf("Miércoles\n");
+            break;
+        //...
+        default:
+            // el caso si nada se cumple
+}    
+```
+
+Combinar `enum` con `switch` nos ayudar mucho cuando tenemos "tipos" o "categorías" que definan flujos, lamentablemente C es un lenguaje que no implementa estructuras más modernas, y obliga a escribir estructuras grandes, tener un `switch` suele ser más cómodo que un bloque `if/else` gigante.
+En cuanto a Wyrm, no deberíamos tener un `switch/case` parecido a C, dentro de este mismo hacer;
+
+```C
+switch (dia) {
+        case LUNES:
+            printf("Lunes\n");
+            break;  
+        case MARTES:
+            printf("Martes\n"); 
+            break;
+        case MIERCOLES: // si no ponemos break sigue ejecutando y permite agrupar casos
+        case JUEVES:
+            // como no hay break ese caso se cumple si hay jueves o miercoles 
+            printf("Miercoles o JUeves\n");
+            break;
+}
+// Es identico a 
+if(dia == LUNES){
+    printf("Lunes\n");
+} else if(dia == MARTES){
+    printf("Martes\n"); 
+}
+```
+Y no queremos sumar redundancia, sino dar herramientas distintas para el desarrollador.
+
+### Rust
+
+Rust saca el verdadero poder del **Pattern Matching**, la idea no es fijarse si la expresión es igual a un valor, sino fijarse que estructura cumple, mejor explicar con ejemplo:
+
+```rs
+let numeros = [10, 20, 30];
+
+// según el "patrón" que coincida con la estructura, retornamos un mensaje
+let mensaje = match numeros { 
+    [] => "La lista está vacía",
+    [x] => "Tiene un solo elemento",
+    [10, segundo, _] => "Empieza con 10, y capturamos el segundo elemento",
+    [primero, .., 30] => "Capturamos el primero y termina con 30",
+    [primero, .., ultimo] => "Capturamos el primero y el último, ignorando el medio",
+    _ => "Desconocido",  // El guion bajo (_) actúa como caso por defecto, cubre cualquier caso que no tengamos en cuenta 
+};
+```
+Como vemos podemos fijarnos en como esta organizado el `array` podemos definir comportamientos distintos, cubriendo todos los casos que se nos imaginen 
+
+La captura del patrón nos permite hacer cosas como 
+```rs
+[mut x] => {
+    x = 1; // cambiamos el valor a 1
+    "Tiene un solo elemento" // devolvemos el mensaje    
+}
+```
+Una forma superpoderosa de lograr que el código reaccione a los patrones, podemos usarlo tanto con `enum`s o con estructuras cumple.
+Y lo mejor es que Rust no se queda solo en un `match` fuertes, sino que mantiene los bloques `if/else` clásico.
+
+```rs
+let numeros = [10, 20, 30];
+
+// simulamos el "mismo" flujo
+let mensaje = if numeros.len() == 0 {
+        "La lista está vacía"
+    } else if numeros.len() == 1 {
+        "Tiene un solo elemento"
+    } else if numeros[0] == 10 &&  {
+        let segundo = numeros[1];
+        "Empieza con 10, y capturamos el segundo elemento"
+    } else if numeros[numeros.len() -1] == 30 {
+        let primero = numeros[0];
+        "Capturamos el primero y termina con 30",
+    } else{
+        let primero = numeros[0];
+        let ultimo = numeros[numeros.len() -1];
+        "Capturamos el primero y el último, ignorando el medio"
+    }
+// notece que es una forma muy distitna de logar el comportamiento 
+```
+
+Es distinto evaluar una igualdad con operadores lógicos (como lo hacemos en un `if`) a fijarnos que "patrón" cumple cierta expresión, entoces Rust nos muestra como hacer convivir `if/else` con `match` sin caer en redundancia.
+
+Para **Wyrm** buscamos algo muy parecido a Rust, tener un comportamiento **Pattern Matching** robusto y repetando una filosofía más funcional, pero antes revisemos otras implementaciones.
+
+### Go
+
+Go no implementa **Pattern Matching**, sino que tiene una aproximacion más clasica y bastante simikar a C.
+
+```Go
+
+// switch muy similar a C evalua la igualdad 
+switch dia {
+    case 1:
+        fmt.Println("Lunes")
+    case 2, 3: // admite agrupaciones 
+        fmt.Println("Martes o Miércoles")
+    default:
+        fmt.Println("Otro día")
+}
+
+numeros := []int{10, 20, 30}
+
+// switch acepta sentenicas boolenas y la primera que sea true se ejecuta
+switch {
+    case len(numeros) == 0:
+        fmt.Println("La lista está vacía")
+    case len(numeros) == 1:
+        fmt.Println("Tiene un solo elemento")
+    case  numeros[0] == 10:
+        fmt.Println("Empieza con 10")
+    default:
+        fmt.Println("Desconocido")
+}
+```
+La gran innovación de Go es no necesitar una palabra `break` para romper la evaluación de los casos y permite agrupar con comas los casos que queremos evaluar. Sin embargo, `switch/case` en Go es demasiado parecido en comportamiento a un bloque `if/else`
+
+```Go
+numeros := []int{10, 20, 30}
+
+if len(numeros) == 0 {
+    fmt.Println("La lista está vacía")
+} else if len(numeros) == 1 {
+    fmt.Println("Tiene un solo elemento")
+} else if numeros[0] == 10{
+    fmt.Println("Empieza con 10")
+} else {
+    fmt.Println("Desconocido")
+}
+```
+
+Esta vez Go decepciono un poco, mantiene un `switch/case` versátil y cómodo de escribir, pero con un nivel de redundancia es bastante alto y no compatible con la filosofía de **Wyrm**.
+
+### Python
+
+Python inicialmente solo contaba con bloques `if/else` bastante útiles y fieles al estilo python, simples de escribir:
+
+```py
+numeros := [10, 20, 30]
+
+if len(numeros) == 0:
+    print("La lista está vacía")
+else if len(numeros) == 1:
+    print("Tiene un solo elemento")
+else if numeros[0] == 10:
+    print(f"Empieza con 10 y sigue con {numeros[1]}")
+else:
+    print("Desconocido")
+```
+
+Pero a partir de la versión 3.10 (fuente [aquí](https://www.geeksforgeeks.org/python/switch-case-in-python-replacement/)) se introdujo soporte para **Pattern Matching** con `switch/case`, bastante similar a Rust la estructura es básicamente la misma:
+
+```py
+numeros := [10, 20, 30]
+match numeros:
+    case []: 
+        print("La lista está vacía")
+    case [x]:
+        print("Tiene un solo elemento")
+    case [10, segundo, _]:
+        # la variable segundo vive ahora podemos usarla
+        print(f"Empieza con 10 y sigue con {segundo}")
+    case _:
+        print("Desconocido") 
+```
+
+Que Python agregara **Pattern Matching** nos indica que su utilidad, este lenguaje suele responder a las exigencias "modernas" incluyendo herramientas populares y útiles. De mínima debemos tener en cuenta para incorporarlo en **Wyrm**, siempre y cuando sea una versión de **Pattern Matching** robusto que no sea un bloque `if/else` con distinta sintaxis.
+
+### **Pattern Matching** en **Wyrm**
+
+Luego de revisar las distintas implementaciones de los lenguajes referentes, podemos sacar en limpio que un bloque `switch/case` tradicional suele estar asociado a un flujo según alguna condición simple de la expresión evaluada, resultando muy parecido (y a veces idéntico) a un bloque `if/else`. Mientras tanto, un bloque `match` responde al **Pattern Matching**, un concepto ligado al paradigma funcional donde definimos un flujo según cómo está estructurada u ordenada una expresión.
+
+Al ser obligatorio definir el caso por defecto (`_`), siempre vamos a estar a salvo sabiendo que se cumplirá al menos un "patrón". Esta garantía nos permite utilizarlo como una expresión de retorno directo para asignaciones (del estilo `TIPO nombre = match(...)`). En cambio, con `if/else` no estás obligado a determinar un caso "base" (`else`), por lo que resulta inseguro usarlo para asignaciones directas, además de que suele utilizarse para evaluar estados externos y/o globales.
+
+Un bloque `match` tiene suficientes argumentos a favor como para existir en **Wyrm**, puesto que su capacidad de utilizarse en asignaciones directas y desestructuración presenta una utilidad completamente distinta al flujo `if/else` común. Sumado a esto, sabemos que es una herramienta estándar y requerida en los lenguajes modernos; por ello, la incluiremos en **Wyrm** conviviendo junto al `if/else` que ya tenemos.
+
+La sintaxis para utilizarla será la siguiente:
+
+```c
+// Ejemplo conceptual de asignación directa:
+bool es_primo = match(numero) {
+    0 -> { false };
+    1 -> { false };
+    2 -> { true };
+    // ... y podemos seguir 
+    _ -> { error };
+};
+
+// También podríamos definir funciones recursivas
+(nat64) -> nat64 fibo = (x) -> {
+    match(x) {
+        1 -> { 1 };
+        2 -> { 1 + fibo(x - 1) };
+        n -> { n + fibo(n - 1) };
+        _ -> { 0 }; // Caso base / error obligatorio
+    }
+};
+
+// O simplemente dirigir el flujo (suponiendo que tenemos strings):
+string mensaje = "";
+
+match(dia) {
+    1    -> { mensaje = "Lunes"; };
+    2    -> { mensaje = "Martes"; };
+    3    -> { mensaje = "Miércoles"; };
+    4, 5 -> { mensaje = "Jueves o Viernes"; };
+    // ... y podemos seguir
+    _    -> { mensaje = "Desconocido"; };
+};
+
+```
+
+**Estructura general:**
+
+```c
+match(EXPRESSION) {
+    CASO_1 -> { /* código */ };
+    CASO_2 -> { /* código */ };
+    // ...
+    CASO_N -> { /* código */ };
+    _      -> { /* código obligatorio por defecto */ };
+}
+```
+## Final
+Y con esto termina el análisis de los tests 7, queda claro que no debemos cambiarlo, pero sí nos queda la deuda de agregar **Patter Matching** co sus tests correspondientes.
+
+# Tests 8
