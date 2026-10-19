@@ -133,6 +133,7 @@ mod tests {
                 "El tipo no es int64"
             );
             assert_eq!(resultado.value.int64_val, 10, "El valor no fue conservado");
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -213,6 +214,7 @@ mod tests {
                 resultado.value.int64_val, 30,
                 "El cálculo matemático de 10 + 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -264,6 +266,7 @@ mod tests {
                 resultado.value.int64_val, -10,
                 "El cálculo matemático de 10 - 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -315,6 +318,7 @@ mod tests {
                 resultado.value.int64_val, 200,
                 "El cálculo matemático de 10 * 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -366,6 +370,7 @@ mod tests {
                 resultado.value.int64_val, 0,
                 "El cálculo matemático de 10 / 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -417,6 +422,7 @@ mod tests {
                 resultado.value.int64_val, 10,
                 "El cálculo matemático de 10 % 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -468,6 +474,7 @@ mod tests {
                 resultado.value.int64_val, 8,
                 "El cálculo matemático de 2 ^ 3 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -507,6 +514,7 @@ mod tests {
                 resultado.value.int64_val, -20,
                 "El cálculo matemático de -20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 }
