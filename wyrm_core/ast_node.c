@@ -88,8 +88,8 @@ ast_node_t *create_unary_node(TokenType operator, ast_node_t *right) {
     check_node(new_node, "Unary");
 
     new_node->type = AST_UNARY_EXPR;
-    new_node->ast_node_value.binary_expr.operator = operator;
-    new_node->ast_node_value.binary_expr.right = right;
+    new_node->ast_node_value.unary_expr.operator = operator;
+    new_node->ast_node_value.unary_expr.right = right;
     return new_node;
 }
 

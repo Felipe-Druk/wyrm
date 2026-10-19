@@ -15,3 +15,6 @@ parser_t *create_parser(token_vector_t *tokens);
 
 // Debe devuelve el nodo raiz listo para ejecutar (Puede disparar errores)
 ast_node_t *parser_parse(parser_t *parser);
+
+// Libera la memoria del parser
+void destroy_parser(parser_t *parser);

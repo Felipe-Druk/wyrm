@@ -391,3 +391,12 @@ ast_node_t *parser_parse(parser_t *parser) {
     }
     return root;
 }
+
+void destroy_parser(parser_t *parser) {
+    if (parser) {
+        parser->tokens = NULL;
+        parser->current_index = 0;
+        parser->flags = 0;
+        free(parser);
+    }
+}

@@ -40,5 +40,8 @@ wyrm_value_t run_wyrm(const char *input, int flags) {
 
     destroy_interpreter(interpreter);
     destroy_ast_node(root_ast);
+    destroy_parser(parser);
+    destroy_token_vector(tokens);
+    free(input_copy);
     return result;
 }
