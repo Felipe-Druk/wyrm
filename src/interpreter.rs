@@ -109,6 +109,7 @@ mod tests {
             root: *mut AstNode,
             scope: *mut std::ffi::c_void,
         ) -> *mut Interpreter;
+        pub fn destroy_interpreter(interpreter: *mut Interpreter);
     }
 
     #[test]
@@ -160,6 +161,7 @@ mod tests {
                 resultado.value.float64_val, 10.0,
                 "El valor no fue conservado"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 

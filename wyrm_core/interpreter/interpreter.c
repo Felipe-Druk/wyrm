@@ -163,3 +163,12 @@ wyrm_value_t interpreter_interpret(interpreter_t *interpreter) {
     }
     return eval_node(interpreter->root, interpreter->scope);
 }
+
+void destroy_interpreter(interpreter_t *interpreter) {
+    if (interpreter == NULL) {
+        return;
+    }
+    interpreter->root = NULL;
+    interpreter->scope = NULL;
+    free(interpreter);
+}

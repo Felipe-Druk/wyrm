@@ -173,3 +173,5 @@ ast_node_t *create_call_node(char *name, size_t arg_count, ast_node_t **args);
 int block_is_full(const ast_block_t *block_node);
 
 void resize_block(ast_block_t *block_node);
+
+void destroy_ast_node(ast_node_t *node);

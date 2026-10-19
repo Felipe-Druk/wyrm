@@ -20,6 +20,14 @@ ast_node_t *create_number_node(char *value, TokenType numeric_type) {
     return new_node;
 }
 
+void destroy_number_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    free(node->ast_node_value.number_expr.value);
+    free(node);
+}
+
 ast_node_t *create_bool_node(bool value) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Bool");
@@ -30,6 +38,13 @@ ast_node_t *create_bool_node(bool value) {
     return new_node;
 }
 
+void destroy_bool_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    free(node);
+}
+
 ast_node_t *create_identifier_node(char *value) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Identifier");
@@ -37,6 +52,14 @@ ast_node_t *create_identifier_node(char *value) {
     new_node->type = AST_IDENTIFIER;
     new_node->ast_node_value.identifier_expr.name = strdup(value);
     return new_node;
+}
+
+void destroy_identifier_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    free(node->ast_node_value.identifier_expr.name);
+    free(node);
 }
 
 ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t *right) {
@@ -51,6 +74,15 @@ ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t 
     return new_node;
 }
 
+void destroy_binary_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    destroy_ast_node(node->ast_node_value.binary_expr.left);
+    destroy_ast_node(node->ast_node_value.binary_expr.right);
+    free(node);
+}
+
 ast_node_t *create_unary_node(TokenType operator, ast_node_t *right) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Unary");
@@ -59,6 +91,14 @@ ast_node_t *create_unary_node(TokenType operator, ast_node_t *right) {
     new_node->ast_node_value.binary_expr.operator = operator;
     new_node->ast_node_value.binary_expr.right = right;
     return new_node;
+}
+
+void destroy_unary_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    destroy_ast_node(node->ast_node_value.unary_expr.right);
+    free(node);
 }
 
 ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression, TokenType assign_op) {
@@ -72,6 +112,15 @@ ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_
     new_node->ast_node_value.var_decl_expr.assign_op = assign_op;
 
     return new_node;
+}
+
+void destroy_var_decl_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    free(node->ast_node_value.var_decl_expr.identifier);
+    destroy_ast_node(node->ast_node_value.var_decl_expr.expression);
+    free(node);
 }
 
 ast_node_t *create_block_node(size_t capacity) {
@@ -101,6 +150,17 @@ void resize_block(ast_block_t *block_node) {
     }
 }
 
+void destroy_block_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    for (size_t i = 0; i < node->ast_node_value.block_expr.size; i++) {
+        destroy_ast_node(node->ast_node_value.block_expr.nodes[i]);
+    }
+    free(node->ast_node_value.block_expr.nodes);
+    free(node);
+}
+
 ast_node_t *create_if_node(ast_node_t *condition, ast_node_t *then_branch, ast_node_t *else_branch) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "IfElse");
@@ -109,6 +169,16 @@ ast_node_t *create_if_node(ast_node_t *condition, ast_node_t *then_branch, ast_n
     new_node->ast_node_value.if_expr.then_branch = then_branch;
     new_node->ast_node_value.if_expr.else_branch = else_branch;
     return new_node;
+}
+
+void destroy_if_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    destroy_ast_node(node->ast_node_value.if_expr.condition);
+    destroy_ast_node(node->ast_node_value.if_expr.then_branch);
+    destroy_ast_node(node->ast_node_value.if_expr.else_branch);
+    free(node);
 }
 
 ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_node_t *value) {
@@ -122,6 +192,15 @@ ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_nod
     return new_node;
 }
 
+void destroy_assignment_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    free(node->ast_node_value.assignment_expr.name);
+    destroy_ast_node(node->ast_node_value.assignment_expr.value);
+    free(node);
+}
+
 ast_node_t *create_while_node(ast_node_t *condition, ast_node_t *body) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "While");
@@ -129,6 +208,15 @@ ast_node_t *create_while_node(ast_node_t *condition, ast_node_t *body) {
     new_node->ast_node_value.while_expr.condition = condition;
     new_node->ast_node_value.while_expr.body = body;
     return new_node;
+}
+
+void destroy_while_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    destroy_ast_node(node->ast_node_value.while_expr.condition);
+    destroy_ast_node(node->ast_node_value.while_expr.body);
+    free(node);
 }
 
 ast_node_t *create_function_decl_node(char *name, wyrm_function_t function) {
@@ -140,6 +228,16 @@ ast_node_t *create_function_decl_node(char *name, wyrm_function_t function) {
     return new_node;
 }
 
+void destroy_function_decl_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    free(node->ast_node_value.function_decl.name);
+    destroy_ast_node(node->ast_node_value.function_decl.function.body);
+    free(node->ast_node_value.function_decl.function.args);
+    free(node);
+}
+
 ast_node_t *create_call_node(char *name, size_t arg_count, ast_node_t **args) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "FunctionCall");
@@ -148,4 +246,63 @@ ast_node_t *create_call_node(char *name, size_t arg_count, ast_node_t **args) {
     new_node->ast_node_value.call_expr.arg_count = arg_count;
     new_node->ast_node_value.call_expr.args = args;
     return new_node;
+}
+
+void destroy_call_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    free(node->ast_node_value.call_expr.name);
+    for (size_t i = 0; i < node->ast_node_value.call_expr.arg_count; i++) {
+        destroy_ast_node(node->ast_node_value.call_expr.args[i]);
+    }
+    free(node->ast_node_value.call_expr.args);
+    free(node);
+}
+
+void destroy_ast_node(ast_node_t *node) {
+    if (node == NULL) {
+        return;
+    }
+    switch (node->type) {
+    case AST_NUMBER_LITERAL:
+        destroy_number_node(node);
+        break;
+    case AST_BOOL_LITERAL:
+        destroy_bool_node(node);
+        break;
+    case AST_IDENTIFIER:
+        destroy_identifier_node(node);
+        break;
+    case AST_BINARY_EXPR:
+        destroy_binary_node(node);
+        break;
+    case AST_UNARY_EXPR:
+        destroy_unary_node(node);
+        break;
+    case AST_VAR_DECLARATION:
+        destroy_var_decl_node(node);
+        break;
+    case AST_PROGRAM:
+    case AST_BLOCK:
+        destroy_block_node(node);
+        break;
+    case AST_IF_EXPR:
+        destroy_if_node(node);
+        break;
+    case AST_ASSIGNMENT:
+        destroy_assignment_node(node);
+        break;
+    case AST_WHILE_EXPR:
+        destroy_while_node(node);
+        break;
+    case AST_FUNCTION_DECL:
+        destroy_function_decl_node(node);
+        break;
+    case AST_CALL:
+        destroy_call_node(node);
+        break;
+    default:
+        break;
+    }
 }

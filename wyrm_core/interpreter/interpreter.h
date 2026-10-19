@@ -20,3 +20,6 @@ interpreter_t *create_interpreter(ast_node_t *root, environment_t *scope);
 
 // evalua toda el ast y retorna el resultado
 wyrm_value_t interpreter_interpret(interpreter_t *interpreter);
+
+// Destruye el interpreter y libera la memoria
+void destroy_interpreter(interpreter_t *interpreter);

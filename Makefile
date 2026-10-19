@@ -3,10 +3,12 @@
 # Flags estrictos para Valgrind:
 # --leak-check=full: Muestra dónde se reservó exactamente cada bloque perdido
 # --show-leak-kinds=definite,indirect: Ignore falsos positivos de Rust
+# --errors-for-leak-kinds=definite,indirect: Devuelve error si hay leaks de memoria, ignorando falsos positivos de Rust
 # --track-origins=yes: Rastrea de dónde salen las variables no inicializadas
 # --error-exitcode=1: Hace que el Makefile falle si algun leak o error de memoria
 VALGRIND_FLAGS = --leak-check=full \
                  --show-leak-kinds=definite,indirect \
+				 --errors-for-leak-kinds=definite,indirect \
                  --track-origins=yes \
                  --error-exitcode=1
 
