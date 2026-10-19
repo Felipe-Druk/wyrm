@@ -6,7 +6,7 @@ Asumiendo que no hay bugs (que seguramente los hay) podemos valernos de los test
 
 Los principales tests están en el archivo [wyrm.rs](../src/wyrm.rs), ya que es una prueba que simula una ejecución "E2E" 
 
-## Tests 1 y retornos
+## Test 1 y retornos
 
 ```rs
 #[test]
@@ -492,7 +492,7 @@ Esta sintaxis es útil, pero no está exenta de problemas. Por ejemplo, a nivel 
 
 El mayor desafío técnico es que implementar esto requiere cambiar internamente los tests y, casi con total seguridad, aplicar una refactorización profunda en el parser.
 
-## Tests 2
+## Test 2
 
 ```rs
 #[test]
@@ -527,7 +527,7 @@ La idea es simular dos llamados para asegurar que el valor sobrevive internament
 
 Lo único de valor que sacar es que ese scope no se destruye al salir, es una parte fundamental del para prevenir los leeks de memoria.
 
-## Tests 3
+## Test 3
 
 ```rs
 #[test]
@@ -551,7 +551,7 @@ Un test rápido que evalúa una operación booleana básica que corresponde a "n
 
 Estaría bueno agregar un test para todos los operadores con resultado bool 
 
-## Tests 4
+## Test 4
 
 ```rs
 #[test]
@@ -575,7 +575,7 @@ Estaría bueno agregar un test para todos los operadores con resultado bool
 Test simple, en realidad no evaluamos nada con el interior del bloque, solo verificamos que nada "rompa" con el input. Muchos tests se hicieron siguiendo **TDD**, lo que nos obliga a hacer tests pequeños y no realizar ningún commit hasta tenerlo en verde.
 Test que no comprueba mucho, pero resulta útil para el flujo de desarrollo.
 
-## Tests 5
+## Test 5
 
 ```rs
 #[test]
@@ -599,7 +599,7 @@ Se valida si el paréntesis funciona, si separa los términos y el resultado es 
 
 Un posible test extra seria hacer lo mismo pero con operaciones booleanas.
 
-## Tests 6
+## Test 6
 
 ```rs
 #[test]
@@ -671,7 +671,7 @@ int64 x = 11 // padre
 // al salir x hijo "muere" pero x padre deberia ser 66
 ```
 
-# Tests 7
+## Test 7
 
 ```rs
 #[test]
@@ -710,12 +710,12 @@ fn test_wyrm_control_de_flujo_if_else() {
 
 Test principal del flujo **TDD** para bloques `if, else if, else` y como paso extra se validan operadores de compracion.
 
-## if/else
+### if/else
 
 Es difícil pensar un lenguaje de programación sin sentencias `if/else`, pero había alternativas a considerar. Dentro del paradigma funcial para resolver este tipo de flujos donde la instrucción siguiente depende del valor o formato de "algo", se utilizan las estructuras `match`, `match case` o `switch/match`.   
 Como siempre revisemos como resuelven los lenguajes de referencia 
 
-### C
+#### C
 C es un lenguaje de la "vieja escuela" para resolver bloques cuenta con sentencias `if/else` y `switch/case`, los dos sirven para lo mismo, en base auna condición el código toma uno u otro camino, solo que hay algunas diferencias.
 
 Para `if/else` sirve cuando la condicion a evaluar no es de "igualdad" sino que se define por rangos:
@@ -817,7 +817,7 @@ if(dia == LUNES){
 ```
 Y no queremos sumar redundancia, sino dar herramientas distintas para el desarrollador.
 
-### Rust
+#### Rust
 
 Rust saca el verdadero poder del **Pattern Matching**, la idea no es fijarse si la expresión es igual a un valor, sino fijarse que estructura cumple, mejor explicar con ejemplo:
 
@@ -872,7 +872,7 @@ Es distinto evaluar una igualdad con operadores lógicos (como lo hacemos en un 
 
 Para **Wyrm** buscamos algo muy parecido a Rust, tener un comportamiento **Pattern Matching** robusto y repetando una filosofía más funcional, pero antes revisemos otras implementaciones.
 
-### Go
+#### Go
 
 Go no implementa **Pattern Matching**, sino que tiene una aproximacion más clasica y bastante simikar a C.
 
@@ -920,7 +920,7 @@ if len(numeros) == 0 {
 
 Esta vez Go decepciono un poco, mantiene un `switch/case` versátil y cómodo de escribir, pero con un nivel de redundancia es bastante alto y no compatible con la filosofía de **Wyrm**.
 
-### Python
+#### Python
 
 Python inicialmente solo contaba con bloques `if/else` bastante útiles y fieles al estilo python, simples de escribir:
 
@@ -955,7 +955,7 @@ match numeros:
 
 Que Python agregara **Pattern Matching** nos indica que su utilidad, este lenguaje suele responder a las exigencias "modernas" incluyendo herramientas populares y útiles. De mínima debemos tener en cuenta para incorporarlo en **Wyrm**, siempre y cuando sea una versión de **Pattern Matching** robusto que no sea un bloque `if/else` con distinta sintaxis.
 
-### **Pattern Matching** en **Wyrm**
+#### **Pattern Matching** en **Wyrm**
 
 Luego de revisar las distintas implementaciones de los lenguajes referentes, podemos sacar en limpio que un bloque `switch/case` tradicional suele estar asociado a un flujo según alguna condición simple de la expresión evaluada, resultando muy parecido (y a veces idéntico) a un bloque `if/else`. Mientras tanto, un bloque `match` responde al **Pattern Matching**, un concepto ligado al paradigma funcional donde definimos un flujo según cómo está estructurada u ordenada una expresión.
 
@@ -1010,7 +1010,276 @@ match(EXPRESSION) {
     _      -> { /* código obligatorio por defecto */ };
 }
 ```
-## Final
+
+### Final
 Y con esto termina el análisis de los tests 7, queda claro que no debemos cambiarlo, pero sí nos queda la deuda de agregar **Patter Matching** co sus tests correspondientes.
 
-# Tests 8
+## Test 8
+
+```rs
+#[test]
+    fn test_wyrm_bucle_while_conteo() {
+        let input = "int32 contador = 0;
+         while (contador < 5) {
+             contador = contador + 1;
+         }
+        contador";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValInt32,
+                "El tipo resultante debe ser int32"
+            );
+            assert_eq!(
+                output.value.int32_val, 5,
+                "El contador debería haber sumado hasta 5"
+            );
+        }
+    }
+```
+
+Es un test que nos permite comprobar si **Wyrm** soporta loops `while` y como extra evaluamos operadores logicos, no es un test muy complejo sino que ayuda al proceso de **TDD**.
+Pero nos abre el camino para hablar de siclos o loops dentro de **Wyrm**
+
+### While vs For
+
+A diferencia de otras veces, como los bucles en general se comportan iguales, no analizaremos todos los lenguajes de referencia, solo nombraremos algunos casos especiales.
+
+#### While
+
+`While` funciona como un bucle que evaluar una condición y "mientas" se cumpla se ejecutara el bloque de código. La estructura suele ser siempre mu similar a :
+
+WHiLE(CONDICION){
+    //... codigo
+}
+
+Ideal para cunado queremos hacer un proceso repetitivo, siempre que se llega al final (cuando se intenta salir) se evalúa de nuevo la condición, si se cumple se ejecuta otra vez, si no, se corta.
+
+```C
+int arr[5] = {1,4,5,1,98};
+
+// si quiesieramos multiplicar cad elemento por 2 
+int i = 0;
+while(i < 5){
+    arr[i] = arr[i] * 2;
+    i++;
+}
+```
+
+Cuando se usa un bucle `while` se debe cuidar la condición de corte para no caer en un loop infinito y "congelar" el programa. Aunque también suelen usarse las sentencias `while (true)`. Esto aunque peligroso y un poco "malo" conceptualmente, permite controlar la condición de corte desde el "interior" del `while` y no tenemos que instancia variables que luego del `while` serán inútiles  
+
+```C
+char result[MAX_STRING] = "";
+// 
+while (true) {
+    bool msg = send(string_msg);
+    if(!msg)[
+        break;
+    ]
+    result = recv(); //simplificado de sockets
+    if(!strcmp(result, "exit")){
+        break;
+    }
+    string_msg = response(result);
+}
+```
+
+Es por esto que, por ejemplo en Rust, se agregó como bucle `loop` que en esencia es `while (true)` pero sin el probelma conceptual de evaluar por siempre `true == true`.
+Por ser conceptualmente razonable y ahorranos una comparación innecesaria, deberíamos tener en cuenta para agregar `loop` en **Wyrm**. Se podría pensar que suma redundancia porque se podría hacer simplemente `while (true)`, pero darles la posibilidad de hacer explícito un bucle "infinito" y evitar internamente la comparación, simplemente ejecutar el bucle cada vez. Son suficientes argumentos como para sumar `loop` a **Wyrm** y evitar que los desarrolladores escriban cosas como `while (true)`. Esto también nos obliga a agregar `break` y considerar `continue`.
+
+```
+// loop en Wyrm
+
+nat16 tope = 999;
+nat16 i =  0;
+loop {
+    //no tememos print pero imaginemos
+    print(i);
+    if (i == tope){
+        break;
+    }
+    i = i + 1;
+}
+```
+
+#### For
+
+`For` suele ser la estructura por defecto para iterar por rangos (contadores, iteradores, recorrer un rango fijo), si sabemos exactamente cuantas veces queremos repetir un bloque de código, podemos hacerlo explícito con un `for`. Suelen tener:
+
+PARA (base, condicion de corte, por cada iteracion){
+    //codio 
+}
+
+La idea es tener algo de base (en general un contador), la condición de corte se evaluará al final de cada acreción justo después de aplicar el "por cada iteración", la mejor manera de entenderlo es "para cada i en un rango" 
+
+```C
+int arr[5] = {1,4,5,1,98};
+
+// si quiesieramos multiplicar cad elemento por 2 
+for (int i = 0 /* itreadro base*/; i < 5 /*minetras sea menor a 5*/; i++ /* aumenta en cada iteracion */){
+    arr[i] = arr[i] * 2;
+}
+```
+
+Sin embargo, en C y muchos lenguajes `for` y `while` son bastante intercambiables, a tal punto que en C podemos declarar un `while (true)` con un `for`
+```C
+for(/*nada*/; true == true /*podemos poner nada tambien*/;){
+    //codigo..
+    if(!condicion){
+        break;
+    }
+}
+```
+
+Es tan similar como para que Go eliminara uno de ellos y condensara todos los bucles en una única palabra `for`
+
+```Go
+for i := 0; i < 10; i++ {
+		sum += i
+	}
+// tambein se puede
+i := 0
+for i < 5 {
+    i++
+}
+// incluso
+i := 0
+for { // actua como loop
+    if i >= 5{
+        break;
+    }
+    i++
+}
+```
+Las similitudes son lo bastante grandes como para que se agrupen en una sola acción, el camino de Go de eliminar la redundancia es acorde a la filosofia de **Wyrm** y como ya tenemos implementado `while` optaremos por no implementar un `for` al menos no el clásico...
+
+
+#### While y For en **Wyrm**
+
+Como revisamos tenido `while` y `loop`, estaríamos cubiertos para todos los caos posibles de bucles ¿O no? 
+Pues de la mano de C++ y Java tenemos una aplicación para `for` interesante.`For` estuvo siempre muy ligado a los arreglos, recorrer cada uno de los elementos de una "colección" y aplicar alguna transformación, es un proceso súper común y perfectamente aplicable con un `for`. Si revisamos C++ vemos;
+
+```cpp
+for (auto n : vector) { // esto se lee como para cada elemento en vector
+    cout << n << " "; 
+}
+
+for (auto &n : vector) {
+    n = n * 2;  // tambien se puede modificar cada elemento 
+}
+```
+
+Python lo hace mucho más explícito;
+
+```py
+for n in vector: # literalmente es "para cada n en vector"
+    n = n * 2
+```
+
+`For` es con su comportamiento está ligada a "conjuntos" se diferencia bastante de un  bucle `while`, no ata su comportamient a una "condicion" suno que aplica el mismo código a cada elemento de algún conjunto. Para **Wyrm** seria muy util implementar este `for`, nos agrega mucha funcinaliadad sin sumar demasiada redundancia.
+
+Y para respetar la sentencia "para elmento en conjunto" se penso en una sitaxis del estilo:
+```C
+for(i in  arr){
+    i = i *2 ;
+}
+```
+Aunque por coherencia las palabras están ligadas a operadores lógicos, lo mejor es tener un símbolo que indique que elemento está en el conjunto (no se debería indicar el tipo, porque lo "heredaría" el tipo del conjunto). Tenemos un símbolo muy útil que además cumple con mantener una cierta coherencia visual `<-` aunque lo tenemos marcado como uno de asignación con retorno, podemos reciclado para que la sintaxis sea:
+
+```C
+for(n <- arr){
+    n = n*2;
+}
+```
+
+Y es perfecto, tenemos definidos nuestros bucles en **Wyrm**
+
+```C
+// un while cuando el corte dependen de una condicion booleana
+int64 i = -39;
+while( i <0){
+    i = i + i;
+}
+
+// si queremos un loop infinito
+int16 j= 1;
+loop {
+    if( j <= -10){
+        break; // obligados a poner un break
+    }
+}
+
+// cuando queramos recorrer un arreglo
+for(n <- numeros){
+    n = n * -1
+}
+```
+
+## Test 9
+
+```rs
+#[test]
+fn test_wyrm_fusion_conteo() {
+    let input = "
+    int32 contador(nat32 x){
+        int32 actual = 0;
+        while (actual < x) {
+            actual = actual + 1;
+        }
+        actual
+    }        
+        contador(5)";
+
+    let wyrm = Wyrm::new(false);
+    let output = wyrm.call_wyrm(input);
+
+    unsafe {
+        assert_eq!(
+            output.value_type,
+            WyrmValueType::ValInt32,
+            "El tipo resultante debe ser int32"
+        );
+        assert_eq!(
+            output.value.int32_val, 5,
+            "El contador debería haber sumado hasta 5"
+        );
+    }
+}
+```
+
+Este es un tests que quedo desfasado con todo lo analizado en este archivo, aunque prueba perfectamente una función de una variable, debe ser cambiado a la nueva sintaxis, debería ser:
+```rs
+    let input = "
+    (int32) -> int contador = (x) -> {
+        int32 actual = 0;
+        while (actual < x) {
+            actual = actual + 1;
+        }
+        actual
+    }        
+        contador(5)";
+```
+
+# Pasos a seguir
+
+
+Luego del extenso análisis que hicimos de cada uno de los tests, podemos tener una lista de cosas por hacer. Y como la proxima entrega es de un "compilador" vamos a dividí las activados en Antes y Durante
+
+Antes:
+
+    - nueva forma de declaarar variables
+    - problemas de memorai
+    - refactor del parser
+
+Luego de terminar estos ítems debemos cargar el **AST** y plasmarlo como bitcode
+
+Durante
+    - vectors y/ arreglos 
+    - función "print"
+    - strings y char
+
+

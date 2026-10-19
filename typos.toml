@@ -91,6 +91,8 @@ controlable = "controlable"
 patron = "patrón"
 tradicional = "tradicional"
 patrones = "patrones"
+repetitivo = "repetitivo"
+aplicable = "aplicable"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"
