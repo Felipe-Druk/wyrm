@@ -71,7 +71,7 @@ ast_node_t *primary(parser_t *parser) {
 
     if (match(parser, T_IDENTIFIER)) {
         wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
-        char *name = strdup(previous->lexeme);
+        char *name = previous->lexeme;
         if (match(parser, T_LPAREN)) {
             size_t capacity = 4;
             size_t arg_count = 0;
@@ -92,7 +92,7 @@ ast_node_t *primary(parser_t *parser) {
 
             return create_call_node(name, arg_count, args);
         }
-        return create_identifier_node(previous->lexeme);
+        return create_identifier_node(name);
     }
 
     // Futuro error
@@ -273,7 +273,7 @@ ast_node_t *function_declaration(parser_t *parser, TokenType actual_type, char *
                 func_def.args = realloc(func_def.args, sizeof(wyrm_function_arg_t) * capacity);
             }
 
-            func_def.args[func_def.arg_count].type = token_to_val_type(actual_type);
+            func_def.args[func_def.arg_count].type = token_to_val_type(arg_type);
             func_def.args[func_def.arg_count].name =
                 strdup(get_token(parser->tokens, parser->current_index - 1)->lexeme);
             func_def.arg_count++;
@@ -340,7 +340,7 @@ ast_node_t *expression_statement(parser_t *parser) {
         if (!match(parser, T_IDENTIFIER)) {
             panic(ERR_SYNTAX, "Syntax error: variable or function needs a name");
         }
-        char *name = strdup(get_token(parser->tokens, parser->current_index - 1)->lexeme);
+        char *name = get_token(parser->tokens, parser->current_index - 1)->lexeme;
 
         if (match(parser, T_LPAREN)) {
             return function_declaration(parser, actual_type, name);
@@ -358,7 +358,10 @@ ast_node_t *expression_statement(parser_t *parser) {
         TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
         ast_node_t *right_expr = expression_statement(parser);
 
-        return create_assignment_node(expr->ast_node_value.identifier_expr.name, assign_op, right_expr);
+        ast_node_t *assignment_node =
+            create_assignment_node(expr->ast_node_value.identifier_expr.name, assign_op, right_expr);
+        destroy_ast_node(expr); // Liberamos la memoria del nodo de identificador original
+        return assignment_node;
     }
 
     return expr;

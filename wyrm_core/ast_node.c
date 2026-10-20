@@ -107,7 +107,7 @@ ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_
 
     new_node->type = AST_VAR_DECLARATION;
     new_node->ast_node_value.var_decl_expr.expression = expression;
-    new_node->ast_node_value.var_decl_expr.identifier = identifier;
+    new_node->ast_node_value.var_decl_expr.identifier = strdup(identifier);
     new_node->ast_node_value.var_decl_expr.var_type = var_type;
     new_node->ast_node_value.var_decl_expr.assign_op = assign_op;
 
@@ -234,6 +234,9 @@ void destroy_function_decl_node(ast_node_t *node) {
     }
     free(node->ast_node_value.function_decl.name);
     destroy_ast_node(node->ast_node_value.function_decl.function.body);
+    for (size_t i = 0; i < node->ast_node_value.function_decl.function.arg_count; i++) {
+        free(node->ast_node_value.function_decl.function.args[i].name);
+    }
     free(node->ast_node_value.function_decl.function.args);
     free(node);
 }

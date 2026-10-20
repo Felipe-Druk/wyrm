@@ -14,6 +14,7 @@ pub struct Wyrm {
 
 unsafe extern "C" {
     fn run_wyrm(input: *const c_char, flags: c_int) -> WyrmValue;
+    fn terminate_wyrm();
 }
 
 impl Wyrm {
@@ -37,6 +38,12 @@ impl Wyrm {
                     0
                 },
             )
+        }
+    }
+
+    fn terminate(&self) {
+        unsafe {
+            terminate_wyrm();
         }
     }
 
@@ -73,13 +80,22 @@ impl Wyrm {
     }
 }
 
+// Nos aseguramos de que al salir del scope de Wyrm, se llame a terminate_wyrm para liberar la memoria del scope global y terminar el intérprete
+impl Drop for Wyrm {
+    fn drop(&mut self) {
+        self.terminate();
+    }
+}
+
 // solo tests de flujo completo
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
+    #[serial] // Como el scope es global, nos es bueno que exista más de un wyrm corriendo al mismo tiempo, serial fuerza a que se ejecuten de a uno
     fn test_wyrm_respeta_punt_y_coma() {
         let input = format!("2+3; 3+6");
         let wyrm = Wyrm::new(false);
@@ -99,6 +115,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_instancia_variables() {
         let input = format!("int32 entero = 54;");
         let input2 = format!("entero;");
@@ -125,6 +142,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_trabaja_booleanos() {
         let input = format!("bool falso = false; falso ~= true");
         let wyrm = Wyrm::new(false);
@@ -141,6 +159,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_trabaja_bloques() {
         let input = "int32 x = (5 + 3) * 2;
                     { 
@@ -158,6 +177,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_respeta_parentecis() {
         let input = format!("(2+2) / 2");
         let wyrm = Wyrm::new(false);
@@ -174,6 +194,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_aisla_variables_en_scope_local() {
         let input = "
             int32 x = 5;
@@ -200,6 +221,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_control_de_flujo_if_else() {
         let input = "
             int32 valor = 15;
@@ -233,6 +255,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_bucle_while_conteo() {
         let input = "int32 contador = 0;
          while (contador < 5) {
@@ -257,6 +280,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_fusion_conteo() {
         let input = "
         int32 contador(nat32 x){

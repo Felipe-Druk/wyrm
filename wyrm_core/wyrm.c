@@ -45,3 +45,10 @@ wyrm_value_t run_wyrm(const char *input, int flags) {
     free(input_copy);
     return result;
 }
+
+void terminate_wyrm() {
+    if (global_scope) {
+        destroy_environment(global_scope);
+        global_scope = NULL;
+    }
+}
