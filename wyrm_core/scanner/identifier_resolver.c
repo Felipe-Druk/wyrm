@@ -16,7 +16,7 @@ int charge_identifier(token_vector_t *tokens, const char *input, size_t new_inde
 
     strncpy(lexeme, input + actual_index, length);
 
-    lexeme[length] = '\0';
+    lexeme[length - 1] = '\0';
 
     wyrm_token_t type_token = {.type = T_IDENTIFIER, .lexeme = lexeme};
     int result = push_token(tokens, type_token);

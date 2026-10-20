@@ -18,6 +18,7 @@ mod tests {
 
     unsafe extern "C" {
         pub fn scanner_scan(input: *mut c_char, scanner: *mut Scanner) -> *mut TokenVector;
+        pub fn destroy_token_vector(vector: *mut TokenVector);
     }
 
     // Test de scanner, si ocurre un bug se agrea un tests
@@ -71,6 +72,7 @@ mod tests {
                     i, tipo_esperado, token.t_type
                 );
             }
+            destroy_token_vector(vector_ptr);
         }
     }
 
@@ -93,6 +95,7 @@ mod tests {
             assert_eq!(vector.size, 1);
             let primer_token = &*vector.tokens.add(0);
             assert_eq!(primer_token.t_type, TokenType::TEof);
+            destroy_token_vector(vector_ptr);
         }
     }
 

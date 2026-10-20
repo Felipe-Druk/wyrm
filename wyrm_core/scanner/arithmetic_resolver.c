@@ -1,11 +1,12 @@
 #include "arithmetic_resolver.h"
+#include <string.h>
 
 const int ERROR = -1;
 
 // por ahora no existe "++" asi que solo cargamos el token de add
 int rsolve_plus(char *input, int index, token_vector_t *tokens) {
     (void)input; // engañmos al linter, por ahora
-    wyrm_token_t add_token = {.type = T_ADD, .lexeme = "+"};
+    wyrm_token_t add_token = {.type = T_ADD, .lexeme = strdup("+")};
     int result = push_token(tokens, add_token);
     return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;
 }
@@ -13,13 +14,13 @@ int rsolve_plus(char *input, int index, token_vector_t *tokens) {
 // en el futuro reconocera "->"
 int resolve_minus(char *input, int index, token_vector_t *tokens) {
     (void)input; // engañmos al linter, por ahora
-    wyrm_token_t minus_token = {.type = T_SUB, .lexeme = "-"};
+    wyrm_token_t minus_token = {.type = T_SUB, .lexeme = strdup("-")};
     int result = push_token(tokens, minus_token);
     return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;
 }
 
 int resolve_multiply(int index, token_vector_t *tokens) {
-    wyrm_token_t multiply_token = {.type = T_MUL, .lexeme = "*"};
+    wyrm_token_t multiply_token = {.type = T_MUL, .lexeme = strdup("*")};
     int result = push_token(tokens, multiply_token);
     return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;
 }
@@ -36,19 +37,19 @@ int resolve_divide(char *input, int index, token_vector_t *tokens) {
     if (input[index + 1] == '/') {
         return jump_line(input, index); // simplemente ignoramos la linea si hay un comentario
     }
-    wyrm_token_t divide_token = {.type = T_DIV, .lexeme = "/"};
+    wyrm_token_t divide_token = {.type = T_DIV, .lexeme = strdup("/")};
     int result = push_token(tokens, divide_token);
     return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;
 }
 
 int resolve_power(int index, token_vector_t *tokens) {
-    wyrm_token_t power_token = {.type = T_POW, .lexeme = "^"};
+    wyrm_token_t power_token = {.type = T_POW, .lexeme = strdup("^")};
     int result = push_token(tokens, power_token);
     return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;
 }
 
 int resolve_modulo(int index, token_vector_t *tokens) {
-    wyrm_token_t modulo_token = {.type = T_MOD, .lexeme = "%"};
+    wyrm_token_t modulo_token = {.type = T_MOD, .lexeme = strdup("%")};
     int result = push_token(tokens, modulo_token);
     return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;
 }

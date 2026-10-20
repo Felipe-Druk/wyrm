@@ -89,3 +89,5 @@ pre-commit:
 clean:
 	@echo "Limpiando el proyecto..."
 	cargo clean
+	rm vgcore.* 2> /dev/null || true
+	rm core.* 2> /dev/null || true

@@ -67,6 +67,9 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
         }
         // se llega si hay un character descnonocido, es un lugar posible para lanzar
         // error
+        if (input[actual_index] == '\0') {
+            break;
+        }
         actual_index++;
     }
 

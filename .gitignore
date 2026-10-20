@@ -10,5 +10,9 @@
 target/
 *.lock
 
+# valgrind
+vgcore.*
+core.*
+
 # vscode
 .vscode
