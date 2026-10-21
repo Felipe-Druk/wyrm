@@ -8,6 +8,7 @@
 #include "parser_internal.h"
 #include "block_statement.h"
 #include "if_statement.h"
+#include "while_statement.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
@@ -179,22 +180,6 @@ ast_node_t *logical_or(parser_t *parser) {
 
 // punto de control de la cadena
 ast_node_t *expression(parser_t *parser) { return logical_or(parser); }
-
-ast_node_t *while_statement(parser_t *parser) {
-    if (!match(parser, T_LPAREN)) {
-        panic(ERR_SYNTAX, "Syntax error: Expected '(' after 'while'");
-    }
-
-    ast_node_t *condition = expression(parser);
-
-    if (!match(parser, T_RPAREN)) {
-        panic(ERR_SYNTAX, "Syntax error: Expected ')' after condition");
-    }
-
-    ast_node_t *body = expression_statement(parser);
-
-    return create_while_node(condition, body);
-}
 
 ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type, char *name) {
     if (!match(parser, T_ASSIGN) && !match(parser, T_RASSIGN)) {

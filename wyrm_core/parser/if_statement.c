@@ -1,6 +1,5 @@
 #include "if_statement.h"
 #include "../utils/error.h"
-#include "parser.h"
 #include "parser_internal.h"
 
 ast_node_t *expression(parser_t *parser);
