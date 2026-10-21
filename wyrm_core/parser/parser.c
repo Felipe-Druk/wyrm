@@ -6,11 +6,14 @@
 #include <string.h>
 #include <stdbool.h>
 #include "parser_internal.h"
+/// se resuleven antes de la cadena
 #include "block_statement.h"
 #include "if_statement.h"
 #include "while_statement.h"
 #include "function_declaration.h"
 #include "variable_declaration.h"
+// cadena por jerarquia
+#include "primary.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
@@ -27,59 +30,6 @@ parser_t *create_parser(token_vector_t *tokens) {
     new_parser->tokens = tokens;
     new_parser->flags = 0;
     return new_parser;
-}
-
-// cumple con primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER
-ast_node_t *primary(parser_t *parser) {
-
-    if (match(parser, T_TRUE)) {
-        return create_bool_node(true);
-    }
-    if (match(parser, T_FALSE)) {
-        return create_bool_node(false);
-    }
-
-    if (match(parser, T_LPAREN)) {
-        ast_node_t *expr = expression(parser);
-        if (!match(parser, T_RPAREN)) {
-            panic(ERR_SYNTAX, "Syntax error: Expected ')' after expression");
-        }
-        return expr;
-    }
-
-    if (match(parser, T_NUMBER) || match(parser, T_FLOAT_NUMBER)) {
-        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
-        return create_number_node(previous->lexeme, previous->type);
-    }
-
-    if (match(parser, T_IDENTIFIER)) {
-        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
-        char *name = previous->lexeme;
-        if (match(parser, T_LPAREN)) {
-            size_t capacity = 4;
-            size_t arg_count = 0;
-            ast_node_t **args = malloc(sizeof(ast_node_t *) * capacity);
-            if (peek(parser)->type != T_RPAREN) {
-                do {
-                    if (arg_count >= capacity) {
-                        capacity *= 2;
-                        args = realloc(args, sizeof(ast_node_t *) * capacity);
-                    }
-                    args[arg_count++] = expression(parser);
-                } while (match(parser, T_COOMA));
-            }
-
-            if (!match(parser, T_RPAREN)) {
-                panic(ERR_SYNTAX, "Syntax error: Expected ')' after arguments");
-            }
-
-            return create_call_node(name, arg_count, args);
-        }
-        return create_identifier_node(name);
-    }
-
-    // Futuro error
-    return NULL;
 }
 
 // cumple con power -> primary ( T_POW primary )
