@@ -5,8 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "parser_internal.h"
+#include "block_statement.h"
 
-const size_t INITIAL_CAPACITY = 5;
+static const size_t INITIAL_CAPACITY = 5;
 
 // definimos funciones privadas para resolver llamados recursivos
 ast_node_t *expression(parser_t *parser);
@@ -25,25 +27,6 @@ parser_t *create_parser(token_vector_t *tokens) {
     new_parser->tokens = tokens;
     new_parser->flags = 0;
     return new_parser;
-}
-
-// puede devolver NULL
-wyrm_token_t *peek(parser_t *parser) { return get_token(parser->tokens, parser->current_index); }
-
-wyrm_token_t *advance(parser_t *parser) {
-    wyrm_token_t *current = peek(parser);
-    if (current->type != T_EOF) {
-        parser->current_index++;
-    }
-    return current;
-}
-
-int match(parser_t *parser, TokenType expected_type_token) {
-    if (peek(parser)->type == expected_type_token) {
-        advance(parser);
-        return 1;
-    }
-    return 0;
 }
 
 // cumple con primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER
@@ -291,33 +274,6 @@ ast_node_t *function_declaration(parser_t *parser, TokenType actual_type, char *
     func_def.body = block_statement(parser);
 
     return create_function_decl_node(name, func_def);
-}
-
-ast_node_t *block_statement(parser_t *parser) {
-    ast_node_t *block = create_block_node(INITIAL_CAPACITY);
-
-    while (peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
-        ast_node_t *stmt = expression_statement(parser);
-
-        if (block_is_full(&block->ast_node_value.block_expr)) {
-            resize_block(&block->ast_node_value.block_expr);
-        }
-        block->ast_node_value.block_expr.nodes[block->ast_node_value.block_expr.size++] = stmt;
-
-        if (stmt->type != AST_BLOCK && stmt->type != AST_IF_EXPR && stmt->type != AST_WHILE_EXPR &&
-            stmt->type != AST_FUNCTION_DECL) {
-
-            if (!match(parser, T_SEMICOLON) && peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
-                panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");
-            }
-        }
-    }
-
-    if (!match(parser, T_RBRACE)) {
-        panic(ERR_SYNTAX, "Syntax error: Expected '}' to close the block");
-    }
-
-    return block;
 }
 
 ast_node_t *expression_statement(parser_t *parser) {
