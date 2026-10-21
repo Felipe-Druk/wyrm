@@ -13,10 +13,17 @@ int rsolve_plus(char *input, int index, token_vector_t *tokens) {
 
 // en el futuro reconocera "->"
 int resolve_minus(char *input, int index, token_vector_t *tokens) {
-    (void)input; // engañmos al linter, por ahora
-    wyrm_token_t minus_token = {.type = T_SUB, .lexeme = strdup("-")};
-    int result = push_token(tokens, minus_token);
-    return result != ERROR_TOKEN_VECTOR ? index + 1 : ERROR;
+    wyrm_token_t token = {.type = T_SUB, .lexeme = strdup("-")};
+    int new_index = index + 1;
+    if (input[index + 1] == '>') {
+        free(token.lexeme);
+        token.type = T_RARROW;
+        token.lexeme = strdup("->");
+        new_index++;
+    }
+
+    int result = push_token(tokens, token);
+    return result != ERROR_TOKEN_VECTOR ? new_index : ERROR;
 }
 
 int resolve_multiply(int index, token_vector_t *tokens) {

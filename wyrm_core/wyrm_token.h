@@ -53,8 +53,11 @@ typedef enum {
     T_GREATER_EQUAL, // >= para comparar igualdad
 
     // Operadores varios
-    T_ASSIGN,  // = para asignacion de variables
-    T_RASSIGN, // <- para asignar valor y recuperar el retorno
+    T_ASSIGN, // = para asignacion de variables
+
+    // Simbolos multiples
+    T_LARROW, // <- para asignar valor y recuperar el retorno, y for
+    T_RARROW, // -> explicita el retorno de una función,
 
     // Literales
     T_NUMBER,       // Numeros enteros o naturales

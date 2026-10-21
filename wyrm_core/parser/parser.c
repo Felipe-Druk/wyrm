@@ -9,13 +9,13 @@
 #include "block_statement.h"
 #include "if_statement.h"
 #include "while_statement.h"
+#include "function_declaration.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
 // definimos funciones privadas para resolver llamados recursivos
 ast_node_t *expression(parser_t *parser);
 ast_node_t *expression_statement(parser_t *parser);
-ast_node_t *function_declaration(parser_t *parser, TokenType actual_type, char *name);
 ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type, char *name);
 
 parser_t *create_parser(token_vector_t *tokens) {
@@ -182,57 +182,12 @@ ast_node_t *logical_or(parser_t *parser) {
 ast_node_t *expression(parser_t *parser) { return logical_or(parser); }
 
 ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type, char *name) {
-    if (!match(parser, T_ASSIGN) && !match(parser, T_RASSIGN)) {
+    if (!match(parser, T_ASSIGN) && !match(parser, T_LARROW)) {
         panic(ERR_SYNTAX, "Syntax error: missing '=' or '<-' symbol");
     }
     TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
     ast_node_t *expr = expression_statement(parser);
     return create_var_decl_node(actual_type, name, expr, assign_op);
-}
-
-ast_node_t *function_declaration(parser_t *parser, TokenType actual_type, char *name) {
-    size_t capacity = 4;
-    wyrm_function_t func_def;
-    func_def.returned = token_to_val_type(actual_type);
-    func_def.arg_count = 0;
-    func_def.args = malloc(sizeof(wyrm_function_arg_t) * capacity);
-
-    if (peek(parser)->type != T_RPAREN) {
-        do {
-            TokenType arg_type = peek(parser)->type;
-            if (arg_type >= MIN_TYPE && arg_type <= MAX_TYPE) {
-                advance(parser);
-            } else {
-                panic(ERR_SYNTAX, "Syntax error: Expected type for argument");
-            }
-
-            if (!match(parser, T_IDENTIFIER)) {
-                panic(ERR_SYNTAX, "Syntax error: Expected name for argument");
-            }
-
-            if (func_def.arg_count >= capacity) {
-                capacity *= 2;
-                func_def.args = realloc(func_def.args, sizeof(wyrm_function_arg_t) * capacity);
-            }
-
-            func_def.args[func_def.arg_count].type = token_to_val_type(arg_type);
-            func_def.args[func_def.arg_count].name =
-                strdup(get_token(parser->tokens, parser->current_index - 1)->lexeme);
-            func_def.arg_count++;
-
-        } while (match(parser, T_COOMA));
-    }
-
-    if (!match(parser, T_RPAREN)) {
-        panic(ERR_SYNTAX, "Syntax error: Expected ')' after parameters");
-    }
-
-    if (!match(parser, T_LBRACE)) {
-        panic(ERR_SYNTAX, "Syntax error: Expected '{' to start function body");
-    }
-    func_def.body = block_statement(parser);
-
-    return create_function_decl_node(name, func_def);
 }
 
 ast_node_t *expression_statement(parser_t *parser) {
@@ -248,28 +203,33 @@ ast_node_t *expression_statement(parser_t *parser) {
         return while_statement(parser);
     }
 
-    // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON
+    // cumple con (TIPO, ...) -> RETORNO nombre = (args) -> { ... }
+    if (peek(parser)->type == T_LPAREN) {
+        TokenType next_type = get_token(parser->tokens, parser->current_index + 1)->type;
+        if ((next_type >= MIN_TYPE && next_type <= MAX_TYPE) || next_type == T_RPAREN) {
+            advance(parser);
+            return function_declaration(parser);
+        }
+    }
+
+    // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON
     TokenType actual_type = peek(parser)->type;
     if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
         advance(parser);
         if (!match(parser, T_IDENTIFIER)) {
-            panic(ERR_SYNTAX, "Syntax error: variable or function needs a name");
+            panic(ERR_SYNTAX, "Syntax error: variable needs a name");
         }
         char *name = get_token(parser->tokens, parser->current_index - 1)->lexeme;
-
-        if (match(parser, T_LPAREN)) {
-            return function_declaration(parser, actual_type, name);
-        } else {
-            return variable_declaration(parser, actual_type, name);
-        }
+        return variable_declaration(parser, actual_type, name);
     }
+
     ast_node_t *expr = expression(parser);
 
     if (expr == NULL) {
         panic(ERR_SYNTAX, "Syntax error: unexpected term or invalid expression");
     }
-    // cumple T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression
-    if (expr->type == AST_IDENTIFIER && (match(parser, T_ASSIGN) || match(parser, T_RASSIGN))) {
+    // cumple T_IDENTIFIER (T_ASSIGN | T_LARROW) expression
+    if (expr->type == AST_IDENTIFIER && (match(parser, T_ASSIGN) || match(parser, T_LARROW))) {
         TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
         ast_node_t *right_expr = expression_statement(parser);
 

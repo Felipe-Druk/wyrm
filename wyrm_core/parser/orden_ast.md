@@ -53,7 +53,7 @@ El orden con dos tipos de asignación
 
 statement -> var_decl
 
-var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON 
+var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON 
 
 > TIPO es cualquier tipo de dato
 
@@ -75,7 +75,7 @@ El orden anterior no consideraba sentencias boolenas
 
 tatement -> var_decl
 
-var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON 
+var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON 
 
 > TIPO es cualquier tipo de dato
 

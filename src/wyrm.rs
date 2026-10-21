@@ -300,14 +300,14 @@ mod tests {
     #[serial]
     fn test_wyrm_fusion_conteo() {
         let input = "
-        int32 contador(nat32 x){
+        (nat32) -> int32 contador = (x) -> {
             int32 actual = 0;
             while (actual < x) {
                 actual = actual + 1;
             }
             actual
         }        
-         contador(5)";
+        contador(5)";
 
         let wyrm = Wyrm::new(false);
         let output = wyrm.call_wyrm(input);

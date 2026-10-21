@@ -23,6 +23,7 @@ fn main() {
         .file("wyrm_core/parser/block_statement.c")
         .file("wyrm_core/parser/if_statement.c")
         .file("wyrm_core/parser/while_statement.c")
+        .file("wyrm_core/parser/function_declaration.c")
         // Interpreter
         .file("wyrm_core/interpreter/interpreter.c")
         .file("wyrm_core/interpreter/evaluator_number.c")

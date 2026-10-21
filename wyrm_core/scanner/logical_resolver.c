@@ -24,7 +24,7 @@ int resolve_less(char *input, int index, token_vector_t *tokens) {
     wyrm_token_t token;
     switch (nex) {
     case '-':
-        token.type = T_RASSIGN;
+        token.type = T_LARROW;
         token.lexeme = strdup("<-");
         new_index++;
         break;

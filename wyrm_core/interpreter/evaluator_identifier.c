@@ -5,7 +5,7 @@ wyrm_value_t eval_val_decl(ast_node_t *node, environment_t *env, wyrm_value_t ex
     wyrm_value_t assign_value = {.type = VAL_VOID};
     environment_set(env, node->ast_node_value.var_decl_expr.identifier, expr_value,
                     node->ast_node_value.var_decl_expr.var_type);
-    if (node->ast_node_value.var_decl_expr.assign_op == T_RASSIGN) {
+    if (node->ast_node_value.var_decl_expr.assign_op == T_LARROW) {
         return expr_value;
     }
     return assign_value;
@@ -29,7 +29,7 @@ wyrm_value_t eval_assignment(ast_node_t *node, environment_t *env, wyrm_value_t 
         panic(ERR_UNDEFINED_VAR, "Error UNDEFINED_VAR: Cannot assign to undeclared variable '%s'",
               node->ast_node_value.assignment_expr.name);
     }
-    if (node->ast_node_value.assignment_expr.operator == T_RASSIGN) {
+    if (node->ast_node_value.assignment_expr.operator == T_LARROW) {
         return expr_value;
     }
 

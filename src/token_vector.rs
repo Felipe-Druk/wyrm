@@ -42,7 +42,10 @@ pub enum TokenType {
     TGreaterEqual,
     // operadores varios
     TAssign,
-    TRassign,
+    // Simbolos multiples
+    TLArrow,
+    TRArrow,
+    // literales
     TNumber,
     TString,
     TFloatNumber,
