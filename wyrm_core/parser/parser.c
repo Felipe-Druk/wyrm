@@ -12,8 +12,7 @@
 #include "while_statement.h"
 #include "function_declaration.h"
 #include "variable_declaration.h"
-// cadena por jerarquia
-#include "primary.h"
+#include "power.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
@@ -30,18 +29,6 @@ parser_t *create_parser(token_vector_t *tokens) {
     new_parser->tokens = tokens;
     new_parser->flags = 0;
     return new_parser;
-}
-
-// cumple con power -> primary ( T_POW primary )
-ast_node_t *power(parser_t *parser) {
-    ast_node_t *primary_expr = primary(parser);
-
-    if (match(parser, T_POW)) {
-        ast_node_t *right_expr = power(parser); // para resolver cadena de potencias
-        return create_binary_node(primary_expr, T_POW, right_expr);
-    }
-
-    return primary_expr;
 }
 
 //  cumple con unary -> ( T_SUB ) power

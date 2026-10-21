@@ -26,6 +26,7 @@ fn main() {
         .file("wyrm_core/parser/function_declaration.c")
         .file("wyrm_core/parser/variable_declaration.c")
         .file("wyrm_core/parser/primary.c")
+        .file("wyrm_core/parser/power.c")
         // Interpreter
         .file("wyrm_core/interpreter/interpreter.c")
         .file("wyrm_core/interpreter/evaluator_number.c")
