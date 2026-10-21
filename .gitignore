@@ -16,3 +16,6 @@ core.*
 
 # vscode
 .vscode
+
+# Wyrm
+.wyrm_history

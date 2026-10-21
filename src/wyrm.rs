@@ -1,4 +1,6 @@
 use crate::interpreter::*;
+use rustyline::DefaultEditor;
+use rustyline::error::ReadlineError;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
@@ -55,28 +57,43 @@ impl Wyrm {
             println!("Modo Verbose activado");
         }
 
-        let mut input = String::new();
+        let mut rl = DefaultEditor::new().expect("No se pudo inicializar la terminal interactiva");
+        let _ = rl.load_history(".wyrm_history");
 
         loop {
-            println!("Wyrm >: ");
-            std::io::stdin()
-                .read_line(&mut input)
-                .expect("Error al leer la entrada");
-
-            if self.verbose {
-                self.input_verbose(&input);
+            match rl.readline("wyrm> ") {
+                Ok(line) => {
+                    let input = line.trim();
+                    if self.verbose {
+                        self.input_verbose(input);
+                    }
+                    if input.is_empty() {
+                        continue;
+                    }
+                    if input == EXIT_COMMAND {
+                        println!("Wyrm se despide :D ...");
+                        break;
+                    }
+                    let _ = rl.add_history_entry(input);
+                    let result = self.call_wyrm(input);
+                    println!("{}", result);
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("Wyrm se despide :D ...");
+                    break;
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("^C");
+                    println!("Wyrm se despide :D ...");
+                    break;
+                }
+                Err(err) => {
+                    eprintln!("Error al leer la entrada: {:?}", err);
+                    break;
+                }
             }
-
-            if input.trim() == EXIT_COMMAND {
-                println!("Wyrm se despide :D ...");
-                break;
-            }
-
-            let result = self.call_wyrm(&input);
-
-            println!("{}", result);
-            input.clear();
         }
+        let _ = rl.save_history(".wyrm_history");
     }
 }
 

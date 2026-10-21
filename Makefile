@@ -91,3 +91,4 @@ clean:
 	cargo clean
 	rm vgcore.* 2> /dev/null || true
 	rm core.* 2> /dev/null || true
+	rm *.wyrm_history 2> /dev/null || true
