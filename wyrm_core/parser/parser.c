@@ -12,7 +12,7 @@
 #include "while_statement.h"
 #include "function_declaration.h"
 #include "variable_declaration.h"
-#include "power.h"
+#include "unary.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
@@ -29,16 +29,6 @@ parser_t *create_parser(token_vector_t *tokens) {
     new_parser->tokens = tokens;
     new_parser->flags = 0;
     return new_parser;
-}
-
-//  cumple con unary -> ( T_SUB ) power
-ast_node_t *unary(parser_t *parser) {
-    if (match(parser, T_SUB) || match(parser, T_NOT)) {
-        TokenType operator = get_token(parser->tokens, parser->current_index - 1)->type;
-        ast_node_t *right_expr = unary(parser); // para resolver cadena de negadores
-        return create_unary_node(operator, right_expr);
-    }
-    return power(parser);
 }
 
 // cumple con factor -> unary ( ( T_MUL | T_DIV | T_MOD ) unary )

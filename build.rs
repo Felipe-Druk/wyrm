@@ -27,6 +27,7 @@ fn main() {
         .file("wyrm_core/parser/variable_declaration.c")
         .file("wyrm_core/parser/primary.c")
         .file("wyrm_core/parser/power.c")
+        .file("wyrm_core/parser/unary.c")
         // Interpreter
         .file("wyrm_core/interpreter/interpreter.c")
         .file("wyrm_core/interpreter/evaluator_number.c")
