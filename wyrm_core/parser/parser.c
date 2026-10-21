@@ -10,13 +10,13 @@
 #include "if_statement.h"
 #include "while_statement.h"
 #include "function_declaration.h"
+#include "variable_declaration.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
 // definimos funciones privadas para resolver llamados recursivos
 ast_node_t *expression(parser_t *parser);
 ast_node_t *expression_statement(parser_t *parser);
-ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type, char *name);
 
 parser_t *create_parser(token_vector_t *tokens) {
     parser_t *new_parser = malloc(sizeof(parser_t));
@@ -181,15 +181,6 @@ ast_node_t *logical_or(parser_t *parser) {
 // punto de control de la cadena
 ast_node_t *expression(parser_t *parser) { return logical_or(parser); }
 
-ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type, char *name) {
-    if (!match(parser, T_ASSIGN) && !match(parser, T_LARROW)) {
-        panic(ERR_SYNTAX, "Syntax error: missing '=' or '<-' symbol");
-    }
-    TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
-    ast_node_t *expr = expression_statement(parser);
-    return create_var_decl_node(actual_type, name, expr, assign_op);
-}
-
 ast_node_t *expression_statement(parser_t *parser) {
     if (match(parser, T_LBRACE)) {
         return block_statement(parser);
@@ -215,12 +206,7 @@ ast_node_t *expression_statement(parser_t *parser) {
     // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON
     TokenType actual_type = peek(parser)->type;
     if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
-        advance(parser);
-        if (!match(parser, T_IDENTIFIER)) {
-            panic(ERR_SYNTAX, "Syntax error: variable needs a name");
-        }
-        char *name = get_token(parser->tokens, parser->current_index - 1)->lexeme;
-        return variable_declaration(parser, actual_type, name);
+        return variable_declaration(parser, actual_type);
     }
 
     ast_node_t *expr = expression(parser);
