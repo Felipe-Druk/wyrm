@@ -75,7 +75,7 @@ tests: clean
 memcheck: clean
 	@echo "Ejecutando Valgrind..."
 	cargo test --no-run
-	valgrind $(VALGRIND_FLAGS) $(TEST_BIN) cargo test -- --test-threads=1
+	valgrind $(VALGRIND_FLAGS) $(TEST_BIN) --test-threads=1
 
 memcheck-one: clean
 	@echo "Ejecutando Valgrind en un solo test..."

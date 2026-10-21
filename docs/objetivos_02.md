@@ -1275,7 +1275,7 @@ Antes:
     - problemas de memorai
     - refactor del parser
 
-Luego de terminar estos ítems debemos cargar el **AST** y plasmarlo como bitcode
+Luego de terminar estos ítems debemos cargar el **AST** y plasmarlo como bytecode
 
 Durante
     - vectors y/ arreglos 
