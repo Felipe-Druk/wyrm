@@ -12,7 +12,8 @@
 #include "while_statement.h"
 #include "function_declaration.h"
 #include "variable_declaration.h"
-#include "factor.h"
+
+#include "term.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
@@ -29,18 +30,6 @@ parser_t *create_parser(token_vector_t *tokens) {
     new_parser->tokens = tokens;
     new_parser->flags = 0;
     return new_parser;
-}
-
-// cumple con term -> factor ( ( T_ADD | T_SUB ) factor )
-ast_node_t *term(parser_t *parser) {
-    ast_node_t *expr = factor(parser);
-
-    while (match(parser, T_ADD) || match(parser, T_SUB)) {
-        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
-        ast_node_t *right_expr = factor(parser);
-        expr = create_binary_node(expr, previous->type, right_expr);
-    }
-    return expr;
 }
 
 // cumple con comparison -> term ( ( T_LESS | T_GREATER | T_LESS_EQUAL | T_GREATER_EQUAL ) term )
