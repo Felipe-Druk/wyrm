@@ -68,16 +68,16 @@ format:
 	cargo fmt
 	find wyrm_core -type f \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} +
 
-tests: clean
+tests:
 	@echo "Ejecutanto tests..."
 	cargo test
 
-memcheck: clean
+memcheck:
 	@echo "Ejecutando Valgrind..."
 	cargo test --no-run
 	valgrind $(VALGRIND_FLAGS) $(TEST_BIN) --test-threads=1
 
-memcheck-one: clean
+memcheck-one:
 	@echo "Ejecutando Valgrind en un solo test..."
 	cargo test --no-run
 	valgrind $(VALGRIND_FLAGS) $(TEST_BIN) $(TEST) --test-threads=1 --nocapture
