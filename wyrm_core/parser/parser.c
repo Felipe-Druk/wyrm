@@ -12,8 +12,8 @@
 #include "while_statement.h"
 #include "function_declaration.h"
 #include "variable_declaration.h"
-
-#include "term.h"
+// inicio de la "cadena"
+#include "comparison.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
@@ -30,19 +30,6 @@ parser_t *create_parser(token_vector_t *tokens) {
     new_parser->tokens = tokens;
     new_parser->flags = 0;
     return new_parser;
-}
-
-// cumple con comparison -> term ( ( T_LESS | T_GREATER | T_LESS_EQUAL | T_GREATER_EQUAL ) term )
-ast_node_t *comparison(parser_t *parser) {
-    ast_node_t *expr = term(parser);
-
-    while (match(parser, T_LESS) || match(parser, T_GREATER) || match(parser, T_LESS_EQUAL) ||
-           match(parser, T_GREATER_EQUAL)) {
-        TokenType operator = get_token(parser->tokens, parser->current_index - 1)->type;
-        ast_node_t *right_expr = term(parser);
-        expr = create_binary_node(expr, operator, right_expr);
-    }
-    return expr;
 }
 
 // cumple con equality -> comparison ( ( T_EQUAL | T_NOT_EQUAL ) comparison )

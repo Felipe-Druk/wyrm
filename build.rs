@@ -30,6 +30,7 @@ fn main() {
         .file("wyrm_core/parser/unary.c")
         .file("wyrm_core/parser/factor.c")
         .file("wyrm_core/parser/term.c")
+        .file("wyrm_core/parser/comparison.c")
         // Interpreter
         .file("wyrm_core/interpreter/interpreter.c")
         .file("wyrm_core/interpreter/evaluator_number.c")
