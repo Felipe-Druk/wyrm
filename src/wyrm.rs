@@ -324,4 +324,33 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    #[serial]
+    fn test_wyrm_inserta_punto_coma() {
+        let input = "
+        (nat32) -> int32 contador = (x) -> {
+            int32 actual = 0
+            while (actual < x) {
+                actual = actual + 1
+            }
+            actual
+        }        
+        nat16 y = 5 + contador(5); y";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValNat16,
+                "El tipo resultante debe ser nat16"
+            );
+            assert_eq!(
+                output.value.nat16_val, 10,
+                "El contador debería haber sumado hasta 10"
+            );
+        }
+    }
 }
