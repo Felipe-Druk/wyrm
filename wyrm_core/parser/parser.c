@@ -13,7 +13,7 @@
 #include "function_declaration.h"
 #include "variable_declaration.h"
 // inicio de la "cadena"
-#include "logical_and.h"
+#include "logical_or_xor.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 
@@ -32,20 +32,8 @@ parser_t *create_parser(token_vector_t *tokens) {
     return new_parser;
 }
 
-// cumple con logical_or -> logical_and ( ( T_OR | T_XOR ) logical_and )
-ast_node_t *logical_or(parser_t *parser) {
-    ast_node_t *expr = logical_and(parser);
-
-    while (match(parser, T_OR) || match(parser, T_XOR)) {
-        TokenType operator = get_token(parser->tokens, parser->current_index - 1)->type;
-        ast_node_t *right_expr = logical_and(parser);
-        expr = create_binary_node(expr, operator, right_expr);
-    }
-    return expr;
-}
-
 // punto de control de la cadena
-ast_node_t *expression(parser_t *parser) { return logical_or(parser); }
+ast_node_t *expression(parser_t *parser) { return logical_or_xor(parser); }
 
 ast_node_t *expression_statement(parser_t *parser) {
     if (match(parser, T_LBRACE)) {
