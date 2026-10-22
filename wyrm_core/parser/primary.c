@@ -2,8 +2,6 @@
 #include "parser_internal.h"
 #include "../utils/error.h"
 
-ast_node_t *expression(parser_t *parser); // solo la firma
-
 ast_node_t *call_expression(parser_t *parser, char *name) {
     size_t capacity = 4;
     size_t arg_count = 0;

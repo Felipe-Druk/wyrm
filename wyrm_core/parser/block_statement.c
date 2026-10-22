@@ -4,8 +4,6 @@
 
 static const size_t INITIAL_CAPACITY = 5;
 
-ast_node_t *expression_statement(parser_t *parser); // solo la firma
-
 ast_node_t *block_statement(parser_t *parser) {
     ast_node_t *block = create_block_node(INITIAL_CAPACITY);
 

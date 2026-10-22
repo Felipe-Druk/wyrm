@@ -17,10 +17,6 @@
 
 static const size_t INITIAL_CAPACITY = 5;
 
-// definimos funciones privadas para resolver llamados recursivos
-ast_node_t *expression(parser_t *parser);
-ast_node_t *expression_statement(parser_t *parser);
-
 parser_t *create_parser(token_vector_t *tokens) {
     parser_t *new_parser = malloc(sizeof(parser_t));
     if (new_parser == NULL) {
@@ -58,9 +54,8 @@ ast_node_t *expression_statement(parser_t *parser) {
     }
 
     // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON
-    TokenType actual_type = peek(parser)->type;
-    if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
-        return variable_declaration(parser, actual_type);
+    if (peek(parser)->type >= MIN_TYPE && peek(parser)->type <= MAX_TYPE) {
+        return variable_declaration(parser);
     }
 
     ast_node_t *expr = expression(parser);

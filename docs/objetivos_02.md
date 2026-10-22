@@ -1272,7 +1272,7 @@ Luego del extenso análisis que hicimos de cada uno de los tests, podemos tener 
 Antes:
 
     - nueva forma de declaarar variables
-    - problemas de memorai
+    - problemas de memoria
     - refactor del parser
 
 Luego de terminar estos ítems debemos cargar el **AST** y plasmarlo como bytecode

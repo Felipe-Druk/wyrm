@@ -2,10 +2,8 @@
 #include "parser_internal.h"
 #include "../utils/error.h"
 
-ast_node_t *expression_statement(parser_t *parser); // solo la firma
-
-ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type) {
-    advance(parser);
+ast_node_t *variable_declaration(parser_t *parser) {
+    TokenType actual_type = advance(parser)->type;
     if (!match(parser, T_IDENTIFIER)) {
         panic(ERR_SYNTAX, "Syntax error: variable needs a name");
     }

@@ -8,6 +8,10 @@ del módulo Son static inline para que el compilador pueda optimizar su uso y ev
 funciones pequeñas son perfectas para ser inline
 */
 
+// definimos funciones privadas para resolver llamados recursivos
+ast_node_t *expression(parser_t *parser);
+ast_node_t *expression_statement(parser_t *parser);
+
 // puede devolver NULL
 static inline wyrm_token_t *peek(parser_t *parser) { return get_token(parser->tokens, parser->current_index); }
 

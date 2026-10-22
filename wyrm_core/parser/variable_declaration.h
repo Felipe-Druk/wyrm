@@ -7,4 +7,4 @@ Wyrm variable_declaration = "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression
 */
 
 // cumple con var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON
-ast_node_t *variable_declaration(parser_t *parser, TokenType actual_type);
+ast_node_t *variable_declaration(parser_t *parser);
