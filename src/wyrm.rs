@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_wyrm_fusion_conteo() {
+    fn test_wyrm_función_conteo() {
         let input = "
         (nat32) -> int32 contador = (x) -> {
             int32 actual = 0;
@@ -350,6 +350,29 @@ mod tests {
             assert_eq!(
                 output.value.nat16_val, 10,
                 "El contador debería haber sumado hasta 10"
+            );
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn test_wyrm_función_multiples_argumetnos() {
+        let input = "
+        (int32, int32) -> int64 suma = (x,y) -> { x+y }        
+        int64 resultado = suma(2,suma(1,2)); resultado";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo resultante debe ser int64"
+            );
+            assert_eq!(
+                output.value.int64_val, 5,
+                "El contador debería haber sumado hasta 5"
             );
         }
     }

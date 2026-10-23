@@ -9,14 +9,14 @@ int charge_identifier(token_vector_t *tokens, const char *input, size_t new_inde
 
     size_t length = new_index - actual_index;
 
-    char *lexeme = malloc(sizeof(char) * length);
+    char *lexeme = malloc(sizeof(char) * (length + 1));
     if (lexeme == NULL) {
         return -1;
     }
 
     strncpy(lexeme, input + actual_index, length);
 
-    lexeme[length - 1] = '\0';
+    lexeme[length] = '\0';
 
     wyrm_token_t type_token = {.type = T_IDENTIFIER, .lexeme = lexeme};
     int result = push_token(tokens, type_token);
@@ -25,10 +25,11 @@ int charge_identifier(token_vector_t *tokens, const char *input, size_t new_inde
 
 int resolver_identifier(char *input, int index, token_vector_t *tokens) {
     int i = index;
-    while (isalpha(input[i]) || input[i] == '_') {
+    if (isalpha(input[i]) || input[i] == '_') {
         i++;
-    }
-    if (i != index) {
+        while (isalnum(input[i]) || input[i] == '_') {
+            i++;
+        }
         if (charge_identifier(tokens, input, i, index) >= 0) {
             return i;
         }
