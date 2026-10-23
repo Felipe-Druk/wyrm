@@ -376,4 +376,28 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    #[serial]
+    fn test_wyrm_función_sin_argumetnos() {
+        let input = "
+        () -> nat64 big = () -> {10^15 }        
+        big()";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValNat64,
+                "El tipo resultante debe ser nat64"
+            );
+            assert_eq!(
+                output.value.nat64_val,
+                10_u64.pow(15),
+                "El contador debería haber sumado hasta 10^15"
+            );
+        }
+    }
 }

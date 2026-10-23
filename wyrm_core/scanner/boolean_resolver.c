@@ -8,7 +8,7 @@ const char *bool_keywords[] = {
 };
 
 // Vector de tokens types, respetando el orden de arriba
-const TokenType bool_tokens[] = {T_TRUE, T_FALSE, T_AND, T_OR, T_NOT, T_XOR, T_IF, T_ELSE, T_WHILE, T_FOR};
+const token_type_t bool_tokens[] = {T_TRUE, T_FALSE, T_AND, T_OR, T_NOT, T_XOR, T_IF, T_ELSE, T_WHILE, T_FOR};
 
 int charge_bool_keyword(token_vector_t *tokens, size_t index) {
     wyrm_token_t token = {.type = bool_tokens[index], .lexeme = strdup(bool_keywords[index])};

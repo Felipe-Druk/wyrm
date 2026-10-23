@@ -20,7 +20,7 @@ const char *types[] = {
 };
 
 // vector para resolver los toknes, debe respetar el orden del vector de arriba
-const TokenType t_types[] = {
+const token_type_t t_types[] = {
     // Enteros
     T_INT8, T_INT16, T_INT32, T_INT64,
 

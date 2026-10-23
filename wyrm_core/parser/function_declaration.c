@@ -19,14 +19,14 @@ void capture_function_args_type(parser_t *parser, wyrm_function_t *func_def) {
 
     if (peek(parser)->type != T_RPAREN) {
         do {
-            TokenType actual_type = peek(parser)->type;
+            token_type_t actual_type = peek(parser)->type;
             if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
                 advance(parser);
                 if (func_def->arg_count >= capacity) {
                     capacity *= 2;
                     resize_function_args(func_def, capacity);
                 }
-                func_def->args[func_def->arg_count].type = token_to_val_type(actual_type);
+                func_def->args[func_def->arg_count].type = token_to_value_type(actual_type);
                 func_def->args[func_def->arg_count].name = NULL;
                 func_def->arg_count++;
             } else {
@@ -42,10 +42,10 @@ void capture_function_args_type(parser_t *parser, wyrm_function_t *func_def) {
 
 // luego de "->" capturamos el tipo de retorno de la función
 void capture_function_return_type(parser_t *parser, wyrm_function_t *func_def) {
-    TokenType actual_type = peek(parser)->type;
+    token_type_t actual_type = peek(parser)->type;
     if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
         advance(parser);
-        func_def->returned = token_to_val_type(actual_type);
+        func_def->returned = token_to_value_type(actual_type);
     } else {
         panic(ERR_SYNTAX, "Syntax error: unexpected token in function return type");
     }
@@ -83,7 +83,7 @@ void capture_function_arg_names(parser_t *parser, wyrm_function_t *func_def) {
 
 ast_node_t *function_declaration(parser_t *parser) {
     wyrm_function_t func_def;
-    func_def.returned = token_to_val_type(peek(parser)->type);
+    func_def.returned = token_to_value_type(peek(parser)->type);
     func_def.arg_count = 0;
     func_def.args = calloc(INITIAL_CAPACITY, sizeof(wyrm_function_arg_t));
 

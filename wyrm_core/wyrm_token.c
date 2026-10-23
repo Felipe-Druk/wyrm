@@ -1,6 +1,6 @@
 #include "wyrm_token.h"
 
-const char *token_type_to_string(TokenType type) {
+const char *token_type_to_string(token_type_t type) {
     // codigo bastante feo, en le futuro intentare mejorarlo.
     switch (type) {
         // tipos

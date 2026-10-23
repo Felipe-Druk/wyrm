@@ -1,7 +1,7 @@
 #pragma once
 
 #include "wyrm_token.h"
-#include "wyrm_value.h"
+#include "wyrm_types/wyrm_value/wyrm_value.h"
 #include <stddef.h>
 
 /*
@@ -14,7 +14,7 @@ manera correcta
 typedef struct {
     char *name;         // El nombre de la variable
     wyrm_value_t value; // El valor enccerado en un wyrm_value
-    TokenType type;     // El tipo de la misma
+    token_type_t type;  // El tipo de la misma
 } EnvEntry;
 
 typedef EnvEntry env_entry_t;
@@ -30,7 +30,7 @@ typedef struct Environment {
 environment_t *create_environment(environment_t *parent);
 
 // carga una nueva variable o la reescribe
-void environment_set(environment_t *env, const char *name, wyrm_value_t value, TokenType type);
+void environment_set(environment_t *env, const char *name, wyrm_value_t value, token_type_t type);
 
 // devuelve un puntero al valor de la variable, o NULL si no existe
 wyrm_value_t *environment_get(environment_t *env, const char *name);

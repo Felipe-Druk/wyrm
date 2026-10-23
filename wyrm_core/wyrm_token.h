@@ -95,6 +95,7 @@ typedef struct {
 } WyrmToken;
 
 typedef WyrmToken wyrm_token_t;
+typedef TokenType token_type_t;
 
 // No es lo más usual pero voy a definir un to_string es util para debuggear.
-const char *token_type_to_string(TokenType type);
+const char *token_type_to_string(token_type_t type);

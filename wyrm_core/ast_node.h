@@ -2,7 +2,7 @@
 #include "wyrm_token.h"
 #include <stddef.h>
 #include <stdbool.h>
-#include "wyrm_value.h"
+#include "wyrm_types/wyrm_value/wyrm_value.h"
 
 /*
 El AST se contruye mediante nodos, cada nodo puede tener una cantidad de hijos no dfeinida, y tienen sus maneras
@@ -33,7 +33,7 @@ typedef struct ASTNode ast_node_t; // declaración para prevenir recursividad
 // Almacena literales numericos
 typedef struct {
     char *value; // Bytes del numero {'0','1','2','3','4','5','6','7','8','9','.'} + '\0'
-    TokenType numeric_type;
+    token_type_t numeric_type;
 } AstNumberLiteral;
 
 typedef AstNumberLiteral ast_number_literal_t;
@@ -54,7 +54,7 @@ typedef AstIdentifier ast_identifier_t;
 // Operaciones binarios
 typedef struct {
     struct ASTNode *left;
-    TokenType operator;
+    token_type_t operator;
     struct ASTNode *right;
 } AstBinaryExpr;
 
@@ -62,7 +62,7 @@ typedef AstBinaryExpr ast_binary_expr_t;
 
 // Operaciones unarias com  -5 o ~x
 typedef struct {
-    TokenType operator;
+    token_type_t operator;
     struct ASTNode *right;
 } AstUnaryExpr;
 
@@ -70,10 +70,10 @@ typedef AstUnaryExpr ast_unary_expr_t;
 
 // Declaraciones de variables
 typedef struct {
-    TokenType var_type;
+    token_type_t var_type;
     char *identifier;           // Nombre de la variable
     struct ASTNode *expression; // Lo que guardaremos en la variable
-    TokenType assign_op;        // Con que operador se isntancio
+    token_type_t assign_op;     // Con que operador se isntancio
 } AstVarDecl;
 
 typedef AstVarDecl ast_var_decl_t;
@@ -97,7 +97,7 @@ typedef AstIfExpr ast_if_expr_t;
 // para cambiar el valor de una variable ya reservada
 typedef struct {
     char *name;            // nombre de la variable a reasignar
-    TokenType operator;    // opredor de asignacion
+    token_type_t operator; // opredor de asignacion
     struct ASTNode *value; // nuevo valor
 } AstAssignment;
 
@@ -157,15 +157,16 @@ struct ASTNode {
     } ast_node_value;
 };
 
-ast_node_t *create_number_node(char *value, TokenType numeric_type);
+ast_node_t *create_number_node(char *value, token_type_t numeric_type);
 ast_node_t *create_bool_node(bool value);
 ast_node_t *create_identifier_node(char *value);
-ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t * right);
-ast_node_t *create_unary_node(TokenType operator, ast_node_t * right);
-ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression, TokenType assign_op);
+ast_node_t *create_binary_node(ast_node_t *left, token_type_t operator, ast_node_t * right);
+ast_node_t *create_unary_node(token_type_t operator, ast_node_t * right);
+ast_node_t *create_var_decl_node(token_type_t var_type, char *identifier, ast_node_t *expression,
+                                 token_type_t assign_op);
 ast_node_t *create_block_node(size_t capacity);
 ast_node_t *create_if_node(ast_node_t *condition, ast_node_t *then_branch, ast_node_t *else_branch);
-ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_node_t * value);
+ast_node_t *create_assignment_node(const char *name, token_type_t operator, ast_node_t * value);
 ast_node_t *create_while_node(ast_node_t *condition, ast_node_t *body);
 ast_node_t *create_function_decl_node(char *name, wyrm_function_t function);
 ast_node_t *create_call_node(char *name, size_t arg_count, ast_node_t **args);

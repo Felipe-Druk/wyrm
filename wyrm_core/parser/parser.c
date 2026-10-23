@@ -46,7 +46,7 @@ ast_node_t *expression_statement(parser_t *parser) {
 
     // cumple con (TIPO, ...) -> RETORNO nombre = (args) -> { ... }
     if (peek(parser)->type == T_LPAREN) {
-        TokenType next_type = get_token(parser->tokens, parser->current_index + 1)->type;
+        token_type_t next_type = get_token(parser->tokens, parser->current_index + 1)->type;
         if ((next_type >= MIN_TYPE && next_type <= MAX_TYPE) || next_type == T_RPAREN) {
             advance(parser);
             return function_declaration(parser);
@@ -65,7 +65,7 @@ ast_node_t *expression_statement(parser_t *parser) {
     }
     // cumple T_IDENTIFIER (T_ASSIGN | T_LARROW) expression
     if (expr->type == AST_IDENTIFIER && (match(parser, T_ASSIGN) || match(parser, T_LARROW))) {
-        TokenType assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
+        token_type_t assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
         ast_node_t *right_expr = expression_statement(parser);
 
         ast_node_t *assignment_node =

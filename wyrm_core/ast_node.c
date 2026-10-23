@@ -9,7 +9,7 @@ void check_node(const ast_node_t *node, const char *name) {
     }
 }
 
-ast_node_t *create_number_node(char *value, TokenType numeric_type) {
+ast_node_t *create_number_node(char *value, token_type_t numeric_type) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Number");
 
@@ -62,7 +62,7 @@ void destroy_identifier_node(ast_node_t *node) {
     free(node);
 }
 
-ast_node_t *create_binary_node(ast_node_t *left, TokenType operator, ast_node_t *right) {
+ast_node_t *create_binary_node(ast_node_t *left, token_type_t operator, ast_node_t *right) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Binary");
 
@@ -83,7 +83,7 @@ void destroy_binary_node(ast_node_t *node) {
     free(node);
 }
 
-ast_node_t *create_unary_node(TokenType operator, ast_node_t *right) {
+ast_node_t *create_unary_node(token_type_t operator, ast_node_t *right) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Unary");
 
@@ -101,7 +101,8 @@ void destroy_unary_node(ast_node_t *node) {
     free(node);
 }
 
-ast_node_t *create_var_decl_node(TokenType var_type, char *identifier, ast_node_t *expression, TokenType assign_op) {
+ast_node_t *create_var_decl_node(token_type_t var_type, char *identifier, ast_node_t *expression,
+                                 token_type_t assign_op) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "var_decl");
 
@@ -181,7 +182,7 @@ void destroy_if_node(ast_node_t *node) {
     free(node);
 }
 
-ast_node_t *create_assignment_node(const char *name, TokenType operator, ast_node_t *value) {
+ast_node_t *create_assignment_node(const char *name, token_type_t operator, ast_node_t *value) {
     ast_node_t *new_node = calloc(1, sizeof(ast_node_t));
     check_node(new_node, "Assignment");
 

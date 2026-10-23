@@ -25,7 +25,7 @@ static inline wyrm_token_t *advance(parser_t *parser) {
 }
 
 // avanza el parser al siguiente token y devuelve el token actual
-static inline int match(parser_t *parser, TokenType expected_type_token) {
+static inline int match(parser_t *parser, token_type_t expected_type_token) {
     if (peek(parser)->type == expected_type_token) {
         advance(parser);
         return 1;

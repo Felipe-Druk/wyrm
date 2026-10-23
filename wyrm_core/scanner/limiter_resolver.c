@@ -7,7 +7,7 @@ static bool should_insert_semicolon(const char *input, int index, token_vector_t
         return false;
     }
 
-    TokenType last = get_token(tokens, tokens->size - 1)->type;
+    token_type_t last = get_token(tokens, tokens->size - 1)->type;
 
     if (last == T_IDENTIFIER || last == T_NUMBER || last == T_FLOAT_NUMBER || last == T_STRING || last == T_TRUE ||
         last == T_FALSE) {
@@ -26,7 +26,7 @@ static bool should_insert_semicolon(const char *input, int index, token_vector_t
 }
 
 int resolver_limiter(char *input, int index, token_vector_t *tokens) {
-    TokenType type;
+    token_type_t type;
     const char *lexeme;
 
     switch (input[index]) {

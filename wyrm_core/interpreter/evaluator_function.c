@@ -41,11 +41,11 @@ wyrm_value_t eval_call(ast_node_t *node, environment_t *scope) {
         wyrm_value_t arg_evaluated = eval_node(args[i], scope);
 
         char *expected_name = func_def.args[i].name;
-        WyrmValueType expected_type = func_def.args[i].type;
+        wyrm_value_type_t expected_type = func_def.args[i].type;
 
-        environment_set(local_env, expected_name, arg_evaluated, (TokenType)expected_type);
+        environment_set(local_env, expected_name, arg_evaluated, (token_type_t)expected_type);
     }
-    wyrm_value_t result = eval_node(func_def.body, local_env);
+    wyrm_value_t result = cast_to_value_type(eval_node(func_def.body, local_env), func_def.returned);
     destroy_environment(local_env);
     if (result.type != func_def.returned && func_def.returned != VAL_VOID) {
         panic(ERR_TYPE, "Runtime error: Function '%s' returned wrong type", func_name);
