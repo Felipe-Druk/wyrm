@@ -8,7 +8,7 @@ Es preferible tener claro que no quedo tan prolijo para que el que lo revise no 
 
 El archivo parser.c quedo increíblemente grande, al querer copiar del repo original no se optó por modularizar como en otros módulos y el resultado es un archivo bastante feo... Es más era el primero en dar problemas cada vez que se agregaba funcionalidad.
 
-Quedaron demasiado TODO regados por ahi, mucho son errores sin disparar o cosas definidas para futuro. El problema fue apurar cuando la entrega estaba a las puertas (de hecho ahora se escribe esto rápisdo).
+Quedaron demasiado TODO regados por ahí, mucho son errores sin disparar o cosas definidas para futuro. El problema fue apurar cuando la entrega estaba a las puertas (de hecho ahora se escribe esto rápisdo).
 
 Intentar tener tantos tipos nativos complico de sobre manera algunos bloques de código, aunque se intentó mitigar con macros y buenas prácticas quedaron regados algunos flujos sin tanta comprobación de por medio.
 

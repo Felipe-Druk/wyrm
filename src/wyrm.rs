@@ -4,7 +4,7 @@ use rustyline::error::ReadlineError;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
-const VERSION: &str = "0.0.3";
+const VERSION: &str = "0.1.0";
 const EXIT_COMMAND: &str = "exit";
 const C_VERBOSE_MODE: c_int = 1 << 0;
 const C_DEBUG_MODE: c_int = 1 << 1;
