@@ -1,5 +1,5 @@
 #pragma once
-#include "../ast_node.h"
+#include "../wyrm_types/ast/ast_node.h"
 #include "../utils/token_vector.h"
 
 typedef struct {
