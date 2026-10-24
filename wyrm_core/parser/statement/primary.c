@@ -1,5 +1,5 @@
 #include "primary.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "../utils/error.h"
 
 ast_node_t *call_expression(parser_t *parser, char *name) {

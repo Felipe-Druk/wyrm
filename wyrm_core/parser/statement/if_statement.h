@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo donde se declara la función if_statement, que es responsable de analizar una declaración if en el lenguaje Wyrm

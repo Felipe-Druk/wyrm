@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo donde se declara la función block_statement, que es responsable de analizar un bloque de código en el lenguaje

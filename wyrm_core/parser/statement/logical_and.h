@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo donde se declara "logica and", and es una compuerta logcia que basicamente es true solo si las dos expresiones

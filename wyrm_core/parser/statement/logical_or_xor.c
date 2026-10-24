@@ -1,5 +1,5 @@
 #include "logical_or_xor.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "logical_and.h"
 
 ast_node_t *logical_or_xor(parser_t *parser) {

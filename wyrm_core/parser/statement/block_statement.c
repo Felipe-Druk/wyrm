@@ -1,6 +1,6 @@
 #include "block_statement.h"
-#include "../utils/error.h"
-#include "parser_internal.h"
+#include "../../utils/error.h"
+#include "../parser_internal.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 

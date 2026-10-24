@@ -1,5 +1,5 @@
 #include "term.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "factor.h"
 
 ast_node_t *term(parser_t *parser) {

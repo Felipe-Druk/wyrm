@@ -1,5 +1,5 @@
 #include "comparison.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "term.h"
 
 ast_node_t *comparison(parser_t *parser) {

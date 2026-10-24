@@ -1,5 +1,5 @@
 #include "equality.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "comparison.h"
 
 ast_node_t *equality(parser_t *parser) {

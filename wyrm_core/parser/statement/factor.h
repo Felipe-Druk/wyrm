@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo donde se declara la función factor, son las opreaciones binarias con gerarquia (* / %)

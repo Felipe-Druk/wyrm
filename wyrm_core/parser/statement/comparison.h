@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo donde se defienen las comparaciones, menos las de "igual" y "desigual", estas tienen "más gerarquia"

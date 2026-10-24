@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo donde se define la expresión de potencia, en cualqueier expresión se resuelven primero las potencias

@@ -1,6 +1,6 @@
 #include "function_declaration.h"
 #include "../utils/error.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "block_statement.h"
 #include <string.h>
 

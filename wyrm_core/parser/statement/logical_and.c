@@ -1,5 +1,5 @@
 #include "logical_and.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "equality.h"
 
 ast_node_t *logical_and(parser_t *parser) {

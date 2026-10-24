@@ -1,5 +1,5 @@
 #include "factor.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "unary.h"
 
 ast_node_t *factor(parser_t *parser) {

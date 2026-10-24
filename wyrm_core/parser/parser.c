@@ -7,13 +7,13 @@
 #include <stdbool.h>
 #include "parser_internal.h"
 /// se resuleven antes de la cadena
-#include "block_statement.h"
-#include "if_statement.h"
-#include "while_statement.h"
-#include "function_declaration.h"
-#include "variable_declaration.h"
+#include "statement/block_statement.h"
+#include "statement/if_statement.h"
+#include "statement/while_statement.h"
+#include "statement/function_declaration.h"
+#include "statement/variable_declaration.h"
 // inicio de la "cadena"
-#include "logical_or_xor.h"
+#include "statement/logical_or_xor.h"
 
 static const size_t INITIAL_CAPACITY = 5;
 

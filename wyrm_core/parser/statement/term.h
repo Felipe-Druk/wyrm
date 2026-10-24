@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo donde se declara la función "termino", son las opreaciones binarias de gerarquia media, incluye + y -

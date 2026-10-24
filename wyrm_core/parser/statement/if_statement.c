@@ -1,6 +1,6 @@
 #include "if_statement.h"
 #include "../utils/error.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 
 ast_node_t *if_statement(parser_t *parser) {
     if (!match(parser, T_LPAREN)) {

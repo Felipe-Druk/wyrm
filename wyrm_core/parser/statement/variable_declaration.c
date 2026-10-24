@@ -1,5 +1,5 @@
 #include "variable_declaration.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "../utils/error.h"
 
 ast_node_t *variable_declaration(parser_t *parser) {

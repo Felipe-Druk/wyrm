@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo donde se define la "igualdad", es de gerarquia menor a los de comparacion, tenmos igual "==" y no igual "~="

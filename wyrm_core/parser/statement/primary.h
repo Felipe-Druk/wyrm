@@ -1,5 +1,5 @@
 #pragma once
-#include "parser.h"
+#include "../parser.h"
 
 /*
 Archivo de cabecera para la expresión primaria. Primary simpre el el ultimo eslabon de la cadena, todo el parser es un

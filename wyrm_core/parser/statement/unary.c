@@ -1,5 +1,5 @@
 #include "unary.h"
-#include "parser_internal.h"
+#include "../parser_internal.h"
 #include "power.h"
 
 ast_node_t *unary(parser_t *parser) {
