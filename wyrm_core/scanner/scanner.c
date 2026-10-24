@@ -5,13 +5,13 @@
 
 #define INITIALCAPACITY 10
 
-#include "arithmetic_resolver.h"
-#include "identifier_resolver.h"
-#include "limiter_resolver.h"
-#include "logical_resolver.h"
-#include "numeric_resolver.h"
-#include "types_resolver.h"
-#include "boolean_resolver.h"
+#include "resolver/arithmetic_resolver.h"
+#include "resolver/identifier_resolver.h"
+#include "resolver/limiter_resolver.h"
+#include "resolver/logical_resolver.h"
+#include "resolver/numeric_resolver.h"
+#include "resolver/types_resolver.h"
+#include "resolver/boolean_resolver.h"
 
 void debug_tokens(token_vector_t *tokens) {
     print_line("== Current tokens == \n");
