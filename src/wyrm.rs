@@ -1,8 +1,10 @@
 use crate::interpreter::*;
+use rustyline::DefaultEditor;
+use rustyline::error::ReadlineError;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 
-const VERSION: &str = "0.0.3";
+const VERSION: &str = "0.1.0";
 const EXIT_COMMAND: &str = "exit";
 const C_VERBOSE_MODE: c_int = 1 << 0;
 const C_DEBUG_MODE: c_int = 1 << 1;
@@ -14,6 +16,7 @@ pub struct Wyrm {
 
 unsafe extern "C" {
     fn run_wyrm(input: *const c_char, flags: c_int) -> WyrmValue;
+    fn terminate_wyrm();
 }
 
 impl Wyrm {
@@ -40,6 +43,12 @@ impl Wyrm {
         }
     }
 
+    fn terminate(&self) {
+        unsafe {
+            terminate_wyrm();
+        }
+    }
+
     /// While infinto que lee entradas del usuario y llama a la implementación de Wyrm en C, en principio se sale con el comando "exit"
     pub fn run(&self) {
         println!("Wyrm Version {}", VERSION);
@@ -48,28 +57,50 @@ impl Wyrm {
             println!("Modo Verbose activado");
         }
 
-        let mut input = String::new();
+        let mut rl = DefaultEditor::new().expect("No se pudo inicializar la terminal interactiva");
+        let _ = rl.load_history(".wyrm_history");
 
         loop {
-            println!("Wyrm >: ");
-            std::io::stdin()
-                .read_line(&mut input)
-                .expect("Error al leer la entrada");
-
-            if self.verbose {
-                self.input_verbose(&input);
+            match rl.readline("wyrm> ") {
+                Ok(line) => {
+                    let input = line.trim();
+                    if self.verbose {
+                        self.input_verbose(input);
+                    }
+                    if input.is_empty() {
+                        continue;
+                    }
+                    if input == EXIT_COMMAND {
+                        println!("Wyrm se despide :D ...");
+                        break;
+                    }
+                    let _ = rl.add_history_entry(input);
+                    let result = self.call_wyrm(input);
+                    println!("{}", result);
+                }
+                Err(ReadlineError::Eof) => {
+                    println!("Wyrm se despide :D ...");
+                    break;
+                }
+                Err(ReadlineError::Interrupted) => {
+                    println!("^C");
+                    println!("Wyrm se despide :D ...");
+                    break;
+                }
+                Err(err) => {
+                    eprintln!("Error al leer la entrada: {:?}", err);
+                    break;
+                }
             }
-
-            if input.trim() == EXIT_COMMAND {
-                println!("Wyrm se despide :D ...");
-                break;
-            }
-
-            let result = self.call_wyrm(&input);
-
-            println!("{}", result);
-            input.clear();
         }
+        let _ = rl.save_history(".wyrm_history");
+    }
+}
+
+// Nos aseguramos de que al salir del scope de Wyrm, se llame a terminate_wyrm para liberar la memoria del scope global y terminar el intérprete
+impl Drop for Wyrm {
+    fn drop(&mut self) {
+        self.terminate();
     }
 }
 
@@ -78,8 +109,10 @@ impl Wyrm {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
+    #[serial] // Como el scope es global, nos es bueno que exista más de un wyrm corriendo al mismo tiempo, serial fuerza a que se ejecuten de a uno
     fn test_wyrm_respeta_punt_y_coma() {
         let input = format!("2+3; 3+6");
         let wyrm = Wyrm::new(false);
@@ -99,6 +132,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_instancia_variables() {
         let input = format!("int32 entero = 54;");
         let input2 = format!("entero;");
@@ -125,6 +159,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_trabaja_booleanos() {
         let input = format!("bool falso = false; falso ~= true");
         let wyrm = Wyrm::new(false);
@@ -141,6 +176,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_trabaja_bloques() {
         let input = "int32 x = (5 + 3) * 2;
                     { 
@@ -158,6 +194,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_respeta_parentecis() {
         let input = format!("(2+2) / 2");
         let wyrm = Wyrm::new(false);
@@ -174,6 +211,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_aisla_variables_en_scope_local() {
         let input = "
             int32 x = 5;
@@ -200,6 +238,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_control_de_flujo_if_else() {
         let input = "
             int32 valor = 15;
@@ -233,6 +272,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_wyrm_bucle_while_conteo() {
         let input = "int32 contador = 0;
          while (contador < 5) {
@@ -257,16 +297,17 @@ mod tests {
     }
 
     #[test]
-    fn test_wyrm_fusion_conteo() {
+    #[serial]
+    fn test_wyrm_función_conteo() {
         let input = "
-        int32 contador(nat32 x){
+        (nat32) -> int32 contador = (x) -> {
             int32 actual = 0;
             while (actual < x) {
                 actual = actual + 1;
             }
             actual
         }        
-         contador(5)";
+        contador(5)";
 
         let wyrm = Wyrm::new(false);
         let output = wyrm.call_wyrm(input);
@@ -280,6 +321,113 @@ mod tests {
             assert_eq!(
                 output.value.int32_val, 5,
                 "El contador debería haber sumado hasta 5"
+            );
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn test_wyrm_inserta_punto_coma() {
+        let input = "
+        (nat32) -> int32 contador = (x) -> {
+            int32 actual = 0
+            while (actual < x) {
+                actual = actual + 1
+            }
+            actual
+        }        
+        nat16 y = 5 + contador(5); y";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValNat16,
+                "El tipo resultante debe ser nat16"
+            );
+            assert_eq!(
+                output.value.nat16_val, 10,
+                "El contador debería haber sumado hasta 10"
+            );
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn test_wyrm_función_multiples_argumetnos() {
+        let input = "
+        (int32, int32) -> int64 suma = (x,y) -> { x+y }        
+        int64 resultado = suma(2,suma(1,2)); resultado";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValInt64,
+                "El tipo resultante debe ser int64"
+            );
+            assert_eq!(
+                output.value.int64_val, 5,
+                "El contador debería haber sumado hasta 5"
+            );
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn test_wyrm_función_sin_argumetnos() {
+        let input = "
+        () -> nat64 big = () -> {10^15 }        
+        big()";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValNat64,
+                "El tipo resultante debe ser nat64"
+            );
+            assert_eq!(
+                output.value.nat64_val,
+                10_u64.pow(15),
+                "El contador debería haber sumado hasta 10^15"
+            );
+        }
+    }
+
+    #[test]
+    #[serial]
+    fn test_wyrm_función_sin_retorno() {
+        let input = "
+        nat64 big;
+        (bool) -> () void = (b) -> {big =10^15;}        
+        void(true)";
+        let input2 = "big";
+
+        let wyrm = Wyrm::new(false);
+        let output = wyrm.call_wyrm(input);
+        assert_eq!(
+            output.value_type,
+            WyrmValueType::ValVoid,
+            "El tipo resultante debe ser vacio"
+        );
+        let output = wyrm.call_wyrm(input2);
+        unsafe {
+            assert_eq!(
+                output.value_type,
+                WyrmValueType::ValNat64,
+                "El tipo resultante debe ser nat64"
+            );
+            assert_eq!(
+                output.value.nat64_val,
+                10_u64.pow(15),
+                "El contador debería haber sumado hasta 10^15"
             );
         }
     }

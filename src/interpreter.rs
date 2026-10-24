@@ -74,12 +74,23 @@ impl fmt::Display for WyrmValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         unsafe {
             match self.value_type {
+                // Enteros
+                WyrmValueType::ValInt8 => write!(f, "{}", self.value.int8_val),
+                WyrmValueType::ValInt16 => write!(f, "{}", self.value.int16_val),
+                WyrmValueType::ValInt32 => write!(f, "{}", self.value.int32_val),
                 WyrmValueType::ValInt64 => write!(f, "{}", self.value.int64_val),
+                // Naturales
+                WyrmValueType::ValNat8 => write!(f, "{}", self.value.nat8_val),
+                WyrmValueType::ValNat16 => write!(f, "{}", self.value.nat16_val),
+                WyrmValueType::ValNat32 => write!(f, "{}", self.value.nat32_val),
                 WyrmValueType::ValNat64 => write!(f, "{}", self.value.nat64_val),
+                // Flotantes
+                WyrmValueType::ValFloat32 => write!(f, "{}", self.value.float32_val),
                 WyrmValueType::ValFloat64 => write!(f, "{}", self.value.float64_val),
+                // booleanos
                 WyrmValueType::ValBool => write!(f, "{}", self.value.bool_val),
 
-                WyrmValueType::ValVoid => write!(f, "void"),
+                WyrmValueType::ValVoid => write!(f, "∅"),
                 _ => write!(f, "<tipo desconocido>"),
             }
         }
@@ -98,6 +109,7 @@ mod tests {
             root: *mut AstNode,
             scope: *mut std::ffi::c_void,
         ) -> *mut Interpreter;
+        pub fn destroy_interpreter(interpreter: *mut Interpreter);
     }
 
     #[test]
@@ -121,6 +133,7 @@ mod tests {
                 "El tipo no es int64"
             );
             assert_eq!(resultado.value.int64_val, 10, "El valor no fue conservado");
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -149,6 +162,7 @@ mod tests {
                 resultado.value.float64_val, 10.0,
                 "El valor no fue conservado"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -200,6 +214,7 @@ mod tests {
                 resultado.value.int64_val, 30,
                 "El cálculo matemático de 10 + 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -251,6 +266,7 @@ mod tests {
                 resultado.value.int64_val, -10,
                 "El cálculo matemático de 10 - 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -302,6 +318,7 @@ mod tests {
                 resultado.value.int64_val, 200,
                 "El cálculo matemático de 10 * 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -353,6 +370,7 @@ mod tests {
                 resultado.value.int64_val, 0,
                 "El cálculo matemático de 10 / 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -404,6 +422,7 @@ mod tests {
                 resultado.value.int64_val, 10,
                 "El cálculo matemático de 10 % 20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -455,6 +474,7 @@ mod tests {
                 resultado.value.int64_val, 8,
                 "El cálculo matemático de 2 ^ 3 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 
@@ -494,6 +514,7 @@ mod tests {
                 resultado.value.int64_val, -20,
                 "El cálculo matemático de -20 falló"
             );
+            destroy_interpreter(interpreter_ptr);
         }
     }
 }

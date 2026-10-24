@@ -8,7 +8,7 @@ Es importante en un proyecto tener mecanismos que mejoren la calidad de vida, un
 
 ## Que paso con CSpell? 
 Si se estudia el historial de commits se vera que se agrego CSpell y luego se quito, resulta que aunque funciona muy bien para encontrar palabras mal escritas, no me fue posible configurarlo en español e ingles al mismo tiempo.
-Fue mejor eliminarlo y como la mayoria de errores son de "typo" (una letra por otra) usamos "typos" para encontrarlos y corregirlos, tiene algunos problemas con palabras como ser o hace que las interpreta como un error de las palbras en inglés set y have, pero se pueden cargar esos casos bordes.
+Fue mejor eliminarlo y como la mayoría de errores son de "typo" (una letra por otra) usamos "typos" para encontrarlos y corregirlos, tiene algunos problemas con palabras como ser o hace que las interpreta como un error de las palbras en inglés set y have, pero se pueden cargar esos casos bordes.
 
 No es perfecto, pero gracias typos y la extensión de vscode espero mejorar bastante la ortografía del proyecto.
 

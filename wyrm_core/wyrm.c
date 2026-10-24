@@ -36,5 +36,19 @@ wyrm_value_t run_wyrm(const char *input, int flags) {
     parser->flags = flags;
     ast_node_t *root_ast = parser_parse(parser);
     interpreter_t *interpreter = create_interpreter(root_ast, global_scope);
-    return interpreter_interpret(interpreter);
+    wyrm_value_t result = interpreter_interpret(interpreter);
+
+    destroy_interpreter(interpreter);
+    destroy_ast_node(root_ast);
+    destroy_parser(parser);
+    destroy_token_vector(tokens);
+    free(input_copy);
+    return result;
+}
+
+void terminate_wyrm() {
+    if (global_scope) {
+        destroy_environment(global_scope);
+        global_scope = NULL;
+    }
 }

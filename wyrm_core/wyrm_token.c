@@ -1,6 +1,6 @@
 #include "wyrm_token.h"
 
-const char *token_type_to_string(TokenType type) {
+const char *token_type_to_string(token_type_t type) {
     // codigo bastante feo, en le futuro intentare mejorarlo.
     switch (type) {
         // tipos
@@ -68,8 +68,11 @@ const char *token_type_to_string(TokenType type) {
     // varios
     case T_ASSIGN:
         return "T_ASSIGN";
-    case T_RASSIGN:
-        return "T_RASSIGN";
+    // simbolos multiples
+    case T_LARROW:
+        return "T_LARROW";
+    case T_RARROW:
+        return "T_RARROW";
     // literales
     case T_NUMBER:
         return "T_NUMBER";

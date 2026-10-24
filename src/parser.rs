@@ -21,9 +21,11 @@ mod tests {
     unsafe extern "C" {
         pub fn create_parser(tokens: *mut TokenVector) -> *mut Parser;
         pub fn parser_parse(parser: *mut Parser) -> *mut AstNode;
+        pub fn destroy_parser(parser: *mut Parser);
+        pub fn destroy_ast_node(node: *mut AstNode);
     }
 
-    unsafe fn parse_primer_nodo(vector: &mut TokenVector) -> *const AstNode {
+    unsafe fn parse_primer_nodo(vector: &mut TokenVector) -> *mut AstNode {
         unsafe {
             let parser_ptr = create_parser(vector);
             assert!(!parser_ptr.is_null(), "El parser falló al instanciarse");
@@ -46,7 +48,9 @@ mod tests {
                 !primer_nodo_ptr.is_null(),
                 "El puntero de la sentencia es nulo"
             );
-
+            (*ast_root_ptr).ast_node_value.block_expr.size = 0;
+            destroy_ast_node(ast_root_ptr);
+            destroy_parser(parser_ptr);
             primer_nodo_ptr
         }
     }
@@ -89,6 +93,7 @@ mod tests {
             // Validamos que el string es "42"
             let c_str_recibido = CStr::from_ptr(number_data.value);
             assert_eq!(c_str_recibido.to_str().unwrap(), "42");
+            destroy_ast_node(ast_root_ptr);
         }
     }
 
@@ -173,6 +178,7 @@ mod tests {
                 "2",
                 "lexema del nodo derecho fallido"
             );
+            destroy_ast_node(ast_root_ptr);
         }
     }
 
@@ -214,15 +220,15 @@ mod tests {
                 "La raiz no es una operacion Unaria"
             );
 
-            let binary_data = ast_root.ast_node_value.binary_expr;
+            let unary_data = ast_root.ast_node_value.unary_expr;
             assert_eq!(
-                binary_data.operator,
+                unary_data.operator,
                 TokenType::TSub,
                 "El operador no una negacion"
             );
 
-            assert!(!binary_data.right.is_null(), "El hay nodo derecho");
-            let right_node = &*binary_data.right;
+            assert!(!unary_data.right.is_null(), "El hay nodo derecho");
+            let right_node = &*unary_data.right;
 
             assert_eq!(
                 right_node.node_type,
@@ -236,6 +242,7 @@ mod tests {
                 "23",
                 "lexema del nodo derecho fallido"
             );
+            destroy_ast_node(ast_root_ptr);
         }
     }
 
@@ -320,6 +327,7 @@ mod tests {
                 "3",
                 "lexema del nodo derecho fallido"
             );
+            destroy_ast_node(ast_root_ptr);
         }
     }
 
@@ -403,6 +411,7 @@ mod tests {
                 "2",
                 "lexema del nodo derecho fallido"
             );
+            destroy_ast_node(ast_root_ptr);
         }
     }
 
@@ -518,6 +527,7 @@ mod tests {
                 "3",
                 "Lexema del nodo izquierdo de la division fallido"
             );
+            destroy_ast_node(ast_root_ptr);
         }
     }
 }

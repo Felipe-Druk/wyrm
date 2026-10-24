@@ -1,7 +1,7 @@
 #pragma once
 #include "ast_node.h"
 #include "environment.h"
-#include "wyrm_value.h"
+#include "../wyrm_types/wyrm_value/wyrm_value.h"
 
 /*
 Archivo que resuelve todo lo refecnte a funciones, tanto declaración como el "llamado"

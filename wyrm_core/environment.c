@@ -22,7 +22,7 @@ environment_t *create_environment(environment_t *parent) {
     return env;
 }
 
-void environment_set(environment_t *env, const char *name, wyrm_value_t value, TokenType type) {
+void environment_set(environment_t *env, const char *name, wyrm_value_t value, token_type_t type) {
     for (size_t i = 0; i < env->count; i++) {
         if (strcmp(env->entries[i].name, name) == 0) {
             env->entries[i].value = value;
@@ -66,7 +66,7 @@ int environment_assign(environment_t *env, const char *name, wyrm_value_t value)
         for (size_t i = 0; i < current->count; i++) {
             if (strcmp(current->entries[i].name, name) == 0) {
 
-                current->entries[i].value.value = value.value;
+                current->entries[i].value.value = cast_value(value, current->entries[i].type).value;
                 return 1;
             }
         }

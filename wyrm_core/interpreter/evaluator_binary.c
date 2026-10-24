@@ -54,7 +54,7 @@ wyrm_value_t eval_pow(wyrm_value_t a, wyrm_value_t b, int has_float, int has_int
         return result;                                                                                                 \
     } while (0)
 
-wyrm_value_t eval_logical(TokenType op, wyrm_value_t left, wyrm_value_t right) {
+wyrm_value_t eval_logical(token_type_t op, wyrm_value_t left, wyrm_value_t right) {
     if (left.type != VAL_BOOL || right.type != VAL_BOOL) {
         panic(ERR_TYPE_MISMATCH, "Logical operators can only be applied to booleans");
     }

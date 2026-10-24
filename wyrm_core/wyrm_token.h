@@ -53,8 +53,11 @@ typedef enum {
     T_GREATER_EQUAL, // >= para comparar igualdad
 
     // Operadores varios
-    T_ASSIGN,  // = para asignacion de variables
-    T_RASSIGN, // <- para asignar valor y recuperar el retorno
+    T_ASSIGN, // = para asignacion de variables
+
+    // Simbolos multiples
+    T_LARROW, // <- para asignar valor y recuperar el retorno, y for
+    T_RARROW, // -> explicita el retorno de una función,
 
     // Literales
     T_NUMBER,       // Numeros enteros o naturales
@@ -63,7 +66,6 @@ typedef enum {
 
     // Importante
     T_IDENTIFIER, // Identificador etiqutas
-    T_COOMA,
 
     // If/else
     T_IF,
@@ -78,6 +80,7 @@ typedef enum {
     T_RPAREN,    // )
     T_LBRACE,    // { encapsula "scopes" o bloques de ejecucion
     T_RBRACE,    // }
+    T_COOMA,
 
 } TokenType;
 
@@ -92,6 +95,7 @@ typedef struct {
 } WyrmToken;
 
 typedef WyrmToken wyrm_token_t;
+typedef TokenType token_type_t;
 
 // No es lo más usual pero voy a definir un to_string es util para debuggear.
-const char *token_type_to_string(TokenType type);
+const char *token_type_to_string(token_type_t type);

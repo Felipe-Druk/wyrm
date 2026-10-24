@@ -1,7 +1,21 @@
 # Siempre un Makefile es important para tener ordenado el proyecto, más si vamos a usar C
 
+# Flags estrictos para Valgrind:
+# --leak-check=full: Muestra dónde se reservó exactamente cada bloque perdido
+# --show-leak-kinds=definite,indirect: Ignore falsos positivos de Rust
+# --errors-for-leak-kinds=definite,indirect: Devuelve error si hay leaks de memoria, ignorando falsos positivos de Rust
+# --track-origins=yes: Rastrea de dónde salen las variables no inicializadas
+# --error-exitcode=1: Hace que el Makefile falle si algun leak o error de memoria
+VALGRIND_FLAGS = --leak-check=full \
+                 --show-leak-kinds=definite,indirect \
+				 --errors-for-leak-kinds=definite,indirect \
+                 --track-origins=yes \
+                 --error-exitcode=1
 
-.PHONY: install check build run run-v clean format help pre-commit tests
+# Ejecuta directamente el binario de test que se encuentra en target/debug/deps/ y que empieza con "wyrm-"		
+TEST_BIN = $$(find target/debug/deps/ -maxdepth 1 -perm -111 -type f -name "wyrm-*" | head -n 1)
+
+.PHONY: install check build run run-v clean format help pre-commit tests memcheck memcheck-one
 
 .DEFAULT_GOAL := help
 
@@ -21,6 +35,8 @@ help:
 	@echo "- run-v: Ejecuta el programa con la flag de seguimiento, si no esta compilado lo compila"
 	@echo "- format: Aplica linters al proyecto"
 	@echo "- tests: Ejecuta todos los test"
+	@echo "- memcheck: Ejecuta Valgrind para detectar leaks de memoria"
+	@echo "- memcheck-one: Ejecuta Valgrind en un solo test, debe ser llamdo con TEST=<nombre_test>"
 	@echo "- pre-commit: Ejecuta los pre-commits sobre todo el proyecto"
 	@echo "- clean: limpia el ejecutable y archivos compilados"
 
@@ -52,14 +68,27 @@ format:
 	cargo fmt
 	find wyrm_core -type f \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} +
 
-tests: clean
+tests:
 	@echo "Ejecutanto tests..."
 	cargo test
+
+memcheck:
+	@echo "Ejecutando Valgrind..."
+	cargo test --no-run
+	valgrind $(VALGRIND_FLAGS) $(TEST_BIN) --test-threads=1
+
+memcheck-one:
+	@echo "Ejecutando Valgrind en un solo test..."
+	cargo test --no-run
+	valgrind $(VALGRIND_FLAGS) $(TEST_BIN) $(TEST) --test-threads=1 --nocapture
 
 pre-commit:
 	@echo "Ejecutando pre-commits..."
 	pre-commit run --all-files
 
-make clean:
+clean:
 	@echo "Limpiando el proyecto..."
 	cargo clean
+	rm vgcore.* 2> /dev/null || true
+	rm core.* 2> /dev/null || true
+	rm *.wyrm_history 2> /dev/null || true

@@ -53,7 +53,7 @@ El orden con dos tipos de asignación
 
 statement -> var_decl
 
-var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON 
+var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON 
 
 > TIPO es cualquier tipo de dato
 
@@ -75,7 +75,7 @@ El orden anterior no consideraba sentencias boolenas
 
 tatement -> var_decl
 
-var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_RASSIGN) expression T_SEMICOLON 
+var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON 
 
 > TIPO es cualquier tipo de dato
 
@@ -99,3 +99,32 @@ power -> primary ( T_POW primary )
 
 primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER
 
+**Orden 5**
+
+El orden anterior no consideraba el `xor` independiente del `or`
+
+tatement -> var_decl
+
+var_decl -> "TIPO" T_IDENTIFIER (T_ASSIGN | T_LARROW) expression T_SEMICOLON 
+
+> TIPO es cualquier tipo de dato
+
+expression -> logical_or
+
+logical_or_xor -> logical_and ( ( T_OR | T_XOR ) logical_and )
+
+logical_and -> equality ( T_AND equality )
+
+equality -> comparison ( ( T_EQUAL | T_NOT_EQUAL ) comparison )
+
+comparison -> term ( ( T_LESS | T_GREATER | T_LESS_EQUAL | T_GREATER_EQUAL ) term )
+
+term -> factor ( ( T_ADD | T_SUB ) factor )
+
+factor -> unary ( ( T_MUL | T_DIV | T_MOD ) unary )
+
+unary -> ( T_SUB | T_NOT ) power
+
+power -> primary ( T_POW primary )
+
+primary -> T_NUMBER | T_FLOAT_NUMBER | T_IDENTIFIER

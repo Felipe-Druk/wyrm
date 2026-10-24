@@ -30,7 +30,7 @@ make run
 
 ### Expectativas
 
-En el marco de de la materia "Lenguajes y Compiladores" me encantaria no solo que el legunaje cumpla los requisitos mínimos de la materia, sino que también lograr algunas metas extra, las cuales serían:
+En el marco de la materia "Lenguajes y Compiladores" me encantaría no solo que el lenguaje cumpla los requisitos mínimos de la materia, sino que también lograr algunas metas extra, las cuales serían:
 
     - Soportar funciones lambda
     - Escribir un programa "hello Word!" 100% functionals
@@ -44,8 +44,8 @@ Algunos componentes de la sintaxis de **Wyrm**  estan bien definidias mientas qu
 
 ### Definida
 
-El control de tamaños de datos es primordial por eso se definico manejar con tipos como intXX donde XX representan el número de bits que se quieren usar. También como diferencial a otros lenguajes usaremos el dato "natXX" para represantar a los naturales.
-Para no repetirnos hay muchas convenciones tomadas en el siguiente [archivo](docs/objetivos_01.md), donde se relatan que operadoes, tipos de datos y operadores.
+El control de tamaños de datos es primordial por eso se ha definido manejar con tipos como intXX donde XX representan el número de bits que se quieren usar. También como diferencial a otros lenguajes usaremos el dato "natXX" para represantar a los naturales.
+Para no repetirnos hay muchas convenciones tomadas en el siguiente [archivo](docs/objetivos_01.md), donde se relatan que operadores, tipos de datos y operadores.
 
 >Para la entrega parcial se apuraron algunas decisions, por eso hay menos documetancion,
 
@@ -58,9 +58,9 @@ Sin retorno explícito (por ahora), cuando se desarrollaron los "bloques" de eje
 }
 
 ```
-Esta setencia devuelve un "Wyrm_value" con el valor 3, el comportamiento (que se asemeja a rust) resulto no solo convenience, sino que además coherente con la filosofía. Hacer que todo tenga retorno incluso si es vacio nos da más abstracción y nos permite combinar sentencias diversas.
+Esta sentencia devuelve un "Wyrm_value" con el valor 3, el comportamiento (que se asemeja a Rust) resulto no solo conveniente, sino que además coherente con la filosofía. Hacer que todo tenga retorno incluso si es vacío nos da más abstracción y nos permite combinar sentencias diversas.
 
-Sin embargo, no tener una palabra reservada como "return" dificulta crear fuljos complejos y obliga a tener todo con alguna sentencia final.
+Sin embargo, no tener una palabra reservada como `return` dificulta crear flujos complejos y obliga a tener todo con alguna sentencia final.
 
 ### Por definir
 
@@ -70,6 +70,6 @@ Sin embargo, no tener una palabra reservada como "return" dificulta crear fuljos
 
 ## Extras
 
-El nombre **Wyrm** fue tomado da una palabra en inglés que podía referiré a un Dragón. Tambien tiene relacion con la palabra "Worm" (gusano) una forma despectiva de referirse a los dragones en la fantasía. Los dragones y los lenguajes de programación tienen una relacion estrecha, y como fanatico de los dragones y los lenguajes de programación me parecio muy acertado el nombre.
+El nombre **Wyrm** fue tomado da una palabra en inglés que podía referiré a un Dragón. También tiene relación con la palabra "Worm" (gusano) una forma despectiva de referirse a los dragones en la fantasía. Los dragones y los lenguajes de programación tienen una relación estrecha, y como fanático de los dragones y los lenguajes de programación me pareció muy acertado el nombre.
 
 >> Más info de la plabra [**Wyrm**](https://en.wikipedia.org/wiki/Germanic_dragon)

@@ -25,67 +25,6 @@ interpreter_t *create_interpreter(ast_node_t *root, environment_t *scope) {
     return new_interpreter;
 }
 
-#define CAST_FROM_INT64(enum_type, field_name, c_type)                                                                 \
-    result.type = enum_type;                                                                                           \
-    result.value.field_name = (c_type)original.value.int64_val;                                                        \
-    break;
-
-#define CAST_FROM_FLOAT64(enum_type, field_name, c_type)                                                               \
-    result.type = enum_type;                                                                                           \
-    result.value.field_name = (c_type)original.value.float64_val;                                                      \
-    break;
-
-wyrm_value_t cast_value(wyrm_value_t original, TokenType target_type) {
-    wyrm_value_t result = original;
-
-    if (original.type == VAL_INT64) {
-        switch (target_type) {
-        case T_INT8:
-            CAST_FROM_INT64(VAL_INT8, int8_val, int8_t)
-        case T_INT16:
-            CAST_FROM_INT64(VAL_INT16, int16_val, int16_t)
-        case T_INT32:
-            CAST_FROM_INT64(VAL_INT32, int32_val, int32_t)
-        case T_NAT8:
-            CAST_FROM_INT64(VAL_NAT8, nat8_val, uint8_t)
-        case T_NAT16:
-            CAST_FROM_INT64(VAL_NAT16, nat16_val, uint16_t)
-        case T_NAT32:
-            CAST_FROM_INT64(VAL_NAT32, nat32_val, uint32_t)
-        case T_NAT64:
-            CAST_FROM_INT64(VAL_NAT64, nat64_val, uint64_t)
-        case T_FLOAT32:
-            CAST_FROM_INT64(VAL_FLOAT32, float32_val, _Float32)
-        case T_FLOAT64:
-            CAST_FROM_INT64(VAL_FLOAT64, float64_val, _Float64)
-        default:
-            break;
-        }
-    } else if (original.type == VAL_FLOAT64) {
-        switch (target_type) {
-        case T_INT8:
-            CAST_FROM_FLOAT64(VAL_INT8, int8_val, int8_t)
-        case T_INT16:
-            CAST_FROM_FLOAT64(VAL_INT16, int16_val, int16_t)
-        case T_INT32:
-            CAST_FROM_FLOAT64(VAL_INT32, int32_val, int32_t)
-        case T_NAT8:
-            CAST_FROM_FLOAT64(VAL_NAT8, nat8_val, uint8_t)
-        case T_NAT16:
-            CAST_FROM_FLOAT64(VAL_NAT16, nat16_val, uint16_t)
-        case T_NAT32:
-            CAST_FROM_FLOAT64(VAL_NAT32, nat32_val, uint32_t)
-        case T_NAT64:
-            CAST_FROM_FLOAT64(VAL_NAT64, nat64_val, uint64_t)
-        case T_FLOAT32:
-            CAST_FROM_FLOAT64(VAL_FLOAT32, float32_val, _Float32)
-        default:
-            break;
-        }
-    }
-    return result;
-}
-
 wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
     wyrm_value_t result = {.type = VAL_VOID};
     if (node == NULL)
@@ -128,8 +67,14 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
         break;
     }
     case AST_VAR_DECLARATION: {
-        wyrm_value_t expr_value = eval_node(node->ast_node_value.var_decl_expr.expression, scope);
-        wyrm_value_t casted_value = cast_value(expr_value, node->ast_node_value.var_decl_expr.var_type);
+        token_type_t var_type = node->ast_node_value.var_decl_expr.var_type;
+        wyrm_value_t casted_value = {0};
+        if (node->ast_node_value.var_decl_expr.expression == NULL) {
+            casted_value.type = token_to_value_type(var_type);
+        } else {
+            wyrm_value_t expr_value = eval_node(node->ast_node_value.var_decl_expr.expression, scope);
+            casted_value = cast_value(expr_value, var_type);
+        }
         result = eval_val_decl(node, scope, casted_value);
         break;
     }
@@ -162,4 +107,13 @@ wyrm_value_t interpreter_interpret(interpreter_t *interpreter) {
         return empty;
     }
     return eval_node(interpreter->root, interpreter->scope);
+}
+
+void destroy_interpreter(interpreter_t *interpreter) {
+    if (interpreter == NULL) {
+        return;
+    }
+    interpreter->root = NULL;
+    interpreter->scope = NULL;
+    free(interpreter);
 }

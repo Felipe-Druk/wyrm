@@ -6,7 +6,7 @@ En este archivo vamos a poner los objetivos para la primera entrega del TP y ade
 
 ## Asignación 
 
-### ¿Como lo hacen los referentes? 
+### ¿Cómo lo hacen los referentes? 
 
 Antes de elegir nuestra asignación vamos a revisar como se resuelve en lenguajes populares, hay distintas maneras, pero lo básico es aclarar el tipo, el nombre de la variable y luego un signo de igual con el valor (aunque esto último es opcional)
 
@@ -36,7 +36,7 @@ Observamos un cambio en el orden además de una palabra especial para indicar qu
 
 var NOMBRE TIPO SIGNO-IGUAl VALOR;
 
-Algo muy parecido tenemos en rust
+Algo muy parecido tenemos en Rust
 ```rs
 let numero = 21;
 
@@ -74,7 +74,7 @@ numero <- 23
 #No indicamos el tipo de dato
 ```
 
-Pasando en limpio hay muchas maneras de instansear una variable, y vimos que darle un valor es opcional incluso indicar el tipo es opcional. Como lo veo yo, es una buena forma de controlar y prevenir saber qué tipo de dato se usa en cada caso. Obviamente en la mayoría de los casos a uno no le importa cuantos bytes se reservaron para esa variable y como deberían interpretarse esos bytes guardados. 
+Pasando en limpio hay muchas maneras de instanciar una variable, y vimos que darle un valor es opcional incluso indicar el tipo es opcional. Como lo veo yo, es una buena forma de controlar y prevenir saber qué tipo de dato se usa en cada caso. Obviamente en la mayoría de los casos a uno no le importa cuantos bytes se reservaron para esa variable y como deberían interpretarse esos bytes guardados. 
 
 ### Aproximacion de **Wyrm**
 
@@ -120,19 +120,19 @@ nat16 natural = 89;
 
 ### Numeros en punto flotante
 
-Lamentablemente, el criterio matemático no se puede mantener en los flotantes, aunque son una represetnacion de los reales tienen bastntes errores de representación, me encantaria llamarlos real pero a diferencia de int o nat que representan todos los conjuntos dentro de un rango, como los reales entre cualquier rango tenemos infinitos elementos no es posible representar bien este conjunto. Por lo tanto nos quedaremos con float32 y float64
+Lamentablemente, el criterio matemático no se puede mantener en los flotantes, aunque son una representación de los reales tienen bastntes errores de representación, me encantaría llamarlos real pero a diferencia de int o nat que representan todos los conjuntos dentro de un rango, como los reales entre cualquier rango tenemos infinitos elementos no es posible representar bien este conjunto. Por lo tanto nos quedaremos con float32 y float64
 
 float32 pi = 3.1415;
 
 ### Booleanos
 
-Aunque no es muy comentado, técnicamente un booleano puede escapat de su representación 1 y 0, una álgebra de bool puede tener varios elementos mientras se cumplan algunas propiedades. Sin embargo, nos quedaremos con el estándar {1,0}, {True. False}, {T,F} o {true, false}. Para ser consistentes usaremos con minúsculas bool 
+Aunque no es muy comentado, técnicamente un booleano puede escapar de su representación 1 y 0, una álgebra de bool puede tener varios elementos mientras se cumplan algunas propiedades. Sin embargo, nos quedaremos con el estándar {1,0}, {True. False}, {T,F} o {true, false}. Para ser consistentes usaremos con minúsculas bool 
 
 bool flag = true;
 
 # Operadores
 
-Hay various operadores a tener en cuenta no solo los básicos {+,-,*,/} también tenemos operadores doubles como ++, --, ** y combinados cómo "!=", "<=" y otros como "?,%,& que son menos comunes. Asi que separaremos en tres, aritméticos, logicos y especiales.
+Hay various operadores a tener en cuenta no solo los básicos {+,-,*,/} también tenemos operadores doubles como ++, --, ** y combinados cómo `!=`, `<=` y otros como `?,%,&` que son menos comunes. Asi que separaremos en tres, aritméticos, lógicos y especiales.
 
 ## Aritméticos
 
@@ -143,14 +143,14 @@ Los aritmeticos sirven para representar operaciones matemáticas comunes, listem
 -   "*" multiplicación (el famoso "por" solemos denotar en papel como una X o un punto)
 -   "/" Division operacion contraria a la multiplicación
 
-Luego para denotar el exponente tenemos algunas opciones como "**" o "^" el simbolo "^" suele estar resevado para XOR, pero usar el símbolo "^" para XOR nos obligaria a usar {& | ~} básicamente. Sin embargo, vamos a arriesgarnos a utilizar el simbolo "^" para los exponentes, luego lidiaremos con como representar XOR para operadores lógicos. 
+Luego para denotar el exponente tenemos algunas opciones como "**" o "^" el simbolo "^" suele estar reservado para XOR, pero usar el símbolo "^" para XOR nos obligaria a usar `{& | ~}` básicamente. Sin embargo, vamos a arriesgarnos a utilizar el simbolo "^" para los exponentes, luego lidiaremos con como representar XOR para operadores lógicos. 
 
 Otro operador excelente a tener en cuenta es "%" que retorna el resto de una división, es increíblemente útil para contadores circulares, y será incluido en **Wyrm**
 
 ## Logicos
 
 ### Evaluar condición 
-Principalmente son aquellos que devuelven un booleano como respuesta, ejemplo si evaluamos 2 > 4 nos devolverá false, ya que 2 es menor que 4. De los más comunes son los que nos sirven para comparar magnitudes, aquí entran los primeros dobles el "==","<=" y">=" ya que el simbolo "=" esta reservado para ala asigncacion, seria complicado tenerlo para evaluar la igualdad.
+Principalmente son aquellos que devuelven un booleano como respuesta, ejemplo si evaluamos 2 > 4 nos devolverá false, ya que 2 es menor que 4. De los más comunes son los que nos sirven para comparar magnitudes, aquí entran los primeros dobles el "==","" y `>=`, ya que el símbolo `=` está reservado para ala asignación, sería complicado tenerlo para evaluar la igualdad.
 De este modo tendríamos
 
 -   ">" Mayor que 
@@ -164,13 +164,13 @@ Todos son básicos a la hora de comparar sobre todo los valores numéricos y son
 ### Compuertas logicas
 
 Ya que tenemos palabras reservadas para true y false, vamos a aplicar la misma logica para las compuertas logicas que se aplican sobre sentencias booleanas, asi que nuestro pool va a ser {and, or, not, xor} que cubriria las compuertas más importantes.
-Tengo como evalucion si agregar los operadores logicos "bit a bit" (cuyo equivalente en C es &,|,~ y ^) pero al reservar ^ para el exponente podria crear un problema. En todo caso si en el futuro se agrea el soporte al tipo Byte se agrgaran de alguna manera o considerando que el XOR sea "><" o "|&"
+Tengo como evalucion si agregar los operadores logicos "bit a bit" (cuyo equivalente en C es `&`,`|`,`~` y `^`) pero al reservar `^` para el exponente podria crear un problema. En todo caso si en el futuro se agrea el soporte al tipo Byte se agrgaran de alguna manera o considerando que el XOR sea `><` o `|&`
 
 ### Especiales
 
-Es importante detectar algunos operadores como () {} []
+Es importante detectar algunos operadores como `()` `{}` `[]`
 
-() sirven para englobar operaciones (2+1) / 2, también en la mayoría de lenguajes se usa para denotar funciones y sus argumentos, ejemplos:
+`()` sirven para englobar operaciones `(2+1) / 2`, también en la mayoría de lenguajes se usa para denotar funciones y sus argumentos, ejemplos:
 
 C
 ```C
@@ -192,12 +192,12 @@ func int_to_rune(x int) rune {
 }
 ```
 
-Del mismo modo las llaves {} suelen englobar el cuerpo de las funciones, o bien son un símbolo para representar mapas. En concreto **Wyrm** tomará las llaves para cuerpos de función similar a como trabaja C, pero quizás podríamos aprovecharlos para separar stacks.
+Del mismo modo las llaves `{}` suelen englobar el cuerpo de las funciones, o bien son un símbolo para representar mapas. En concreto **Wyrm** tomará las llaves para cuerpos de función similar a como trabaja C, pero quizás podríamos aprovecharlos para separar stacks.
 
-Por último los corchetes [] son perfectos para que sean el símbolo de indexar, donde a algún contenedor lo podemos indexar de la manera contenedor[indice].
+Por último los corchetes `[]` son perfectos para que sean el símbolo de indexar, donde a algún contenedor lo podemos indexar de la manera `contenedor[indice]`.
 
 # Conclusiones 
 
-Ya definimos nuestros primeros objetivos con los tipos de datos numericos y que símbolos deberíamos reconocer, actualmente nuestro lenguaje **Wyrm** será más una calculadora glorificada y luego de tener esto funcionado debemos pasar con lo poderoso, las funciones, if else, for y while.
+Ya definimos nuestros primeros objetivos con los tipos de datos numéricos y que símbolos deberíamos reconocer, actualmente nuestro lenguaje **Wyrm** será más una calculadora glorificada y luego de tener esto funcionado debemos pasar con lo poderoso, las funciones, if else, for y while.
 
-Pero si logramos reconcoer todos los símbolos en este archivo y resolver las operaciones de manera correcta, tendremos una buena base para ampliar.
+Pero si logramos reconocer todos los símbolos en este archivo y resolver las operaciones de manera correcta, tendremos una buena base para ampliar.

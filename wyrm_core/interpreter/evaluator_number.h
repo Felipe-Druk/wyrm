@@ -1,6 +1,6 @@
 #pragma once
 #include "../ast_node.h"
-#include "../wyrm_value.h"
+#include "../wyrm_types/wyrm_value/wyrm_value.h"
 
 /*
 Archivo que resuelve un literal number, siguiendo las reglas

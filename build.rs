@@ -1,48 +1,34 @@
+use std::fs;
+use std::path::Path;
+
 // Archivo que concecta la implementation de Wyrm en C
 
+fn collect_c_sources(dir: &Path, build: &mut cc::Build) {
+    build.include(dir);
+    let entries = fs::read_dir(dir).expect("No se pudo leer el directorio de wyrm_core");
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+
+        if path.is_dir() {
+            collect_c_sources(&path, build);
+        } else if let Some(ext) = path.extension() {
+            if ext == "c" {
+                build.file(&path);
+                println!("cargo:rerun-if-changed={}", path.display()); // solo compila si hay cambios
+            } else if ext == "h" {
+                println!("cargo:rerun-if-changed={}", path.display());
+            }
+        }
+    }
+}
+
 fn main() {
-    cc::Build::new()
-        // Todos los .c
-        .file("wyrm_core/wyrm.c")
-        .file("wyrm_core/wyrm_token.c")
-        .file("wyrm_core/ast_node.c")
-        .file("wyrm_core/wyrm_value.c")
-        .file("wyrm_core/environment.c")
-        // Scanner
-        .file("wyrm_core/scanner/arithmetic_resolver.c")
-        .file("wyrm_core/scanner/numeric_resolver.c")
-        .file("wyrm_core/scanner/types_resolver.c")
-        .file("wyrm_core/scanner/scanner.c")
-        .file("wyrm_core/scanner/identifier_resolver.c")
-        .file("wyrm_core/scanner/limiter_resolver.c")
-        .file("wyrm_core/scanner/logical_resolver.c")
-        .file("wyrm_core/scanner/boolean_resolver.c")
-        // Parser
-        .file("wyrm_core/parser/parser.c")
-        .file("wyrm_core/parser/debugger_parser.c")
-        // Interpreter
-        .file("wyrm_core/interpreter/interpreter.c")
-        .file("wyrm_core/interpreter/evaluator_number.c")
-        .file("wyrm_core/interpreter/evaluator_binary.c")
-        .file("wyrm_core/interpreter/evaluator_unary.c")
-        .file("wyrm_core/interpreter/evaluator_identifier.c")
-        .file("wyrm_core/interpreter/evaluator_bool.c")
-        .file("wyrm_core/interpreter/evaluator_block.c")
-        .file("wyrm_core/interpreter/evaluator_if.c")
-        .file("wyrm_core/interpreter/evaluator_loop.c")
-        .file("wyrm_core/interpreter/evaluator_function.c")
-        //utils
-        .file("wyrm_core/utils/debugger.c")
-        .file("wyrm_core/utils/token_vector.c")
-        .file("wyrm_core/utils/error.c")
-        // Dependencias o .h
-        .include("wyrm_core")
-        .include("wyrm_core/scanner")
-        .include("wyrm_core/utils")
-        .include("wyrm_core/parser")
-        .include("wyrm_core/interpreter")
-        // Compilación
-        .compile("wyrm");
+    let mut build = cc::Build::new();
+
+    collect_c_sources(Path::new("wyrm_core"), &mut build);
+
+    build.compile("wyrm");
 
     println!("cargo:rustc-link-lib=m");
 }

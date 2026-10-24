@@ -42,13 +42,15 @@ pub enum TokenType {
     TGreaterEqual,
     // operadores varios
     TAssign,
-    TRassign,
+    // Simbolos multiples
+    TLArrow,
+    TRArrow,
+    // literales
     TNumber,
     TString,
     TFloatNumber,
     // importante
     TIdentifier,
-    TComma,
     // If/else
     TIf,
     TElse,
@@ -62,6 +64,7 @@ pub enum TokenType {
     TRparen,
     TLbrace,
     TRbrace,
+    TComma,
 }
 
 #[repr(C)]

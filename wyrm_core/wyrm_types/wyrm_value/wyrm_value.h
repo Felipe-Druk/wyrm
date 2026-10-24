@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "wyrm_token.h"
+#include "../../wyrm_token.h"
 
 /*
 Como se decicido que cada "bloque" tenga un retorno si o si, esta estrutura representa los posibles valores de esos
@@ -74,13 +74,19 @@ struct WyrmValue {
     } value;
 };
 
+typedef WyrmValueType wyrm_value_type_t;
+
 uint64_t get_cast_nat64(wyrm_value_t value);
 
 int64_t get_cast_int64(wyrm_value_t value);
 
 _Float64 get_cast_float64(wyrm_value_t value);
 
-WyrmValueType token_to_val_type(TokenType t);
+wyrm_value_type_t token_to_value_type(token_type_t token_type);
+
+wyrm_value_t cast_to_value_type(wyrm_value_t original, wyrm_value_type_t target_type);
+
+wyrm_value_t cast_value(wyrm_value_t original, token_type_t target_type);
 
 #define MAKE_WYRM_VAL(X)                                                                                               \
     _Generic((X),                                                                                                      \
@@ -94,8 +100,8 @@ WyrmValueType token_to_val_type(TokenType t);
         bool: (wyrm_value_t){.type = VAL_FLOAT64, .value.bool_val = (X)},                                              \
         default: (wyrm_value_t){.type = VAL_VOID})
 
-int is_float(WyrmValueType type);
+int is_float(wyrm_value_type_t type);
 
-int is_int(WyrmValueType type);
+int is_int(wyrm_value_type_t type);
 
 int is_zero(wyrm_value_t value);

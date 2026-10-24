@@ -39,10 +39,10 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
     int debug = scanner->flags & (DEBUG_MODE | SCANNER_MODE);
     while (input[actual_index] != '\0') {
         if (debug) {
-            print_line_debug("== actual_index: %zu, current_char: '%c' ==\n", actual_index, input[actual_index]);
+            print_line_debug("== actual_index: %zu, current_char: '%c' ==", actual_index, input[actual_index]);
             debug_tokens(tokens);
         }
-        if (input[actual_index] == ' ' || input[actual_index] == '\n' || input[actual_index] == '\t') {
+        if (input[actual_index] == ' ' || input[actual_index] == '\t') {
             actual_index++;
             continue;
         }
@@ -67,6 +67,9 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
         }
         // se llega si hay un character descnonocido, es un lugar posible para lanzar
         // error
+        if (input[actual_index] == '\0') {
+            break;
+        }
         actual_index++;
     }
 

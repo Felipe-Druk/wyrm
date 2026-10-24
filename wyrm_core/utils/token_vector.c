@@ -52,6 +52,11 @@ int destroy_token_vector(token_vector_t *vector) {
     if (vector == NULL) {
         return ERROR_TOKEN_VECTOR;
     }
+    for (size_t i = 0; i < vector->size; i++) {
+        if (vector->tokens[i].lexeme != NULL) {
+            free(vector->tokens[i].lexeme);
+        }
+    }
     free(vector->tokens);
     free(vector);
     return 0;

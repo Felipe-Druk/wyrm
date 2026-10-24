@@ -1,15 +1,18 @@
 #include "logical_resolver.h"
+#include <string.h>
 
 int resolve_equal(char *input, int index, token_vector_t *tokens) {
-    wyrm_token_t token = {.type = T_ASSIGN, .lexeme = "="};
+    wyrm_token_t token = {.type = T_ASSIGN, .lexeme = strdup("=")};
     int new_index = index + 1;
     if (input[new_index] == '=') {
         token.type = T_EQUAL;
-        token.lexeme = "==";
+        free(token.lexeme);
+        token.lexeme = strdup("==");
         new_index++;
     } else {
         token.type = T_ASSIGN;
-        token.lexeme = "=";
+        free(token.lexeme);
+        token.lexeme = strdup("=");
     }
 
     int result = push_token(tokens, token);
@@ -21,18 +24,18 @@ int resolve_less(char *input, int index, token_vector_t *tokens) {
     wyrm_token_t token;
     switch (nex) {
     case '-':
-        token.type = T_RASSIGN;
-        token.lexeme = "<-";
+        token.type = T_LARROW;
+        token.lexeme = strdup("<-");
         new_index++;
         break;
     case '=':
         token.type = T_LESS_EQUAL;
-        token.lexeme = "<=";
+        token.lexeme = strdup("<=");
         new_index++;
         break;
     default:
         token.type = T_LESS;
-        token.lexeme = "<";
+        token.lexeme = strdup("<");
         break;
     }
     int result = push_token(tokens, token);
@@ -45,11 +48,11 @@ int resolve_greater(char *input, int index, token_vector_t *tokens) {
 
     if (input[new_index] == '=') {
         token.type = T_GREATER_EQUAL;
-        token.lexeme = ">=";
+        token.lexeme = strdup(">=");
         new_index++;
     } else {
         token.type = T_GREATER;
-        token.lexeme = ">";
+        token.lexeme = strdup(">");
     }
 
     int result = push_token(tokens, token);
@@ -62,7 +65,7 @@ int resolve_not(char *input, int index, token_vector_t *tokens) {
 
     if (input[new_index] == '=') {
         token.type = T_NOT_EQUAL;
-        token.lexeme = "~=";
+        token.lexeme = strdup("~=");
         new_index++;
         int result = push_token(tokens, token);
         return result != ERROR_TOKEN_VECTOR ? new_index : -1;
