@@ -1,18 +1,18 @@
 
 # Debate sobre la asignacion
 
-Justo al terminar el escáner me encontré con un debate, como tomar el símbolo "=". No es cualquier cosa, sino que hay un sentido filosófico y técnico detrás.
+Justo al terminar el escáner me encontré con un debate, como tomar el símbolo `=`. No es cualquier cosa, sino que hay un sentido filosófico y técnico detrás.
 
 ## ¿Yo igualo o yo defino? 
 
 Posiblemente, el problema más grande es que en matemáticas el `=` es una sentencia, declaro que la igualdad existe y cumple algunas propiedades como la transitividad (a = b, b = c -> a = c). Pero en programación se usan para dos cosas, para igualar una variable a un valor u otra variable y también cuando defino esa variable sé instancia con un valor inicial (a veces). 
 Esto hace pensar, ya que al hacer x = 1 y luego x = 12 significa que las declaraciones fueron temporales, x efectivamente tenia el valor 1 hasta que le fue cambiado. Esto quiere decir que cuando programamos nunca usamos el símbolo "=" con el rigor matematico que buscamos en **Wyrm**. Y a efectos practicos pedirle al usuario que siempre instancie una nvuea variable cuando quiere cambiar de valor la misma no es lo más eficinete a nivel tecnico.
 
-## ¿Que debería hacer el simbolo? 
+## ¿Qué debería hacer el símbolo? 
 
-En principio todos tenemos claro que el simbolo igual deberia asignar el valor a la derecha a el componente de la izquierda y nada más. Esto cumpliria con respetar de alguna manera el concepto matemático (aunque limitado) pero nos limita de hacer declaraciones transitivas como a = b = 1; por ejemplo.
+En principio todos tenemos claro que el símbolo igual deberia asignar el valor a la derecha a el componente de la izquierda y nada más. Esto cumpliría con respetar de alguna manera el concepto matemático (aunque limitado) pero nos limita de hacer declaraciones transitivas como `a = b = 1;` por ejemplo.
 
-Podriamos sino tomar otra aproximacion y declarar que una asignacion de valor retorne el valor asignado, rompiendo asi el rigor matemativo pero ganado algunas facilidades como la asignacion en candena `a = b =1;` o comprimier lineas del estilo `while( line = read(file) != EOF)` este ultomo solo es posible si el = teien algun retorno. 
+Podriamos sino tomar otra aproximación y declarar que una asignacion de valor retorne el valor asignado, rompiendo asi el rigor matemático, pero ganado algunas facilidades como la asignación en cadena `a = b =1;` o comprimier lineas del estilo `while( line = read(file) != EOF)` este último solo es posible si el = teien algun retorno. 
 
 Lneguajes como python tienen el igual sin retorno, pero luego añadió el símbolo `:=` para tener un igual con retorno, cosa distinta a Go que no tiene un igual con retorno y reservo el símbolo `:=` para la declaración de variables (algo que nos gustaría copiar a futuro), por último C/C++ tienen el operador igual con retorno por lo que no hay un esntandar en la industria es una definición pura de diseño.
 
@@ -30,7 +30,7 @@ Bajo esta sentencia nos debiermos apegar al rigor matematico y no darle retorno 
 
 El simbolo "=" no tendrá retorno, sino que simplemente cumplirá con lo que se espera de él, "cargar" el valor en la variable.
 
-Para un igual con retorno vamos a aprovechar un símbolo afín a la asignacion, teniendo en cuenta que `:=` lo guardaremos para más tarde, que == se reserva en booleanos y que tanto => como <= son comparadores. El designado será `<-` un símbolo poco usado en realidad, pero algunos lenguajes lo aprovechan para asignar, y como en el futuro queremos aprovechar `->` para definir funciones, `<-` nos queda perfecto para lo que buscamos.
+Para un igual con retorno vamos a aprovechar un símbolo afín a la asignación, teniendo en cuenta que `:=` lo guardaremos para más tarde, que `==` se reserva en booleanos y que tanto `=>` como `<=` son comparadores. El designado será `<-` un símbolo poco usado en realidad, pero algunos lenguajes lo aprovechan para asignar, y como en el futuro queremos aprovechar `->` para definir funciones, `<-` nos queda perfecto para lo que buscamos.
 
 Ahora un se permitirá a <- b <- 1; pero si no queremos tener sentencias complejas podemos declarar como siempre de la manera x = 1;
 

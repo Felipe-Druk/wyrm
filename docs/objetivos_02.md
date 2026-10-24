@@ -123,7 +123,7 @@ En general este es el enfoque que nos gustaría lograr con **Wyrm** tener libert
 
 "suma = (int64 x, int64 y) -> {x +y}; // posible declaración de funciones lambda en **Wyrm**"
 
-Y con esto se podría hacer por ejemplo (suponiendo que tenemos arrays) map(array, (int64 x) -> {x+1};), y demás operaciones asociadas al paradigma funcional.
+Y con esto se podría hacer por ejemplo (suponiendo que tenemos arrays) `map(array, (int64 x) -> {x+1};`), y demás operaciones asociadas al paradigma funcional.
 Hay varias opocines que se deben tener en cuenta, pero Rust nos muestra algunos caminos tentadores.
 
 ### Go
@@ -142,7 +142,7 @@ func nombre( argumentos espaciados por comas) TIPO_RETORNO {
     return RETORNO // El ";" es opcional 
 }
 
-Identificamos una palabra clave "func" y sin muchas complicaciones se deja el tipo de retorno a la derecha justo antes de arbir llaves, nada muy distinto de Rust solo que saca el símbolo "->". La palabra "return" es obligatoria en este caso y aunque parezca que ";" no lo es hay un matiz en esto, Go hace automáticamente que algunos '\n' por ';'. Asi quieres escribir en una sola línea puedes poner:
+Identificamos una palabra clave "func" y sin muchas complicaciones se deja el tipo de retorno a la derecha justo antes de abrir llaves, nada muy distinto de Rust solo que saca el símbolo "->". La palabra "return" es obligatoria en este caso y aunque parezca que `;` no lo es hay un matiz en esto, Go hace automáticamente que algunos '\n' por ';'. Asi quieres escribir en una sola línea puedes poner:
 
 ```go
 var x = 21; var y = 221; var suma = x + y;
@@ -1267,7 +1267,7 @@ Este es un tests que quedo desfasado con todo lo analizado en este archivo, aunq
 # Pasos a seguir
 
 
-Luego del extenso análisis que hicimos de cada uno de los tests, podemos tener una lista de cosas por hacer. Y como la proxima entrega es de un "compilador" vamos a dividí las activados en Antes y Durante
+Luego del extenso análisis que hicimos de cada uno de los tests, podemos tener una lista de cosas por hacer. Y como la proxima entrega es de un "compilador" vamos a dividir las activadas en Antes y Durante
 
 Antes:
 

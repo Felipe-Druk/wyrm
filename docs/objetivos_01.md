@@ -6,7 +6,7 @@ En este archivo vamos a poner los objetivos para la primera entrega del TP y ade
 
 ## Asignación 
 
-### ¿Como lo hacen los referentes? 
+### ¿Cómo lo hacen los referentes? 
 
 Antes de elegir nuestra asignación vamos a revisar como se resuelve en lenguajes populares, hay distintas maneras, pero lo básico es aclarar el tipo, el nombre de la variable y luego un signo de igual con el valor (aunque esto último es opcional)
 
@@ -164,7 +164,7 @@ Todos son básicos a la hora de comparar sobre todo los valores numéricos y son
 ### Compuertas logicas
 
 Ya que tenemos palabras reservadas para true y false, vamos a aplicar la misma logica para las compuertas logicas que se aplican sobre sentencias booleanas, asi que nuestro pool va a ser {and, or, not, xor} que cubriria las compuertas más importantes.
-Tengo como evalucion si agregar los operadores logicos "bit a bit" (cuyo equivalente en C es `&`,`|`,`~` y `^`) pero al reservar ^ para el exponente podria crear un problema. En todo caso si en el futuro se agrea el soporte al tipo Byte se agrgaran de alguna manera o considerando que el XOR sea `><` o `|&`
+Tengo como evalucion si agregar los operadores logicos "bit a bit" (cuyo equivalente en C es `&`,`|`,`~` y `^`) pero al reservar `^` para el exponente podria crear un problema. En todo caso si en el futuro se agrea el soporte al tipo Byte se agrgaran de alguna manera o considerando que el XOR sea `><` o `|&`
 
 ### Especiales
 
@@ -198,6 +198,6 @@ Por último los corchetes `[]` son perfectos para que sean el símbolo de indexa
 
 # Conclusiones 
 
-Ya definimos nuestros primeros objetivos con los tipos de datos numericos y que símbolos deberíamos reconocer, actualmente nuestro lenguaje **Wyrm** será más una calculadora glorificada y luego de tener esto funcionado debemos pasar con lo poderoso, las funciones, if else, for y while.
+Ya definimos nuestros primeros objetivos con los tipos de datos numéricos y que símbolos deberíamos reconocer, actualmente nuestro lenguaje **Wyrm** será más una calculadora glorificada y luego de tener esto funcionado debemos pasar con lo poderoso, las funciones, if else, for y while.
 
 Pero si logramos reconocer todos los símbolos en este archivo y resolver las operaciones de manera correcta, tendremos una buena base para ampliar.
