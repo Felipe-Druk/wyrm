@@ -1,5 +1,5 @@
 #include "evaluator_block.h"
-#include "interpreter.h"
+#include "interpreter_internal.h"
 
 wyrm_value_t eval_block(ast_node_t *node, environment_t *parent_scope) {
     environment_t *local_scope = create_environment(parent_scope);

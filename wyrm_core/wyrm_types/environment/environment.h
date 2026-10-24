@@ -1,7 +1,7 @@
 #pragma once
 
 #include "wyrm_token.h"
-#include "wyrm_types/wyrm_value/wyrm_value.h"
+#include "../wyrm_value/wyrm_value.h"
 #include <stddef.h>
 
 /*

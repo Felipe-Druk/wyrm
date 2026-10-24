@@ -1,5 +1,5 @@
 #include "evaluator_if.h"
-#include "interpreter.h"
+#include "interpreter_internal.h"
 #include "../utils/error.h"
 
 wyrm_value_t eval_if(ast_node_t *node, environment_t *env) {

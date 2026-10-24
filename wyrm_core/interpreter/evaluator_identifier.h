@@ -2,7 +2,7 @@
 
 #include "../wyrm_types/ast/ast_node.h"
 #include "../wyrm_types/wyrm_value/wyrm_value.h"
-#include "../environment.h"
+#include "../wyrm_types/environment/environment.h"
 
 /*
 Archivo que resuelve la declaración de variables

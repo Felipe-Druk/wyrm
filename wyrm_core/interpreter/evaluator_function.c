@@ -1,5 +1,5 @@
 #include "evaluator_function.h"
-#include "interpreter.h"
+#include "interpreter_internal.h"
 #include "../utils/error.h"
 #include <string.h>
 
