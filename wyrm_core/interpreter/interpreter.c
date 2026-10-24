@@ -67,8 +67,14 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
         break;
     }
     case AST_VAR_DECLARATION: {
-        wyrm_value_t expr_value = eval_node(node->ast_node_value.var_decl_expr.expression, scope);
-        wyrm_value_t casted_value = cast_value(expr_value, node->ast_node_value.var_decl_expr.var_type);
+        token_type_t var_type = node->ast_node_value.var_decl_expr.var_type;
+        wyrm_value_t casted_value = {0};
+        if (node->ast_node_value.var_decl_expr.expression == NULL) {
+            casted_value.type = token_to_value_type(var_type);
+        } else {
+            wyrm_value_t expr_value = eval_node(node->ast_node_value.var_decl_expr.expression, scope);
+            casted_value = cast_value(expr_value, var_type);
+        }
         result = eval_val_decl(node, scope, casted_value);
         break;
     }

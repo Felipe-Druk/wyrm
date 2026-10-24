@@ -42,6 +42,14 @@ void capture_function_args_type(parser_t *parser, wyrm_function_t *func_def) {
 
 // luego de "->" capturamos el tipo de retorno de la función
 void capture_function_return_type(parser_t *parser, wyrm_function_t *func_def) {
+    if (match(parser, T_LPAREN)) {
+        if (!match(parser, T_RPAREN)) {
+            panic(ERR_SYNTAX, "Syntax error: expected ')' for empty return type '()'");
+        }
+        func_def->returned = VAL_VOID;
+        return;
+    }
+
     token_type_t actual_type = peek(parser)->type;
     if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
         advance(parser);

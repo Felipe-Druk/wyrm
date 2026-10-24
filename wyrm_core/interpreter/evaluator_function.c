@@ -47,9 +47,14 @@ wyrm_value_t eval_call(ast_node_t *node, environment_t *scope) {
     }
     wyrm_value_t result = cast_to_value_type(eval_node(func_def.body, local_env), func_def.returned);
     destroy_environment(local_env);
-    if (result.type != func_def.returned && func_def.returned != VAL_VOID) {
-        panic(ERR_TYPE, "Runtime error: Function '%s' returned wrong type", func_name);
+
+    if (func_def.returned == VAL_VOID) {
+        return (wyrm_value_t){.type = VAL_VOID};
     }
 
+    result = cast_to_value_type(result, func_def.returned);
+    if (result.type != func_def.returned) {
+        panic(ERR_TYPE, "Runtime error: Function '%s' returned wrong type", func_name);
+    }
     return result;
 }
