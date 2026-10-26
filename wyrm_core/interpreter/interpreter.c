@@ -1,15 +1,15 @@
 #include "interpreter.h"
 #include <stdlib.h>
 
-#include "evaluator_number.h"
-#include "evaluator_bool.h"
-#include "evaluator_binary.h"
-#include "evaluator_unary.h"
-#include "evaluator_identifier.h"
-#include "evaluator_block.h"
-#include "evaluator_if.h"
-#include "evaluator_loop.h"
-#include "evaluator_function.h"
+#include "evaluator/evaluator_number.h"
+#include "evaluator/evaluator_bool.h"
+#include "evaluator/evaluator_binary.h"
+#include "evaluator/evaluator_unary.h"
+#include "evaluator/evaluator_identifier.h"
+#include "evaluator/evaluator_block.h"
+#include "evaluator/evaluator_if.h"
+#include "evaluator/evaluator_loop.h"
+#include "evaluator/evaluator_function.h"
 
 interpreter_t *create_interpreter(ast_node_t *root, environment_t *scope) {
 
