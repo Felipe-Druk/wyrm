@@ -17,6 +17,10 @@ typedef enum {
     ERR_TYPE = 9,
     ERR_SCANNER = 10,
     ERR_MEMORY = 11,
+    ERR_INVALID_INDEX = 12,
+    ERR_FILE_NOT_FOUND = 13,
+    ERR_FILE_READ = 14,
+    ERR_FILE_WRITE = 15,
 } WyrmErrorCode;
 
 typedef WyrmErrorCode wyrm_error_code_t;
