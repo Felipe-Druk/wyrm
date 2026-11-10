@@ -13,5 +13,18 @@ typedef enum WyrmOpcode {
     // Opcodes operadores lógicos
     WYRM_OP_AND = 0x07,
     WYRM_OP_OR = 0x08,
-    WYRM_OP_NOT = 0x09
+    WYRM_OP_NOT = 0x09,
+    // Opcodes de control de flujo
+    WYRM_OP_JUMP = 0x0A,
+    WYRM_OP_JUMP_IF = 0x0B,
+    WYRM_OP_JUMP_IF_NOT = 0x0C,
+    // Opcodes de valores
+    WYRM_OP_CONSTANT = 0x0D,
+    WYRM_OP_CAST = 0x0E,
+    // Opcodes de funciones
+    WYRM_OP_CALL = 0x0F,
+    WYRM_OP_RETURN = 0x10,
+    // Opcodes de variables
+    WYRM_OP_GET_LOCAL = 0x11,
+    WYRM_OP_SET_LOCAL = 0x12,
 } wyrm_opcode_t;

@@ -19,4 +19,17 @@ typedef struct WyrmChunk {
     size_t *lines; // Número de línea en código .wyrm por cada byte de code[]
 } wyrm_chunk_t;
 
+// Reserva en moemoria espacio para un chunk
 wyrm_chunk_t *create_wyrm_chunk();
+
+// Agrega un byte al vector de bytes
+void chunk_write_byte(wyrm_chunk_t *chunk, uint8_t byte);
+
+// Agrega un los dos bytes al vector de bytes
+void chunk_write_uint16(wyrm_chunk_t *chunk, uint16_t value);
+
+// Agrega una constante al vector de constantes
+uint16_t chunk_add_constant(wyrm_chunk_t *chunk, wyrm_value_t value);
+
+// Libera toda la memoria reservada para el chunk
+void destroy_wyrm_chunk(wyrm_chunk_t *chunk);

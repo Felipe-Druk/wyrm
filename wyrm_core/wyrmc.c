@@ -3,20 +3,25 @@
 #include "scanner/scanner.h"
 #include "parser/parser.h"
 #include "compiler/compiler.h"
+#include "options.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#define MAGICNUMBER "WYRM"
+#define WYRM_MAGIC "WYRM"
+#define WYRM_MAGIC_SIZE 4
+#define WYRMC_VERSION ((uint16_t)0x0100)
 
 wyrmc_t *create_wyrmc(const char *input_file_path, const char *output_file_path, int flags) {
     wyrmc_t *wyrmc = malloc(sizeof(wyrmc_t));
     if (wyrmc == NULL) {
         panic(1, "Could not allocate memory for wyrmc_t");
     }
+    if (flags) {
+        wyrmc->flags = VERBOSE_MODE | PARSER_MODE | SCANNER_MODE | DEBUG_MODE;
+    }
     wyrmc->input_file_path = strdup(input_file_path);
     wyrmc->output_file_path = strdup(output_file_path);
-    wyrmc->flags = flags;
     return wyrmc;
 }
 
@@ -45,30 +50,57 @@ char *input_file_to_string(wyrmc_t *wyrmc) {
     return buffer;
 }
 
+void write_chunk_to_file(const char *output_path, wyrm_chunk_t *chunk) {
+    FILE *file = fopen(output_path, "wb");
+    if (!file) {
+        panic(ERR_IO, "Could not open output file: %s", output_path);
+    }
+
+    // Header
+    const uint16_t version = WYRMC_VERSION;
+    fwrite(WYRM_MAGIC, sizeof(char), WYRM_MAGIC_SIZE, file);
+    fwrite(&version, sizeof(uint16_t), 1, file);
+
+    // Constantes
+    uint16_t const_count = (uint16_t)chunk->constants.size;
+    fwrite(&const_count, sizeof(uint16_t), 1, file);
+
+    wyrm_value_t *constants_arr = (wyrm_value_t *)chunk->constants.data;
+    for (uint16_t i = 0; i < const_count; i++) {
+        uint8_t type_tag = (uint8_t)constants_arr[i].type;
+        fwrite(&type_tag, sizeof(uint8_t), 1, file);
+        fwrite(&constants_arr[i].value.int64_val, sizeof(int64_t), 1, file);
+    }
+
+    // Funciones
+    uint16_t func_count = (uint16_t)chunk->functions.size;
+    fwrite(&func_count, sizeof(uint16_t), 1, file);
+
+    // Code
+    uint32_t code_size = (uint32_t)chunk->code.size;
+    fwrite(&code_size, sizeof(uint32_t), 1, file);
+    if (code_size > 0) {
+        fwrite(chunk->code.data, sizeof(uint8_t), code_size, file);
+    }
+
+    fclose(file);
+}
+
 void compile_file(wyrmc_t *wyrmc) {
     scanner_t scanner = {.tokens = create_token_vector(16), .flags = wyrmc->flags};
     char *input = input_file_to_string(wyrmc);
     token_vector_t *tokens = scanner_scan(input, &scanner);
     parser_t *parser = create_parser(tokens);
+    if (wyrmc->flags & (PARSER_MODE | DEBUG_MODE)) {
+        parser_set_flags(parser, wyrmc->flags);
+    }
     ast_node_t *root = parser_parse(parser);
     compiler_t *compiler = create_compiler(root, wyrmc->flags);
-    wyrm_chunk_t *chunk = compile_ast(compiler);
-    (void)chunk; // Evita advertencias de variable no utilizada
-
-    FILE *output_file = fopen(wyrmc->output_file_path, "wb");
-    if (output_file == NULL) {
-        free(input);
-        panic(ERR_FILE_WRITE, "Could not open output file for writing");
-    }
-    fprintf(output_file, "%s", MAGICNUMBER); // Escribimos el magic number
-    fclose(output_file);
-    free(input);
+    compile_ast(compiler);
+    write_chunk_to_file(wyrmc->output_file_path, compiler->chunk);
 }
 
-void set_wyrmc_flags(wyrmc_t *wyrmc, int flags) {
-    (void)wyrmc;
-    (void)flags;
-}
+void set_wyrmc_flags(wyrmc_t *wyrmc, int flags) { wyrmc->flags = flags; }
 
 void destroy_wyrmc(wyrmc_t *wyrmc) {
     (void)wyrmc;

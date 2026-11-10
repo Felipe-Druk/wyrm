@@ -15,3 +15,27 @@ wyrm_chunk_t *create_wyrm_chunk() {
     chunk->lines = NULL; // Inicializamos a NULL, se asignará memoria cuando se agreguen líneas
     return chunk;
 }
+
+void chunk_write_byte(wyrm_chunk_t *chunk, uint8_t byte) { vector_push(&chunk->code, &byte); }
+
+void chunk_write_uint16(wyrm_chunk_t *chunk, uint16_t value) {
+    uint8_t low = (uint8_t)(value & 0xFF);
+    uint8_t high = (uint8_t)((value >> 8) & 0xFF);
+    chunk_write_byte(chunk, low);
+    chunk_write_byte(chunk, high);
+}
+
+uint16_t chunk_add_constant(wyrm_chunk_t *chunk, wyrm_value_t value) {
+    vector_push(&chunk->constants, &value);
+    return (uint16_t)(chunk->constants.size - 1);
+}
+
+void destroy_wyrm_chunk(wyrm_chunk_t *chunk) {
+    if (chunk == NULL)
+        return;
+    destroy_vector(&chunk->code);
+    destroy_vector(&chunk->constants);
+    destroy_vector(&chunk->functions);
+    free(chunk->lines);
+    free(chunk);
+}

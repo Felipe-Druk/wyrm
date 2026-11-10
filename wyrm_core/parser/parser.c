@@ -105,6 +105,8 @@ ast_node_t *parser_parse(parser_t *parser) {
     return root;
 }
 
+void parser_set_flags(parser_t *parser, int new_flags) { parser->flags = new_flags; }
+
 void destroy_parser(parser_t *parser) {
     if (parser) {
         parser->tokens = NULL;
