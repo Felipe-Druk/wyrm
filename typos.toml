@@ -93,6 +93,8 @@ tradicional = "tradicional"
 patrones = "patrones"
 repetitivo = "repetitivo"
 aplicable = "aplicable"
+limite = "límite"
+fiel = "fiel"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"

@@ -1,0 +1,11 @@
+#pragma once
+#include "../wyrm_types/ast/ast_node.h"
+#include "../wyrm_types/wyrm_value/wyrm_value.h"
+#include "../wyrm_types/environment/environment.h"
+
+/*
+Archivo que resuelve los loop como while y for
+*/
+
+// evalua el nodo siempre y cuando sea de tipo while
+wyrm_value_t eval_loop(ast_node_t *node, environment_t *env);

@@ -18,4 +18,6 @@ core.*
 .vscode
 
 # Wyrm
-.wyrm_history
+*.wyrm_history
+*.wyrm
+*.wrc

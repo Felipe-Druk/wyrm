@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../ast_node.h"
+#include "../wyrm_types/ast/ast_node.h"
 #include "../wyrm_types/wyrm_value/wyrm_value.h"
-#include "../environment.h"
+#include "../wyrm_types/environment/environment.h"
 
 typedef struct {
     ast_node_t *root;
@@ -11,9 +11,6 @@ typedef struct {
 } Interpreter;
 
 typedef Interpreter interpreter_t;
-
-// evalua el nodo puntual
-wyrm_value_t eval_node(ast_node_t *node, environment_t *scope);
 
 // Crea el interpreter del un nodo ast raiz, si falla devuelve un NULL pointer
 interpreter_t *create_interpreter(ast_node_t *root, environment_t *scope);

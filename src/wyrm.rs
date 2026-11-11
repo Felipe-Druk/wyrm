@@ -3,6 +3,7 @@ use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
+use std::path::Path;
 
 const VERSION: &str = "0.1.0";
 const EXIT_COMMAND: &str = "exit";
@@ -12,17 +13,19 @@ const C_DEBUG_MODE: c_int = 1 << 1;
 /// Aplicacion de consola que lee entradas del usuario, y llama a la implementación de Wyrm en C
 pub struct Wyrm {
     verbose: bool,
+    file_path: Option<String>,
 }
 
 unsafe extern "C" {
     fn run_wyrm(input: *const c_char, flags: c_int) -> WyrmValue;
     fn terminate_wyrm();
+    fn run_wvm(file_path: *const c_char, flags: c_int) -> WyrmValue;
 }
 
 impl Wyrm {
     /// Crea un nuevo objeto Wyrm
-    pub fn new(verbose: bool) -> Self {
-        Wyrm { verbose }
+    pub fn new(verbose: bool, file_path: Option<String>) -> Self {
+        Wyrm { verbose, file_path }
     }
 
     fn input_verbose(&self, input: &str) {
@@ -49,8 +52,39 @@ impl Wyrm {
         }
     }
 
+    fn call_vm(&self, file_path: &str) -> WyrmValue {
+        let c_file_path = CString::new(file_path).expect("Error al convertir a CString");
+        unsafe {
+            run_wvm(
+                c_file_path.as_ptr(),
+                if self.verbose {
+                    C_VERBOSE_MODE | C_DEBUG_MODE
+                } else {
+                    0
+                },
+            )
+        }
+    }
+
     /// While infinto que lee entradas del usuario y llama a la implementación de Wyrm en C, en principio se sale con el comando "exit"
     pub fn run(&self) {
+        if let Some(path) = &self.file_path {
+            // Si hay archivos significa que debe ser un .wrc y ejecutamos la vm
+            let path_ref = Path::new(path);
+            if path_ref.exists()
+                && path_ref.is_file()
+                && let Some(extension) = path_ref.extension()
+            {
+                if extension != "wrc" {
+                    eprintln!("El archivo debe tener extensión .wrc");
+                } else {
+                    let result = self.call_vm(path_ref.to_str().unwrap());
+                    println!("{}", result);
+                }
+            }
+
+            return; // cortaa si ya trabajo la vm
+        }
         println!("Wyrm Version {}", VERSION);
         println!("Power by DrukDev");
         if self.verbose {
@@ -115,7 +149,7 @@ mod tests {
     #[serial] // Como el scope es global, nos es bueno que exista más de un wyrm corriendo al mismo tiempo, serial fuerza a que se ejecuten de a uno
     fn test_wyrm_respeta_punt_y_coma() {
         let input = format!("2+3; 3+6");
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
 
         unsafe {
             let resultado = wyrm.call_wyrm(&input);
@@ -136,7 +170,7 @@ mod tests {
     fn test_wyrm_instancia_variables() {
         let input = format!("int32 entero = 54;");
         let input2 = format!("entero;");
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
 
         unsafe {
             let resultado = wyrm.call_wyrm(&input);
@@ -162,7 +196,7 @@ mod tests {
     #[serial]
     fn test_wyrm_trabaja_booleanos() {
         let input = format!("bool falso = false; falso ~= true");
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
 
         unsafe {
             let resultado = wyrm.call_wyrm(&input);
@@ -183,7 +217,7 @@ mod tests {
                         bool y = true; 
                     } 
                     int32 z = 10;";
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
 
         let resultado = wyrm.call_wyrm(&input);
         assert_eq!(
@@ -197,7 +231,7 @@ mod tests {
     #[serial]
     fn test_wyrm_respeta_parentecis() {
         let input = format!("(2+2) / 2");
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
 
         unsafe {
             let resultado = wyrm.call_wyrm(&input);
@@ -220,7 +254,7 @@ mod tests {
             }
             x;
         ";
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
 
         let resultado = wyrm.call_wyrm(input);
 
@@ -255,7 +289,7 @@ mod tests {
             resultado;
         ";
 
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
         let output = wyrm.call_wyrm(input);
 
         unsafe {
@@ -280,7 +314,7 @@ mod tests {
          }
         contador";
 
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
         let output = wyrm.call_wyrm(input);
 
         unsafe {
@@ -309,7 +343,7 @@ mod tests {
         }        
         contador(5)";
 
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
         let output = wyrm.call_wyrm(input);
 
         unsafe {
@@ -338,7 +372,7 @@ mod tests {
         }        
         nat16 y = 5 + contador(5); y";
 
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
         let output = wyrm.call_wyrm(input);
 
         unsafe {
@@ -361,7 +395,7 @@ mod tests {
         (int32, int32) -> int64 suma = (x,y) -> { x+y }        
         int64 resultado = suma(2,suma(1,2)); resultado";
 
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
         let output = wyrm.call_wyrm(input);
 
         unsafe {
@@ -384,7 +418,7 @@ mod tests {
         () -> nat64 big = () -> {10^15 }        
         big()";
 
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
         let output = wyrm.call_wyrm(input);
 
         unsafe {
@@ -410,7 +444,7 @@ mod tests {
         void(true)";
         let input2 = "big";
 
-        let wyrm = Wyrm::new(false);
+        let wyrm = Wyrm::new(false, None);
         let output = wyrm.call_wyrm(input);
         assert_eq!(
             output.value_type,
