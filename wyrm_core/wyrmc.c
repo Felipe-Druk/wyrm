@@ -76,6 +76,15 @@ void write_chunk_to_file(const char *output_path, wyrm_chunk_t *chunk) {
     uint16_t func_count = (uint16_t)chunk->functions.size;
     fwrite(&func_count, sizeof(uint16_t), 1, file);
 
+    wyrm_func_entry_t *funcs_arr = (wyrm_func_entry_t *)chunk->functions.data;
+    for (uint16_t i = 0; i < func_count; i++) {
+        uint8_t ret_type = (uint8_t)funcs_arr[i].return_type;
+        fwrite(&funcs_arr[i].arg_count, sizeof(uint8_t), 1, file);
+        fwrite(&ret_type, sizeof(uint8_t), 1, file);
+        fwrite(&funcs_arr[i].code_offset, sizeof(uint32_t), 1, file);
+        fwrite(&funcs_arr[i].code_length, sizeof(uint32_t), 1, file);
+    }
+
     // Code
     uint32_t code_size = (uint32_t)chunk->code.size;
     fwrite(&code_size, sizeof(uint32_t), 1, file);

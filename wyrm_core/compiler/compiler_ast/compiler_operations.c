@@ -27,7 +27,27 @@ void compile_binary_expr(ast_node_t *node, compiler_t *compiler) {
     case T_OR:
         chunk_write_byte(compiler->chunk, WYRM_OP_OR);
         break;
-
+    case T_EQUAL:
+        chunk_write_byte(compiler->chunk, WYRM_OP_EQUAL);
+        break;
+    case T_LESS:
+        chunk_write_byte(compiler->chunk, WYRM_OP_LESS);
+        break;
+    case T_GREATER:
+        chunk_write_byte(compiler->chunk, WYRM_OP_GREATER);
+        break;
+    case T_NOT_EQUAL: // a ~= b  ==>  !(a == b)
+        chunk_write_byte(compiler->chunk, WYRM_OP_EQUAL);
+        chunk_write_byte(compiler->chunk, WYRM_OP_NOT);
+        break;
+    case T_LESS_EQUAL: // a <= b  ==>  !(a > b)
+        chunk_write_byte(compiler->chunk, WYRM_OP_GREATER);
+        chunk_write_byte(compiler->chunk, WYRM_OP_NOT);
+        break;
+    case T_GREATER_EQUAL: // a >= b  ==>  !(a < b)
+        chunk_write_byte(compiler->chunk, WYRM_OP_LESS);
+        chunk_write_byte(compiler->chunk, WYRM_OP_NOT);
+        break;
     default:
         panic(ERR_UNKNOWN_OP, "Unknown binary operator in compiler: %d", bin.operator);
     }

@@ -27,4 +27,10 @@ typedef enum WyrmOpcode {
     // Opcodes de variables
     WYRM_OP_GET_LOCAL = 0x11,
     WYRM_OP_SET_LOCAL = 0x12,
+    // Opcodes relacionales
+    WYRM_OP_LESS = 0x13,
+    WYRM_OP_GREATER = 0x14,
+    WYRM_OP_EQUAL = 0x15,
+    WYRM_OP_NOT_EQUAL = 0x16,
+
 } wyrm_opcode_t;

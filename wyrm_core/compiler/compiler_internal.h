@@ -9,8 +9,13 @@ Definimos internamente la fimra de "compile_node" para facilitar la recursion y 
 incluyan ""ompiler"
 */
 
+#define ERRRESOLVER -1
+
 // Compila el nodo segun su tipo,
 void compile_node(ast_node_t *node, compiler_t *compiler);
 
 // devuelve el indice de la variable, si esta en el "scope" local
 int resolve_local(compiler_t *compiler, const char *name);
+
+// devuleve el indcie de la función
+int resolve_function(compiler_t *compiler, const char *name);

@@ -42,6 +42,14 @@ pub enum WyrmOpcode {
     // Opcodes de funciones
     WYRM_OP_CALL = 0x0F,
     WYRM_OP_RETURN = 0x10,
+    // Opcodes de variables
+    WYRM_OP_GET_LOCAL = 0x11,
+    WYRM_OP_SET_LOCAL = 0x12,
+    // Opcodes relacionales
+    WYRM_OP_LESS = 0x13,
+    WYRM_OP_GREATER = 0x14,
+    WYRM_OP_EQUAL = 0x15,
+    WYRM_OP_NOT_EQUAL = 0x16,
 }
 
 const DEFAULT_OUTPUT_FILE_NAME: &str = "output.wrc";
@@ -281,5 +289,139 @@ mod tests {
             WyrmOpcode::WYRM_OP_RETURN as u8,
             "La tercera instrucción debe ser OP_RETURN"
         );
+    }
+
+    #[test]
+    #[serial]
+    fn test_wyrmc_compila_función_contador() {
+        let _guard = TempFileGuard {
+            paths: vec![TEST_INPUT_FILE, TEST_OUTPUT_FILE],
+        };
+
+        let codigo = b"
+        (nat32) -> int32 contador = (x) -> {
+            int32 actual = 0;
+            while (actual < x) {
+                actual = actual + 1;
+            }
+            actual
+        }
+        contador(5);
+        ";
+
+        compilar_codigo_prueba(codigo, true);
+
+        let bytes = fs::read(TEST_OUTPUT_FILE).expect("No se pudo leer el archivo .wrc generado");
+        let mut cursor = HEADER_SIZE;
+
+        // constantes
+        let const_count = u16::from_le_bytes([bytes[cursor], bytes[cursor + 1]]);
+        cursor += 2;
+        assert_eq!(
+            const_count, 3,
+            "Deben existir 3 constantes literales (0, 1 y 5)"
+        );
+
+        let valores_esperados = [0i64, 1i64, 5i64];
+        for (i, &esperado) in valores_esperados.iter().enumerate() {
+            let const_type = bytes[cursor];
+            cursor += 1;
+            assert_eq!(const_type, 8, "La constante {} debe ser ValInt64 (8)", i);
+
+            let val = i64::from_le_bytes(bytes[cursor..cursor + 8].try_into().unwrap());
+            cursor += 8;
+            assert_eq!(val, esperado, "Valor incorrecto en la constante {}", i);
+        }
+
+        // funciones
+        let func_count = u16::from_le_bytes([bytes[cursor], bytes[cursor + 1]]);
+        cursor += 2;
+        assert_eq!(func_count, 1, "Debe haber exactamente 1 función registrada");
+
+        let arg_count = bytes[cursor];
+        let return_type = bytes[cursor + 1];
+        let code_offset = u32::from_le_bytes(bytes[cursor + 2..cursor + 6].try_into().unwrap());
+        let code_length = u32::from_le_bytes(bytes[cursor + 6..cursor + 10].try_into().unwrap());
+        cursor += 10; // 1B arg_count + 1B return_type + 4B code_offset + 4B code_length
+
+        assert_eq!(arg_count, 1, "contador recibe 1 parámetro (x)");
+        assert_eq!(return_type, 7, "contador retorna ValInt32 (7)");
+        assert_eq!(
+            code_offset, 3,
+            "El cuerpo de contador inicia en el byte 3 tras el OP_JUMP inicial"
+        );
+        assert_eq!(code_length, 32, "El cuerpo de contador debe medir 32 bytes");
+
+        // Bytecode generado:
+        let code_size = u32::from_le_bytes(bytes[cursor..cursor + 4].try_into().unwrap()) as usize;
+        cursor += 4;
+        assert_eq!(
+            bytes.len() - cursor,
+            code_size,
+            "El tamaño declarado de code[] no coincide con los bytes restantes del archivo"
+        );
+
+        let code = &bytes[cursor..];
+
+        // Bytecode esperado:
+        // OP_JUMP 35          -> Salta el cuerpo de 'contador' directo al byte 35 (contador(5))
+        // OP_CONSTANT 0       -> Literal 0
+        // OP_CAST 7           -> Casteo a  ValInt32
+        // OP_GET_LOCAL 1      -> Lee "actual"
+        // OP_GET_LOCAL 0      -> Lee "x"
+        // OP_LESS             ->  "actual < x"
+        // OP_JUMP_IF_NOT 31   -> false = salta a byte 31
+        // OP_GET_LOCAL 1      -> Lee "actual"
+        // OP_CONSTANT 1       -> Literal 1
+        // OP_ADD              -> "actual + 1"
+        // OP_SET_LOCAL 1      -> Guarda el resultado en "actual"
+        // OP_JUMP 8           -> Vuelve al principio del "while"
+        // OP_GET_LOCAL 1      -> Lee "actual"
+        // OP_RETURN           -> Termina la función (offset 3 + 32 bytes = 35)
+        // OP_CONSTANT 2       -> Argumento 5 (constante índice 2)
+        // OP_CALL 0           -> Llama a la función 0 (contador)
+        // OP_RETURN           -> Fin del programa
+
+        // inicia la función
+        assert_eq!(code[0], WyrmOpcode::WYRM_OP_JUMP as u8);
+        assert_eq!(u16::from_le_bytes([code[1], code[2]]), 35);
+
+        // int32 actual = 0;
+        assert_eq!(code[3], WyrmOpcode::WYRM_OP_CONSTANT as u8);
+        assert_eq!(u16::from_le_bytes([code[4], code[5]]), 0);
+        assert_eq!(code[6], WyrmOpcode::WYRM_OP_CAST as u8);
+        assert_eq!(code[7], 7); // ValInt32
+
+        // Condición while (actual < x)
+        assert_eq!(code[8], WyrmOpcode::WYRM_OP_GET_LOCAL as u8);
+        assert_eq!(u16::from_le_bytes([code[9], code[10]]), 1); // actual
+        assert_eq!(code[11], WyrmOpcode::WYRM_OP_GET_LOCAL as u8);
+        assert_eq!(u16::from_le_bytes([code[12], code[13]]), 0); // x
+        assert_eq!(code[14], WyrmOpcode::WYRM_OP_LESS as u8);
+        assert_eq!(code[15], WyrmOpcode::WYRM_OP_JUMP_IF_NOT as u8);
+        assert_eq!(u16::from_le_bytes([code[16], code[17]]), 31);
+
+        //Cuerpo del while: actual = actual + 1;
+        assert_eq!(code[18], WyrmOpcode::WYRM_OP_GET_LOCAL as u8);
+        assert_eq!(u16::from_le_bytes([code[19], code[20]]), 1); // actual
+        assert_eq!(code[21], WyrmOpcode::WYRM_OP_CONSTANT as u8);
+        assert_eq!(u16::from_le_bytes([code[22], code[23]]), 1); // constante 1
+        assert_eq!(code[24], WyrmOpcode::WYRM_OP_ADD as u8);
+        assert_eq!(code[25], WyrmOpcode::WYRM_OP_SET_LOCAL as u8);
+        assert_eq!(u16::from_le_bytes([code[26], code[27]]), 1); // actual
+        assert_eq!(code[28], WyrmOpcode::WYRM_OP_JUMP as u8);
+        assert_eq!(u16::from_le_bytes([code[29], code[30]]), 8); // vuelve a la condición
+
+        // Retorno de "actual"
+        assert_eq!(code[31], WyrmOpcode::WYRM_OP_GET_LOCAL as u8);
+        assert_eq!(u16::from_le_bytes([code[32], code[33]]), 1);
+        assert_eq!(code[34], WyrmOpcode::WYRM_OP_RETURN as u8);
+
+        // Llamada contador(5) y fin
+        assert_eq!(code[35], WyrmOpcode::WYRM_OP_CONSTANT as u8);
+        assert_eq!(u16::from_le_bytes([code[36], code[37]]), 2); // constante 5
+        assert_eq!(code[38], WyrmOpcode::WYRM_OP_CALL as u8);
+        assert_eq!(u16::from_le_bytes([code[39], code[40]]), 0); // func_id 0
+        assert_eq!(code[41], WyrmOpcode::WYRM_OP_RETURN as u8);
     }
 }

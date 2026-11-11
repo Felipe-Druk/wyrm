@@ -1,6 +1,8 @@
 #include "compiler_internal.h"
 #include "compiler_ast/compiler_variables.h"
 #include "compiler_ast/compiler_operations.h"
+#include "compiler_ast/compiler_flows.h"
+#include "compiler_ast/compiler_functions.h"
 #include "../utils/debugger.h"
 #include <stdlib.h>
 
@@ -14,6 +16,7 @@ compiler_t *create_compiler(ast_node_t *root_ast, int flags) {
     compiler->root_ast = root_ast;
     compiler->chunk = NULL;
     compiler->locals = create_vector(sizeof(wyrm_local_t), INITIALLOCALS);
+    compiler->func_symbols = create_vector(sizeof(wyrm_func_symbol_t), INITIALLOCALS);
     compiler->scope_level = 0;
     compiler->flags = flags;
     return compiler;
@@ -52,8 +55,28 @@ void compile_node(ast_node_t *node, compiler_t *compiler) {
         compile_identifier(node, compiler);
         break;
     }
+    case AST_ASSIGNMENT: {
+        compile_assignment(node, compiler);
+        break;
+    }
     case AST_BINARY_EXPR: {
         compile_binary_expr(node, compiler);
+        break;
+    }
+    case AST_WHILE_EXPR: {
+        compile_while_expr(node, compiler);
+        break;
+    }
+    case AST_IF_EXPR: {
+        compile_if_expr(node, compiler);
+        break;
+    }
+    case AST_FUNCTION_DECL: {
+        compile_function_decl(node, compiler);
+        break;
+    }
+    case AST_CALL: {
+        compile_call_expr(node, compiler);
         break;
     }
     default:
@@ -68,7 +91,17 @@ int resolve_local(compiler_t *compiler, const char *name) {
             return i;
         }
     }
-    return -1;
+    return ERRRESOLVER;
+}
+
+int resolve_function(compiler_t *compiler, const char *name) {
+    wyrm_func_symbol_t *funcs = (wyrm_func_symbol_t *)compiler->func_symbols.data;
+    for (size_t i = 0; i < compiler->func_symbols.size; i++) {
+        if (strcmp(funcs[i].name, name) == 0) {
+            return (int)funcs[i].func_id;
+        }
+    }
+    return ERRRESOLVER;
 }
 
 void *compile_ast(compiler_t *compiler) {
@@ -102,6 +135,7 @@ void destroy_compiler(compiler_t *compiler) {
         destroy_wyrm_chunk(compiler->chunk);
     }
     destroy_vector(&compiler->locals);
+    destroy_vector(&compiler->func_symbols);
     free(compiler);
     compiler = NULL;
 }

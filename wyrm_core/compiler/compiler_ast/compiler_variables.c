@@ -16,10 +16,23 @@ void compile_identifier(ast_node_t *node, compiler_t *compiler) {
     const char *name = node->ast_node_value.identifier_expr.name;
     int slot = resolve_local(compiler, name);
 
-    if (slot == -1) {
+    if (slot == ERRRESOLVER) {
         panic(ERR_UNDEFINED_VAR, "Error UNDEFINED_VAR: %s", name);
     }
 
     chunk_write_byte(compiler->chunk, WYRM_OP_GET_LOCAL);
+    chunk_write_uint16(compiler->chunk, (uint16_t)slot);
+}
+
+void compile_assignment(ast_node_t *node, compiler_t *compiler) {
+    ast_assignment_t assign = node->ast_node_value.assignment_expr;
+    compile_node(assign.value, compiler);
+
+    int slot = resolve_local(compiler, assign.name);
+    if (slot == ERRRESOLVER) {
+        panic(ERR_UNDEFINED_VAR, "Error UNDEFINED_VAR in assignment: %s", assign.name);
+    }
+
+    chunk_write_byte(compiler->chunk, WYRM_OP_SET_LOCAL);
     chunk_write_uint16(compiler->chunk, (uint16_t)slot);
 }

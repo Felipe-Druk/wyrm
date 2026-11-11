@@ -10,10 +10,17 @@ typedef struct WyrmLocal {
     int scope_level;
 } wyrm_local_t;
 
+// estrutura que representa una función (en tiempo de compilación).
+typedef struct {
+    char *name;
+    uint16_t func_id;
+} wyrm_func_symbol_t;
+
 typedef struct Compiler {
     ast_node_t *root_ast;
     wyrm_chunk_t *chunk;
     wyrm_vector_t locals;
+    wyrm_vector_t func_symbols;
     int scope_level;
     int flags;
 } compiler_t;
