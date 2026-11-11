@@ -8,9 +8,11 @@
 # --error-exitcode=1: Hace que el Makefile falle si algun leak o error de memoria
 VALGRIND_FLAGS = --leak-check=full \
                  --show-leak-kinds=definite,indirect \
-				 --errors-for-leak-kinds=definite,indirect \
+                 --errors-for-leak-kinds=definite,indirect \
                  --track-origins=yes \
                  --error-exitcode=1
+
+VALGRIND_RUNNER = valgrind $(VALGRIND_FLAGS)
 
 # Ejecuta directamente el binario de test que se encuentra en target/debug/deps/ y que empieza con "wyrm-"		
 TEST_BIN = $$(find target/debug/deps/ -maxdepth 1 -perm -111 -type f -name "wyrm-*" | head -n 1)
@@ -75,13 +77,13 @@ tests:
 memcheck:
 	@echo "Ejecutando Valgrind..."
 	cargo test --no-run
-	valgrind $(VALGRIND_FLAGS) $(TEST_BIN) --test-threads=1
+	CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="$(VALGRIND_RUNNER)" cargo test -- --test-threads=1
 
 memcheck-one:
 	@echo "Ejecutando Valgrind en un solo test..."
 	cargo test --no-run
-	valgrind $(VALGRIND_FLAGS) $(TEST_BIN) $(TEST) --test-threads=1 --nocapture
-
+	CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="$(VALGRIND_RUNNER)" cargo test $(TEST) -- --test-threads=1 --nocapture
+	
 pre-commit:
 	@echo "Ejecutando pre-commits..."
 	pre-commit run --all-files

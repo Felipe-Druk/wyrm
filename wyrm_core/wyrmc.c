@@ -20,6 +20,7 @@ wyrmc_t *create_wyrmc(const char *input_file_path, const char *output_file_path,
     if (flags) {
         wyrmc->flags = VERBOSE_MODE | PARSER_MODE | SCANNER_MODE | DEBUG_MODE;
     }
+    wyrmc->flags = 0;
     wyrmc->input_file_path = strdup(input_file_path);
     wyrmc->output_file_path = strdup(output_file_path);
     return wyrmc;
@@ -96,7 +97,7 @@ void write_chunk_to_file(const char *output_path, wyrm_chunk_t *chunk) {
 }
 
 void compile_file(wyrmc_t *wyrmc) {
-    scanner_t scanner = {.tokens = create_token_vector(16), .flags = wyrmc->flags};
+    scanner_t scanner = {.tokens = NULL, .flags = wyrmc->flags};
     char *input = input_file_to_string(wyrmc);
     token_vector_t *tokens = scanner_scan(input, &scanner);
     parser_t *parser = create_parser(tokens);
@@ -107,11 +108,19 @@ void compile_file(wyrmc_t *wyrmc) {
     compiler_t *compiler = create_compiler(root, wyrmc->flags);
     compile_ast(compiler);
     write_chunk_to_file(wyrmc->output_file_path, compiler->chunk);
+
+    destroy_compiler(compiler);
+    destroy_parser(parser);
+    destroy_token_vector(tokens);
+    free(input);
 }
 
 void set_wyrmc_flags(wyrmc_t *wyrmc, int flags) { wyrmc->flags = flags; }
 
 void destroy_wyrmc(wyrmc_t *wyrmc) {
-    (void)wyrmc;
+    if (wyrmc == NULL)
+        return;
+    free(wyrmc->input_file_path);
+    free(wyrmc->output_file_path);
     free(wyrmc);
 }
