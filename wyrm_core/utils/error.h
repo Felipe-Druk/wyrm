@@ -23,6 +23,7 @@ typedef enum {
     ERR_FILE_WRITE = 15,
     ERR_NULL_POINTER = 16,
     ERR_IO = 17,
+    ERR_OVERFLOW = 18,
 } WyrmErrorCode;
 
 typedef WyrmErrorCode wyrm_error_code_t;

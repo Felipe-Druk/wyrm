@@ -178,7 +178,7 @@ mod tests {
             paths: vec![TEST_INPUT_FILE, TEST_OUTPUT_FILE],
         };
 
-        compilar_codigo_prueba(b"nat8 x = 1;", true);
+        compilar_codigo_prueba(b"nat8 x = 1;", false);
 
         let bytes = fs::read(TEST_OUTPUT_FILE).expect("No se pudo leer el archivo .wrc generado");
 
@@ -202,7 +202,7 @@ mod tests {
             paths: vec![TEST_INPUT_FILE, TEST_OUTPUT_FILE],
         };
 
-        compilar_codigo_prueba(b"nat8 x = 1;", true);
+        compilar_codigo_prueba(b"nat8 x = 1;", false);
 
         let bytes = fs::read(TEST_OUTPUT_FILE).expect("No se pudo leer el archivo .wrc generado");
         let mut cursor = HEADER_SIZE;
@@ -231,7 +231,7 @@ mod tests {
             paths: vec![TEST_INPUT_FILE, TEST_OUTPUT_FILE],
         };
 
-        compilar_codigo_prueba(b"nat8 x = 1;", true);
+        compilar_codigo_prueba(b"nat8 x = 1;", false);
 
         let bytes = fs::read(TEST_OUTPUT_FILE).expect("No se pudo leer el archivo .wrc generado");
         let cursor = HEADER_SIZE + CONSTANTS_SECTION_SIZE;
@@ -248,7 +248,7 @@ mod tests {
             paths: vec![TEST_INPUT_FILE, TEST_OUTPUT_FILE],
         };
 
-        compilar_codigo_prueba(b"nat8 x = 1;", true);
+        compilar_codigo_prueba(b"nat8 x = 1;", false);
 
         let bytes = fs::read(TEST_OUTPUT_FILE).expect("No se pudo leer el archivo .wrc generado");
         let mut cursor = HEADER_SIZE + CONSTANTS_SECTION_SIZE + FUNCTIONS_SECTION_SIZE;
@@ -309,7 +309,7 @@ mod tests {
         contador(5);
         ";
 
-        compilar_codigo_prueba(codigo, true);
+        compilar_codigo_prueba(codigo, false);
 
         let bytes = fs::read(TEST_OUTPUT_FILE).expect("No se pudo leer el archivo .wrc generado");
         let mut cursor = HEADER_SIZE;

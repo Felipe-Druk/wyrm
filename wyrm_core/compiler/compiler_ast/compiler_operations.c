@@ -36,6 +36,7 @@ void compile_binary_expr(ast_node_t *node, compiler_t *compiler) {
     case T_GREATER:
         chunk_write_byte(compiler->chunk, WYRM_OP_GREATER);
         break;
+    case T_XOR:       // a ~= b ==> a xor b
     case T_NOT_EQUAL: // a ~= b  ==>  !(a == b)
         chunk_write_byte(compiler->chunk, WYRM_OP_EQUAL);
         chunk_write_byte(compiler->chunk, WYRM_OP_NOT);
@@ -50,5 +51,20 @@ void compile_binary_expr(ast_node_t *node, compiler_t *compiler) {
         break;
     default:
         panic(ERR_UNKNOWN_OP, "Unknown binary operator in compiler: %d", bin.operator);
+    }
+}
+
+void compile_unary_expr(ast_node_t *node, compiler_t *compiler) {
+    ast_unary_expr_t unary = node->ast_node_value.unary_expr;
+    compile_node(unary.right, compiler);
+    switch (unary.operator) {
+    case T_NOT:
+        chunk_write_byte(compiler->chunk, WYRM_OP_NOT);
+        break;
+    case T_SUB:
+        chunk_write_byte(compiler->chunk, WYRM_OP_SUB);
+        break;
+    default:
+        panic(ERR_UNKNOWN_OP, "Unknown unary operator in compiler: %d", unary.operator);
     }
 }

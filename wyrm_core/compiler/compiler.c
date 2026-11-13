@@ -46,7 +46,15 @@ void compile_node(ast_node_t *node, compiler_t *compiler) {
         chunk_write_uint16(compiler->chunk, const_idx);
         break;
     }
-
+    case AST_BOOL_LITERAL: {
+        wyrm_value_t constant = {0};
+        constant.type = VAL_BOOL;
+        constant.value.bool_val = node->ast_node_value.bool_expr.value;
+        uint16_t const_idx = chunk_add_constant(compiler->chunk, constant);
+        chunk_write_byte(compiler->chunk, WYRM_OP_CONSTANT);
+        chunk_write_uint16(compiler->chunk, const_idx);
+        break;
+    }
     case AST_VAR_DECLARATION: {
         compile_var_declaration(node, compiler);
         break;
@@ -61,6 +69,10 @@ void compile_node(ast_node_t *node, compiler_t *compiler) {
     }
     case AST_BINARY_EXPR: {
         compile_binary_expr(node, compiler);
+        break;
+    }
+    case AST_UNARY_EXPR: {
+        compile_unary_expr(node, compiler);
         break;
     }
     case AST_WHILE_EXPR: {
