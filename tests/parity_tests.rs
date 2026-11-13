@@ -187,3 +187,12 @@ fn test_paridad_05_función_contador() {
 fn test_paridad_06_archivo_vacio() {
     ejecutar_paridad_wyrm("tests/wyrm_scripts/06_vacio.wyrm", val_void());
 }
+
+#[test]
+#[serial]
+fn test_paridad_07_benchmarks_contador() {
+    ejecutar_paridad_wyrm(
+        "tests/wyrm_scripts/07_benchmarks_contador.wyrm",
+        val_int32(5000000),
+    );
+}

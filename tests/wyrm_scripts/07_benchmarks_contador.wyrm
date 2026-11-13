@@ -1,0 +1,8 @@
+(nat32) -> int32 contador = (x) -> {
+    int32 actual = 0;
+    while (actual < x) {
+        actual = actual + 1;
+    }
+    actual
+}
+contador(5000000);

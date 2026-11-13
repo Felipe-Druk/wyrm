@@ -49,6 +49,7 @@ void wvm_op_call(wyrm_vm_t *vm) {
     frame->return_type = func->return_type;
 
     // Salteamos a la base de la función
+    vm->base_slot = frame->base_slot;
     vm->ip = func->code_offset;
 }
 
@@ -68,6 +69,7 @@ bool wvm_op_return(wyrm_vm_t *vm, wyrm_value_t *final_result) {
     }
 
     vm->stack_top = frame.base_slot;
+    vm->base_slot = (vm->frame_count > 0) ? vm->frames[vm->frame_count - 1].base_slot : 0;
     vm_push(vm, ret_val);
     vm->ip = frame.return_ip;
     return false;

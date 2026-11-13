@@ -37,6 +37,7 @@ help:
 	@echo "- run-v: Ejecuta el programa con la flag de seguimiento, si no esta compilado lo compila"
 	@echo "- format: Aplica linters al proyecto"
 	@echo "- tests: Ejecuta todos los test"
+	@echo "- tests-parity: Ejecuta tests de paridad con salida estadnar"
 	@echo "- memcheck: Ejecuta Valgrind para detectar leaks de memoria"
 	@echo "- memcheck-one: Ejecuta Valgrind en un solo test, debe ser llamdo con TEST=<nombre_test>"
 	@echo "- pre-commit: Ejecuta los pre-commits sobre todo el proyecto"
@@ -74,6 +75,9 @@ tests:
 	@echo "Ejecutanto tests..."
 	cargo test
 
+tests-parity:
+	@echo "Ejecutanto tests de paridad..."
+	cargo test --test parity_tests -- --nocapture
 memcheck:
 	@echo "Ejecutando Valgrind..."
 	cargo test --no-run

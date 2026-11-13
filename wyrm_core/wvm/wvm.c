@@ -1,41 +1,7 @@
 #include "wvm_internal.h"
-#include <stdlib.h>
 #include "wvm_ops/wvm_variables.h"
 #include "wvm_ops/wvm_operations.h"
 #include "wvm_control_flow.h"
-
-void vm_push(wyrm_vm_t *vm, wyrm_value_t val) {
-    if (vm->stack_top >= vm->stack_capacity) {
-        vm->stack_capacity *= 2;
-        vm->stack = realloc(vm->stack, sizeof(wyrm_value_t) * vm->stack_capacity);
-        if (!vm->stack) {
-            panic(ERR_OUT_MEMORY, "VM stack overflow");
-        }
-    }
-    vm->stack[vm->stack_top++] = val;
-}
-
-wyrm_value_t vm_pop(wyrm_vm_t *vm) {
-    if (vm->stack_top == 0) {
-        wyrm_value_t empty = {.type = VAL_VOID};
-        return empty;
-    }
-    return vm->stack[--vm->stack_top];
-}
-
-uint8_t vm_read_byte(wyrm_vm_t *vm) {
-    uint8_t *byte_ptr = (uint8_t *)vector_get(&vm->chunk->code, vm->ip++);
-    if (byte_ptr == NULL) {
-        panic(ERR_OVERFLOW, "VM instruction pointer out of bounds: %u", vm->ip - 1);
-    }
-    return *byte_ptr;
-}
-
-uint16_t vm_read_uint16(wyrm_vm_t *vm) {
-    uint16_t low = vm_read_byte(vm);
-    uint16_t high = vm_read_byte(vm);
-    return (uint16_t)(low | (high << 8));
-}
 
 size_t vm_current_base_slot(wyrm_vm_t *vm) {
     if (vm->frame_count == 0) {
@@ -85,10 +51,8 @@ wyrm_value_t cast_vm_value(wyrm_value_t val, wyrm_value_type_t target_type) {
 }
 
 static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
-    const uint8_t *code = (const uint8_t *)vm->chunk->code.data;
-
     while (vm->ip < vm->chunk->code.size) {
-        uint8_t instruction = code[vm->ip++];
+        wyrm_opcode_t instruction = (wyrm_opcode_t)vm_read_byte(vm);
 
         switch (instruction) {
         case WYRM_OP_CONSTANT:
@@ -162,10 +126,15 @@ wyrm_value_t run_wvm(const char *file_path, int flags) {
 
     wyrm_vm_t vm = {
         .chunk = chunk,
+        .code = chunk->code.size > 0 ? (const uint8_t *)vector_get(&chunk->code, 0) : NULL,
+        .code_size = chunk->code.size,
+        .constants = chunk->constants.size > 0 ? (const wyrm_value_t *)vector_get(&chunk->constants, 0) : NULL,
         .ip = 0,
         .stack = calloc(STACK_INITIAL_CAPACITY, sizeof(wyrm_value_t)),
         .stack_top = 0,
         .stack_capacity = STACK_INITIAL_CAPACITY,
+        .base_slot = 0,
+        .frame_count = 0,
         .flags = flags,
     };
 
