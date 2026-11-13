@@ -61,6 +61,18 @@ void wvm_op_binary_arith(wyrm_vm_t *vm, wyrm_opcode_t op) {
             res.value.nat64_val = get_cast_nat64(left) % get_cast_nat64(right);
         }
         break;
+    case WYRM_OP_POW:
+        if (has_float) {
+            res.type = VAL_FLOAT64;
+            res.value.float64_val = pow(get_cast_float64(left), get_cast_float64(right));
+        } else if (has_int) {
+            res.type = VAL_INT64;
+            res.value.int64_val = (int64_t)pow((double)get_cast_int64(left), (double)get_cast_int64(right));
+        } else {
+            res.type = VAL_NAT64;
+            res.value.nat64_val = (uint64_t)pow((double)get_cast_nat64(left), (double)get_cast_nat64(right));
+        }
+        break;
     default:
         panic(ERR_UNKNOWN_OP, "Invalid arithmetic opcode: %d", op);
     }

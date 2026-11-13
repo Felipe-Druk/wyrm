@@ -32,7 +32,7 @@ impl Wyrm {
         println!("Entrada recibida: {}", input);
     }
 
-    fn call_wyrm(&self, input: &str) -> WyrmValue {
+    pub fn call_wyrm(&self, input: &str) -> WyrmValue {
         let c_input = CString::new(input).expect("Error al convertir a CString");
         unsafe {
             run_wyrm(

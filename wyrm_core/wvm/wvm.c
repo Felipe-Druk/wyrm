@@ -109,6 +109,7 @@ static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
         case WYRM_OP_MUL:
         case WYRM_OP_DIV:
         case WYRM_OP_MOD:
+        case WYRM_OP_POW:
             wvm_op_binary_arith(vm, instruction);
             break;
 

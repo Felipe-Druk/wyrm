@@ -1,0 +1,12 @@
+int32 valor = 15;
+int32 resultado = 0;
+
+if (valor < 10) {
+    resultado = 10;
+} else if (valor == 15) {
+    resultado = 20;
+} else {
+    resultado = 30;
+}
+
+resultado;

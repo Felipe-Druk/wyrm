@@ -1,0 +1,8 @@
+int32 entero = 10;
+entero = entero + 1
+entero = entero - 1
+entero = entero / 2
+entero = entero * 2;
+entero = entero ^2
+entero = entero/10
+entero;
