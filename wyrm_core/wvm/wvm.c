@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "wvm_ops/wvm_variables.h"
 #include "wvm_ops/wvm_operations.h"
+#include "wvm_control_flow.h"
 
 void vm_push(wyrm_vm_t *vm, wyrm_value_t val) {
     if (vm->stack_top >= vm->stack_capacity) {
@@ -123,7 +124,17 @@ static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
         case WYRM_OP_GREATER:
             wvm_op_binary_cmp(vm, instruction);
             break;
+        case WYRM_OP_JUMP:
+            wvm_op_jump(vm);
+            break;
 
+        case WYRM_OP_JUMP_IF:
+            wvm_op_jump_if(vm);
+            break;
+
+        case WYRM_OP_JUMP_IF_NOT:
+            wvm_op_jump_if_not(vm);
+            break;
         case WYRM_OP_RETURN:
             return vm_pop(vm);
 

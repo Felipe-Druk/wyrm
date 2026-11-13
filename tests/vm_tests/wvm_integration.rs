@@ -131,3 +131,36 @@ fn test_wvm_03_operadores_logicos() {
         );
     }
 }
+
+#[test]
+#[serial]
+fn test_wvm_04_control_de_flujo_if_else() {
+    let codigo = b"
+        int32 valor = 15;
+        int32 resultado = 0;
+
+        if (valor < 10) {
+            resultado = 10;
+        } else if (valor == 15) {
+            resultado = 20;
+        } else {
+            resultado = 30;
+        }
+
+        resultado;
+    ";
+
+    let resultado = compilar_y_ejecutar_wvm("if_else", codigo, false);
+
+    unsafe {
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValInt32,
+            "El tipo resultante debe ser ValInt32"
+        );
+        assert_eq!(
+            resultado.value.int32_val, 20,
+            "El control de flujo en la VM no entró en la rama 'else if' esperada (20)"
+        );
+    }
+}
