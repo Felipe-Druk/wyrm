@@ -2,6 +2,11 @@
 #include "../wyrm_value/wyrm_value.h"
 #include "../../utils/wyrm_vector.h"
 
+#define WYRM_MAGIC "WYRM"
+#define WYRM_MAGIC_SIZE 4
+#define WYRMC_VERSION ((uint16_t)0x0100)
+#define STACK_INITIAL_CAPACITY 1024
+
 typedef struct {
     uint8_t arg_count;             // Parámetros formales que espera la función
     wyrm_value_type_t return_type; // Tipo de retorno de la función
@@ -30,6 +35,18 @@ void chunk_write_uint16(wyrm_chunk_t *chunk, uint16_t value);
 
 // Agrega una constante al vector de constantes
 uint16_t chunk_add_constant(wyrm_chunk_t *chunk, wyrm_value_t value);
+
+// Emite un salto con un offset temporal 0xFFFF
+size_t chunk_emit_jump(wyrm_chunk_t *chunk, uint8_t opcode);
+
+// Sobrescribe el offset temporal
+void chunk_patch_jump(wyrm_chunk_t *chunk, size_t operand_offset);
+
+// Serializa el chunk en un archvio de salida
+void write_chunk_to_file(const char *output_path, wyrm_chunk_t *chunk);
+
+// Deserializa un chunk en base a un archivo .wrc
+wyrm_chunk_t *read_chunk_from_file(const char *input_path);
 
 // Libera toda la memoria reservada para el chunk
 void destroy_wyrm_chunk(wyrm_chunk_t *chunk);

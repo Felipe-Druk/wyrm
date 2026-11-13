@@ -52,7 +52,7 @@ impl Wyrm {
         }
     }
 
-    fn call_vm(&self, file_path: &str) -> WyrmValue {
+    pub fn call_vm(&self, file_path: &str) -> WyrmValue {
         let c_file_path = CString::new(file_path).expect("Error al convertir a CString");
         unsafe {
             run_wvm(
