@@ -67,3 +67,83 @@ void wvm_op_binary_arith(wyrm_vm_t *vm, wyrm_opcode_t op) {
 
     vm_push(vm, res);
 }
+
+void wvm_op_not(wyrm_vm_t *vm) {
+    wyrm_value_t val = vm_pop(vm);
+    if (val.type != VAL_BOOL) {
+        panic(ERR_TYPE_MISMATCH, "The 'not' operator in VM requires a boolean");
+    }
+    wyrm_value_t res = {0};
+    res.type = VAL_BOOL;
+    res.value.bool_val = !val.value.bool_val;
+    vm_push(vm, res);
+}
+
+void wvm_op_binary_logic(wyrm_vm_t *vm, wyrm_opcode_t op) {
+    wyrm_value_t right = vm_pop(vm);
+    wyrm_value_t left = vm_pop(vm);
+
+    if (left.type != VAL_BOOL || right.type != VAL_BOOL) {
+        panic(ERR_TYPE_MISMATCH, "Logical operators in VM require booleans");
+    }
+
+    wyrm_value_t res = {0};
+    res.type = VAL_BOOL;
+    if (op == WYRM_OP_AND) {
+        res.value.bool_val = left.value.bool_val && right.value.bool_val;
+    } else if (op == WYRM_OP_OR) {
+        res.value.bool_val = left.value.bool_val || right.value.bool_val;
+    }
+    vm_push(vm, res);
+}
+
+void wvm_op_binary_cmp(wyrm_vm_t *vm, wyrm_opcode_t op) {
+    wyrm_value_t right = vm_pop(vm);
+    wyrm_value_t left = vm_pop(vm);
+
+    wyrm_value_t res = {0};
+    res.type = VAL_BOOL;
+
+    if (left.type == VAL_BOOL && right.type == VAL_BOOL) {
+        if (op == WYRM_OP_EQUAL) {
+            res.value.bool_val = (left.value.bool_val == right.value.bool_val);
+            vm_push(vm, res);
+            return;
+        }
+        panic(ERR_TYPE_MISMATCH, "Cannot order-compare booleans");
+    }
+
+    int has_float = is_float_type(left.type) || is_float_type(right.type);
+    int has_int = is_int_type(left.type) || is_int_type(right.type);
+
+    switch (op) {
+    case WYRM_OP_EQUAL:
+        if (has_float)
+            res.value.bool_val = (get_cast_float64(left) == get_cast_float64(right));
+        else if (has_int)
+            res.value.bool_val = (get_cast_int64(left) == get_cast_int64(right));
+        else
+            res.value.bool_val = (get_cast_nat64(left) == get_cast_nat64(right));
+        break;
+    case WYRM_OP_LESS:
+        if (has_float)
+            res.value.bool_val = (get_cast_float64(left) < get_cast_float64(right));
+        else if (has_int)
+            res.value.bool_val = (get_cast_int64(left) < get_cast_int64(right));
+        else
+            res.value.bool_val = (get_cast_nat64(left) < get_cast_nat64(right));
+        break;
+    case WYRM_OP_GREATER:
+        if (has_float)
+            res.value.bool_val = (get_cast_float64(left) > get_cast_float64(right));
+        else if (has_int)
+            res.value.bool_val = (get_cast_int64(left) > get_cast_int64(right));
+        else
+            res.value.bool_val = (get_cast_nat64(left) > get_cast_nat64(right));
+        break;
+    default:
+        panic(ERR_UNKNOWN_OP, "Invalid comparison opcode: %d", op);
+    }
+
+    vm_push(vm, res);
+}

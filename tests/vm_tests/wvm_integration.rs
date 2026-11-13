@@ -106,3 +106,28 @@ fn test_wvm_02_operadores_arigmeticos() {
         );
     }
 }
+
+#[test]
+#[serial]
+fn test_wvm_03_operadores_logicos() {
+    let codigo = b"bool booleano = true;\n\
+                   booleano = booleano and true\n\
+                   booleano = booleano or false\n\
+                   booleano = not booleano\n\
+                   booleano = booleano xor true;\n\
+                   booleano;";
+
+    let resultado = compilar_y_ejecutar_wvm("logica", codigo, false);
+
+    unsafe {
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValBool,
+            "La VM debe devolver Bool"
+        );
+        assert_eq!(
+            resultado.value.bool_val, true,
+            "El valor devuelto por la VM no coincide con el esperado (true)"
+        );
+    }
+}

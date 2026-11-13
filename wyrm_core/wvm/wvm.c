@@ -109,6 +109,21 @@ static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
             wvm_op_binary_arith(vm, instruction);
             break;
 
+        case WYRM_OP_AND:
+        case WYRM_OP_OR:
+            wvm_op_binary_logic(vm, instruction);
+            break;
+
+        case WYRM_OP_NOT:
+            wvm_op_not(vm);
+            break;
+
+        case WYRM_OP_EQUAL:
+        case WYRM_OP_LESS:
+        case WYRM_OP_GREATER:
+            wvm_op_binary_cmp(vm, instruction);
+            break;
+
         case WYRM_OP_RETURN:
             return vm_pop(vm);
 
