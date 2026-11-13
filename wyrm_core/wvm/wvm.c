@@ -38,8 +38,10 @@ uint16_t vm_read_uint16(wyrm_vm_t *vm) {
 }
 
 size_t vm_current_base_slot(wyrm_vm_t *vm) {
-    (void)vm;
-    return 0;
+    if (vm->frame_count == 0) {
+        return 0;
+    }
+    return vm->frames[vm->frame_count - 1].base_slot;
 }
 
 // Castea el tope el valor del tope (para asignacion)
@@ -135,8 +137,15 @@ static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
         case WYRM_OP_JUMP_IF_NOT:
             wvm_op_jump_if_not(vm);
             break;
+        case WYRM_OP_CALL:
+            wvm_op_call(vm);
+            break;
         case WYRM_OP_RETURN:
-            return vm_pop(vm);
+            wyrm_value_t final_result = {.type = VAL_VOID};
+            if (wvm_op_return(vm, &final_result)) {
+                return final_result;
+            }
+            break;
 
         default:
             panic(ERR_UNKNOWN_OP, "Unknown opcode in VM: 0x%02X", instruction);

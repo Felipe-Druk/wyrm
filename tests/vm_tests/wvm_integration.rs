@@ -164,3 +164,32 @@ fn test_wvm_04_control_de_flujo_if_else() {
         );
     }
 }
+
+#[test]
+#[serial]
+fn test_wvm_05_función_contador() {
+    let codigo = b"
+        (nat32) -> int32 contador = (x) -> {
+            int32 actual = 0;
+            while (actual < x) {
+                actual = actual + 1;
+            }
+            actual
+        }
+        contador(5);
+    ";
+
+    let resultado = compilar_y_ejecutar_wvm("función_contador", codigo, false);
+
+    unsafe {
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValInt32,
+            "La función ejecutada en la VM debe devolver ValInt32"
+        );
+        assert_eq!(
+            resultado.value.int32_val, 5,
+            "El contador en la VM debería haber sumado hasta 5"
+        );
+    }
+}
