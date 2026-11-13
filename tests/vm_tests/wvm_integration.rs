@@ -82,3 +82,27 @@ fn test_wvm_01_instancia_y_lee_variable() {
         );
     }
 }
+#[test]
+#[serial]
+fn test_wvm_02_operadores_arigmeticos() {
+    let codigo = b"int32 entero = 10;\n\
+                   entero = entero + 1\n\
+                   entero = entero - 1\n\
+                   entero = entero / 2\n\
+                   entero = entero * 2;\n\
+                   entero;";
+
+    let resultado = compilar_y_ejecutar_wvm("aritmetica", codigo, false);
+
+    unsafe {
+        assert_eq!(
+            resultado.value_type,
+            WyrmValueType::ValInt32,
+            "La VM debe devolver ValInt32"
+        );
+        assert_eq!(
+            resultado.value.int32_val, 10,
+            "El valor devuelto por la VM no coincide con el esperado (10)"
+        );
+    }
+}

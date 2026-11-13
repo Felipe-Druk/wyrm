@@ -1,19 +1,9 @@
-#include "wvm.h"
-#include "wyrm_types/wyrmc_types/wyrm_chunk.h"
-#include "wyrm_types/wyrmc_types/wyrm_opcode.h"
-#include "utils/error.h"
+#include "wvm_internal.h"
 #include <stdlib.h>
+#include "wvm_ops/wvm_variables.h"
+#include "wvm_ops/wvm_operations.h"
 
-typedef struct WyrmVm {
-    wyrm_chunk_t *chunk;
-    uint32_t ip;
-    wyrm_value_t *stack;
-    size_t stack_top;
-    size_t stack_capacity;
-    int flags;
-} wyrm_vm_t;
-
-static void vm_push(wyrm_vm_t *vm, wyrm_value_t val) {
+void vm_push(wyrm_vm_t *vm, wyrm_value_t val) {
     if (vm->stack_top >= vm->stack_capacity) {
         vm->stack_capacity *= 2;
         vm->stack = realloc(vm->stack, sizeof(wyrm_value_t) * vm->stack_capacity);
@@ -24,7 +14,7 @@ static void vm_push(wyrm_vm_t *vm, wyrm_value_t val) {
     vm->stack[vm->stack_top++] = val;
 }
 
-static wyrm_value_t vm_pop(wyrm_vm_t *vm) {
+wyrm_value_t vm_pop(wyrm_vm_t *vm) {
     if (vm->stack_top == 0) {
         wyrm_value_t empty = {.type = VAL_VOID};
         return empty;
@@ -32,14 +22,27 @@ static wyrm_value_t vm_pop(wyrm_vm_t *vm) {
     return vm->stack[--vm->stack_top];
 }
 
-static uint16_t vm_read_uint16(wyrm_vm_t *vm, const uint8_t *code) {
-    uint16_t low = code[vm->ip++];
-    uint16_t high = code[vm->ip++];
+uint8_t vm_read_byte(wyrm_vm_t *vm) {
+    uint8_t *byte_ptr = (uint8_t *)vector_get(&vm->chunk->code, vm->ip++);
+    if (byte_ptr == NULL) {
+        panic(ERR_OVERFLOW, "VM instruction pointer out of bounds: %u", vm->ip - 1);
+    }
+    return *byte_ptr;
+}
+
+uint16_t vm_read_uint16(wyrm_vm_t *vm) {
+    uint16_t low = vm_read_byte(vm);
+    uint16_t high = vm_read_byte(vm);
     return (uint16_t)(low | (high << 8));
 }
 
+size_t vm_current_base_slot(wyrm_vm_t *vm) {
+    (void)vm;
+    return 0;
+}
+
 // Castea el tope el valor del tope (para asignacion)
-static wyrm_value_t cast_vm_value(wyrm_value_t val, wyrm_value_type_t target_type) {
+wyrm_value_t cast_vm_value(wyrm_value_t val, wyrm_value_type_t target_type) {
     int64_t raw = val.value.int64_val; //  VAL_INT64 tipo por defecto de los literales
     wyrm_value_t res = {0};
     res.type = target_type;
@@ -80,34 +83,34 @@ static wyrm_value_t cast_vm_value(wyrm_value_t val, wyrm_value_type_t target_typ
 
 static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
     const uint8_t *code = (const uint8_t *)vm->chunk->code.data;
-    const wyrm_value_t *constants = (const wyrm_value_t *)vm->chunk->constants.data;
 
     while (vm->ip < vm->chunk->code.size) {
         uint8_t instruction = code[vm->ip++];
 
-        switch ((wyrm_opcode_t)instruction) {
-        case WYRM_OP_CONSTANT: {
-            uint16_t const_idx = vm_read_uint16(vm, code);
-            vm_push(vm, constants[const_idx]);
+        switch (instruction) {
+        case WYRM_OP_CONSTANT:
+            wvm_op_constant(vm);
             break;
-        }
-
-        case WYRM_OP_CAST: {
-            wyrm_value_type_t target_type = (wyrm_value_type_t)code[vm->ip++];
-            wyrm_value_t val = vm_pop(vm);
-            vm_push(vm, cast_vm_value(val, target_type));
+        case WYRM_OP_CAST:
+            wvm_op_cast(vm);
             break;
-        }
-
-        case WYRM_OP_GET_LOCAL: {
-            uint16_t slot = vm_read_uint16(vm, code);
-            vm_push(vm, vm->stack[slot]);
+        case WYRM_OP_GET_LOCAL:
+            wvm_op_get_local(vm);
             break;
-        }
+        case WYRM_OP_SET_LOCAL:
+            wvm_op_set_local(vm);
+            break;
 
-        case WYRM_OP_RETURN: {
+        case WYRM_OP_ADD:
+        case WYRM_OP_SUB:
+        case WYRM_OP_MUL:
+        case WYRM_OP_DIV:
+        case WYRM_OP_MOD:
+            wvm_op_binary_arith(vm, instruction);
+            break;
+
+        case WYRM_OP_RETURN:
             return vm_pop(vm);
-        }
 
         default:
             panic(ERR_UNKNOWN_OP, "Unknown opcode in VM: 0x%02X", instruction);
