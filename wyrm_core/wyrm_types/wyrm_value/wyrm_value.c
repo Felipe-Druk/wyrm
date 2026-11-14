@@ -130,53 +130,51 @@ wyrm_value_type_t token_to_value_type(TokenType token_type) {
     break;
 
 wyrm_value_t cast_to_value_type(wyrm_value_t original, wyrm_value_type_t token_type) {
-    wyrm_value_t result = original;
-
-    if (original.type == VAL_INT64) {
-        switch (token_type) {
-        case VAL_INT8:
-            CAST_FROM_INT64(VAL_INT8, int8_val, int8_t)
-        case VAL_INT16:
-            CAST_FROM_INT64(VAL_INT16, int16_val, int16_t)
-        case VAL_INT32:
-            CAST_FROM_INT64(VAL_INT32, int32_val, int32_t)
-        case VAL_NAT8:
-            CAST_FROM_INT64(VAL_NAT8, nat8_val, uint8_t)
-        case VAL_NAT16:
-            CAST_FROM_INT64(VAL_NAT16, nat16_val, uint16_t)
-        case VAL_NAT32:
-            CAST_FROM_INT64(VAL_NAT32, nat32_val, uint32_t)
-        case VAL_NAT64:
-            CAST_FROM_INT64(VAL_NAT64, nat64_val, uint64_t)
-        case VAL_FLOAT32:
-            CAST_FROM_INT64(VAL_FLOAT32, float32_val, _Float32)
-        case VAL_FLOAT64:
-            CAST_FROM_INT64(VAL_FLOAT64, float64_val, _Float64)
-        default:
-            break;
-        }
-    } else if (original.type == VAL_FLOAT64) {
-        switch (token_type) {
-        case VAL_INT8:
-            CAST_FROM_FLOAT64(VAL_INT8, int8_val, int8_t)
-        case VAL_INT16:
-            CAST_FROM_FLOAT64(VAL_INT16, int16_val, int16_t)
-        case VAL_INT32:
-            CAST_FROM_FLOAT64(VAL_INT32, int32_val, int32_t)
-        case VAL_NAT8:
-            CAST_FROM_FLOAT64(VAL_NAT8, nat8_val, uint8_t)
-        case VAL_NAT16:
-            CAST_FROM_FLOAT64(VAL_NAT16, nat16_val, uint16_t)
-        case VAL_NAT32:
-            CAST_FROM_FLOAT64(VAL_NAT32, nat32_val, uint32_t)
-        case VAL_NAT64:
-            CAST_FROM_FLOAT64(VAL_NAT64, nat64_val, uint64_t)
-        case VAL_FLOAT32:
-            CAST_FROM_FLOAT64(VAL_FLOAT32, float32_val, _Float32)
-        default:
-            break;
-        }
+    if (original.type == token_type || original.type == VAL_VOID) {
+        return original;
     }
+
+    wyrm_value_t result = {0};
+    result.type = token_type;
+
+    switch (token_type) {
+    case VAL_INT8:
+        result.value.int8_val = (int8_t)get_cast_int64(original);
+        break;
+    case VAL_INT16:
+        result.value.int16_val = (int16_t)get_cast_int64(original);
+        break;
+    case VAL_INT32:
+        result.value.int32_val = (int32_t)get_cast_int64(original);
+        break;
+    case VAL_INT64:
+        result.value.int64_val = (int64_t)get_cast_int64(original);
+        break;
+    case VAL_NAT8:
+        result.value.nat8_val = (uint8_t)get_cast_nat64(original);
+        break;
+    case VAL_NAT16:
+        result.value.nat16_val = (uint16_t)get_cast_nat64(original);
+        break;
+    case VAL_NAT32:
+        result.value.nat32_val = (uint32_t)get_cast_nat64(original);
+        break;
+    case VAL_NAT64:
+        result.value.nat64_val = (uint64_t)get_cast_nat64(original);
+        break;
+    case VAL_FLOAT32:
+        result.value.float32_val = (_Float32)get_cast_float64(original);
+        break;
+    case VAL_FLOAT64:
+        result.value.float64_val = (_Float64)get_cast_float64(original);
+        break;
+    case VAL_BOOL:
+        result.value.bool_val = original.value.bool_val;
+        break;
+    default:
+        return original;
+    }
+
     return result;
 }
 

@@ -152,6 +152,13 @@ fn val_void() -> WyrmValue {
     }
 }
 
+fn val_nat8(v: u8) -> WyrmValue {
+    WyrmValue {
+        value_type: WyrmValueType::ValNat8,
+        value: WyrmValueData { nat8_val: v },
+    }
+}
+
 #[test]
 #[serial]
 fn test_paridad_01_aritmetica() {
@@ -195,4 +202,10 @@ fn test_paridad_07_benchmarks_contador() {
         "tests/wyrm_scripts/07_benchmarks_contador.wyrm",
         val_int32(5000000),
     );
+}
+
+#[test]
+#[serial]
+fn test_paridad_08_chars_como_nat8() {
+    ejecutar_paridad_wyrm("tests/wyrm_scripts/08_chars.wyrm", val_nat8(97));
 }
