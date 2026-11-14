@@ -67,6 +67,21 @@ static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
         case WYRM_OP_SET_LOCAL:
             wvm_op_set_local(vm);
             break;
+        case WYRM_OP_BUILD_VEC:
+            wvm_op_build_vec(vm);
+            break;
+        case WYRM_OP_VEC_CAST:
+            wvm_op_vec_cast(vm);
+            break;
+        case WYRM_OP_VEC_GET:
+            wvm_op_vec_get(vm);
+            break;
+        case WYRM_OP_VEC_SET:
+            wvm_op_vec_set(vm);
+            break;
+        case WYRM_OP_VEC_LEN:
+            wvm_op_vec_len(vm);
+            break;
 
         case WYRM_OP_ADD:
         case WYRM_OP_SUB:
@@ -144,7 +159,9 @@ wyrm_value_t run_wvm(const char *file_path, int flags) {
     }
 
     wyrm_value_t result = vm_execute(&vm);
-
+    if (result.type != VAL_VEC) {
+        free_all_wyrm_vecs();
+    }
     free(vm.stack);
     destroy_wyrm_chunk(chunk);
     return result;

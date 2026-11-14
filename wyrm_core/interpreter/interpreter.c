@@ -71,9 +71,26 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
         wyrm_value_t casted_value = {0};
         if (node->ast_node_value.var_decl_expr.expression == NULL) {
             casted_value.type = token_to_value_type(var_type);
+            if (var_type == T_VEC) {
+                wyrm_value_type_t elem_type = token_to_value_type(node->ast_node_value.var_decl_expr.element_type);
+                casted_value.value.vec_val = create_wyrm_vec(elem_type, 4);
+            }
         } else {
             wyrm_value_t expr_value = eval_node(node->ast_node_value.var_decl_expr.expression, scope);
-            casted_value = cast_value(expr_value, var_type);
+            if (var_type == T_VEC && expr_value.type == VAL_VEC && expr_value.value.vec_val != NULL) {
+                wyrm_value_type_t elem_type = token_to_value_type(node->ast_node_value.var_decl_expr.element_type);
+                wyrm_vec_t *vec = expr_value.value.vec_val;
+                if (elem_type != VAL_VOID) {
+                    vec->element_type = elem_type;
+                    for (size_t i = 0; i < vec->items.size; i++) {
+                        wyrm_value_t *item_ptr = (wyrm_value_t *)vector_get(&vec->items, i);
+                        *item_ptr = cast_to_value_type(*item_ptr, elem_type);
+                    }
+                }
+                casted_value = expr_value;
+            } else {
+                casted_value = cast_value(expr_value, var_type);
+            }
         }
         result = eval_val_decl(node, scope, casted_value);
         break;
@@ -95,6 +112,18 @@ wyrm_value_t eval_node(ast_node_t *node, environment_t *scope) {
         return eval_function_decl(node, scope);
     case AST_CALL:
         return eval_call(node, scope);
+    case AST_FOR_EXPR: {
+        result = eval_for(node, scope);
+        break;
+    }
+    case AST_VEC_LITERAL: {
+        result = eval_vec_literal(node, scope);
+        break;
+    }
+    case AST_VEC_ACCESS: {
+        result = eval_vec_access(node, scope);
+        break;
+    }
     default:
         break;
     }

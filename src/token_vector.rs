@@ -19,6 +19,8 @@ pub enum TokenType {
     TFloat64,
     // booleanos
     TBool,
+    // colecciones
+    TVec,
     // palabras para booleanos
     TTrue,
     TFalse,
@@ -65,6 +67,8 @@ pub enum TokenType {
     TLbrace,
     TRbrace,
     TComma,
+    TLbracket,
+    TRbracket,
 }
 
 #[repr(C)]

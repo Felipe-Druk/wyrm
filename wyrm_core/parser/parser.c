@@ -43,6 +43,9 @@ ast_node_t *expression_statement(parser_t *parser) {
     if (match(parser, T_WHILE)) {
         return while_statement(parser);
     }
+    if (match(parser, T_FOR)) {
+        return for_statement(parser);
+    }
 
     // cumple con (TIPO, ...) -> RETORNO nombre = (args) -> { ... }
     if (peek(parser)->type == T_LPAREN) {
@@ -63,6 +66,27 @@ ast_node_t *expression_statement(parser_t *parser) {
     if (expr == NULL) {
         panic(ERR_SYNTAX, "Syntax error: unexpected term or invalid expression");
     }
+
+    // cumple T_IDENTIFIER[index] (T_ASSIGN | T_LARROW) expression
+    if (expr->type == AST_VEC_ACCESS && (match(parser, T_ASSIGN) || match(parser, T_LARROW))) {
+        token_type_t assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
+        ast_node_t *vec_ident = expr->ast_node_value.binary_expr.left;
+        ast_node_t *index_node = expr->ast_node_value.binary_expr.right;
+
+        if (vec_ident->type != AST_IDENTIFIER) {
+            panic(ERR_SYNTAX, "Syntax error: invalid vector assignment target");
+        }
+
+        ast_node_t *right_expr = expression_statement(parser);
+        ast_node_t *assignment_node =
+            create_assignment_node(vec_ident->ast_node_value.identifier_expr.name, assign_op, right_expr);
+        assignment_node->ast_node_value.assignment_expr.index = index_node;
+
+        destroy_ast_node(vec_ident);
+        free(expr);
+        return assignment_node;
+    }
+
     // cumple T_IDENTIFIER (T_ASSIGN | T_LARROW) expression
     if (expr->type == AST_IDENTIFIER && (match(parser, T_ASSIGN) || match(parser, T_LARROW))) {
         token_type_t assign_op = get_token(parser->tokens, parser->current_index - 1)->type;
@@ -90,7 +114,7 @@ ast_node_t *parser_parse(parser_t *parser) {
         root->ast_node_value.block_expr.nodes[root->ast_node_value.block_expr.size++] = actual_node;
 
         if (actual_node->type != AST_BLOCK && actual_node->type != AST_IF_EXPR && actual_node->type != AST_WHILE_EXPR &&
-            actual_node->type != AST_FUNCTION_DECL) {
+            actual_node->type != AST_FUNCTION_DECL && actual_node->type != AST_FOR_EXPR) {
 
             if (!match(parser, T_SEMICOLON) && peek(parser)->type != T_EOF) {
                 panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");

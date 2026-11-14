@@ -27,6 +27,7 @@ pub enum WyrmValueType {
     ValFloat64,
     ValBool,
     ValFunction,
+    ValVec,
 }
 
 #[repr(C)]
@@ -44,6 +45,7 @@ pub union WyrmValueData {
     pub float64_val: f64,
     pub bool_val: bool,
     pub function_val: WyrmFunction,
+    pub vec_val: *mut std::ffi::c_void,
 }
 
 #[repr(C)]
@@ -139,6 +141,7 @@ mod tests {
             root: *mut AstNode,
             scope: *mut std::ffi::c_void,
         ) -> *mut Interpreter;
+
         pub fn destroy_interpreter(interpreter: *mut Interpreter);
     }
 

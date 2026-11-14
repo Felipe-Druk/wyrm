@@ -1,4 +1,8 @@
 #include "wyrm_value.h"
+#include "../../utils/error.h"
+#include <stdlib.h>
+
+static wyrm_vec_t *allocated_vectors_head = NULL; // singlenton de vectors, para elminar memoria
 
 uint64_t get_cast_nat64(wyrm_value_t value) {
     switch (value.type) {
@@ -114,6 +118,8 @@ wyrm_value_type_t token_to_value_type(TokenType token_type) {
         return VAL_FLOAT64;
     case T_BOOL:
         return VAL_BOOL;
+    case T_VEC:
+        return VAL_VEC;
     default:
         return VAL_VOID;
     }
@@ -187,3 +193,28 @@ int is_float(wyrm_value_type_t type) { return (type == VAL_FLOAT32) || (type == 
 int is_int(wyrm_value_type_t type) { return (type >= VAL_INT8) && (type <= VAL_INT64); }
 
 int is_zero(wyrm_value_t value) { return (get_cast_float64(value) == 0.0) || (get_cast_nat64(value) == 0); }
+
+wyrm_vec_t *create_wyrm_vec(wyrm_value_type_t element_type, size_t initial_capacity) {
+    wyrm_vec_t *vec = calloc(1, sizeof(wyrm_vec_t));
+    if (!vec) {
+        panic(ERR_OUT_MEMORY, "Could not allocate wyrm_vec_t");
+    }
+    vec->element_type = element_type;
+    vec->items = create_vector(sizeof(wyrm_value_t), initial_capacity > 0 ? initial_capacity : 4);
+
+    // Igual que la vm de java este metodo previene que se quede memoria sin liberar
+    vec->next_allocated = allocated_vectors_head;
+    allocated_vectors_head = vec;
+    return vec;
+}
+
+void free_all_wyrm_vecs() {
+    wyrm_vec_t *current = allocated_vectors_head;
+    while (current != NULL) {
+        wyrm_vec_t *next = current->next_allocated;
+        destroy_vector(&current->items);
+        free(current);
+        current = next;
+    }
+    allocated_vectors_head = NULL;
+}

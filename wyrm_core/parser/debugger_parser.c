@@ -59,12 +59,27 @@ void debug_ast(ast_node_t *node, int level) {
         print_line_debug("FunctionDecl(%s)\n", node->ast_node_value.function_decl.name);
         debug_ast(node->ast_node_value.function_decl.function.body, level + 1);
         break;
-
     case AST_CALL:
         print_line_debug("FunctionCall(%s)\n", node->ast_node_value.call_expr.name);
         for (size_t i = 0; i < node->ast_node_value.call_expr.arg_count; i++) {
             debug_ast(node->ast_node_value.call_expr.args[i], level + 1);
         }
+        break;
+    case AST_VEC_LITERAL:
+        print_line_debug("VecLiteral(size: %zu)", node->ast_node_value.block_expr.size);
+        for (size_t i = 0; i < node->ast_node_value.block_expr.size; i++) {
+            debug_ast(node->ast_node_value.block_expr.nodes[i], level + 1);
+        }
+        break;
+    case AST_VEC_ACCESS:
+        print_line_debug("VecAccess");
+        debug_ast(node->ast_node_value.binary_expr.left, level + 1);
+        debug_ast(node->ast_node_value.binary_expr.right, level + 1);
+        break;
+    case AST_FOR_EXPR:
+        print_line_debug("ForExpr");
+        debug_ast(node->ast_node_value.while_expr.condition, level + 1);
+        debug_ast(node->ast_node_value.while_expr.body, level + 1);
         break;
     }
 }

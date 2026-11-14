@@ -22,9 +22,106 @@ void wvm_op_set_local(wyrm_vm_t *vm) {
     uint16_t slot = vm_read_uint16(vm);
     wyrm_value_t new_val = vm_pop(vm);
     wyrm_value_t *dest = &vm->stack[vm->base_slot + slot];
-    if (new_val.type == dest->type) {
+
+    if (dest->type == VAL_VEC && dest->value.vec_val != NULL && new_val.type == VAL_VEC &&
+        new_val.value.vec_val != NULL) {
+        wyrm_value_type_t elem_type = dest->value.vec_val->element_type;
+        wyrm_vec_t *new_vec = new_val.value.vec_val;
+        if (elem_type != VAL_VOID) {
+            new_vec->element_type = elem_type;
+            for (size_t i = 0; i < new_vec->items.size; i++) {
+                wyrm_value_t *item_ptr = (wyrm_value_t *)vector_get(&new_vec->items, i);
+                *item_ptr = cast_to_value_type(*item_ptr, elem_type);
+            }
+        }
+        *dest = new_val;
+    } else if (new_val.type == dest->type || dest->type == VAL_VOID) {
         *dest = new_val;
     } else {
         *dest = cast_to_value_type(new_val, dest->type);
     }
+}
+
+void wvm_op_build_vec(wyrm_vm_t *vm) {
+    uint16_t count = vm_read_uint16(vm);
+    wyrm_vec_t *vec = create_wyrm_vec(VAL_INT64, count);
+
+    size_t start_idx = vm->stack_top - count;
+    for (uint16_t i = 0; i < count; i++) {
+        wyrm_value_t item = vm->stack[start_idx + i];
+        if (i == 0) {
+            vec->element_type = item.type;
+        }
+        vector_push(&vec->items, &item);
+    }
+    vm->stack_top -= count;
+
+    wyrm_value_t res = {0};
+    res.type = VAL_VEC;
+    res.value.vec_val = vec;
+    vm_push(vm, res);
+}
+
+void wvm_op_vec_cast(wyrm_vm_t *vm) {
+    wyrm_value_type_t elem_type = (wyrm_value_type_t)vm_read_byte(vm);
+    wyrm_value_t *top = &vm->stack[vm->stack_top - 1];
+    if (top->type == VAL_VEC && top->value.vec_val != NULL && elem_type != VAL_VOID) {
+        wyrm_vec_t *vec = top->value.vec_val;
+        vec->element_type = elem_type;
+        for (size_t i = 0; i < vec->items.size; i++) {
+            wyrm_value_t *item_ptr = (wyrm_value_t *)vector_get(&vec->items, i);
+            *item_ptr = cast_to_value_type(*item_ptr, elem_type);
+        }
+    }
+}
+
+void wvm_op_vec_get(wyrm_vm_t *vm) {
+    wyrm_value_t idx_val = vm_pop(vm);
+    wyrm_value_t vec_val = vm_pop(vm);
+
+    if (vec_val.type != VAL_VEC || vec_val.value.vec_val == NULL) {
+        panic(ERR_TYPE_MISMATCH, "Attempting to index a non-vector in VM");
+    }
+
+    int64_t idx = get_cast_int64(idx_val);
+    wyrm_vec_t *vec = vec_val.value.vec_val;
+
+    if (idx < 0 || (size_t)idx >= vec->items.size) {
+        panic(ERR_OVERFLOW, "VM error: Vector index %lld out of bounds (size: %zu)", (long long)idx, vec->items.size);
+    }
+
+    wyrm_value_t elem = *(wyrm_value_t *)vector_get(&vec->items, (size_t)idx);
+    vm_push(vm, elem);
+}
+
+void wvm_op_vec_set(wyrm_vm_t *vm) {
+    wyrm_value_t new_val = vm_pop(vm);
+    wyrm_value_t idx_val = vm_pop(vm);
+    wyrm_value_t vec_val = vm_pop(vm);
+
+    if (vec_val.type != VAL_VEC || vec_val.value.vec_val == NULL) {
+        panic(ERR_TYPE_MISMATCH, "Attempting to assign to index of a non-vector in VM");
+    }
+
+    int64_t idx = get_cast_int64(idx_val);
+    wyrm_vec_t *vec = vec_val.value.vec_val;
+
+    if (idx < 0 || (size_t)idx >= vec->items.size) {
+        panic(ERR_OVERFLOW, "VM error: Vector index %lld out of bounds (size: %zu)", (long long)idx, vec->items.size);
+    }
+
+    wyrm_value_t casted = cast_to_value_type(new_val, vec->element_type);
+    wyrm_value_t *slot = (wyrm_value_t *)vector_get(&vec->items, (size_t)idx);
+    *slot = casted;
+}
+
+void wvm_op_vec_len(wyrm_vm_t *vm) {
+    wyrm_value_t vec_val = vm_pop(vm);
+    if (vec_val.type != VAL_VEC || vec_val.value.vec_val == NULL) {
+        panic(ERR_TYPE_MISMATCH, "OP_VEC_LEN requires a vector in VM");
+    }
+    wyrm_value_t len_val = {0};
+    len_val.type = VAL_INT64;
+    len_val.value.int64_val = (int64_t)vec_val.value.vec_val->items.size;
+    vm_push(vm, len_val);
 }

@@ -10,7 +10,7 @@ static bool should_insert_semicolon(const char *input, int index, token_vector_t
     token_type_t last = get_token(tokens, tokens->size - 1)->type;
 
     if (last == T_IDENTIFIER || last == T_NUMBER || last == T_FLOAT_NUMBER || last == T_STRING || last == T_TRUE ||
-        last == T_FALSE) {
+        last == T_FALSE || last == T_RBRACKET) {
         return true;
     }
 
@@ -35,7 +35,7 @@ int resolver_limiter(char *input, int index, token_vector_t *tokens) {
             return index + 1;
         }
         // fallthrough
-    case ';': // sin break por mismo comportamietno
+    case ';': // sin break por mismo comportamiento
         type = T_SEMICOLON;
         lexeme = ";";
         break;
@@ -54,6 +54,14 @@ int resolver_limiter(char *input, int index, token_vector_t *tokens) {
     case '}':
         type = T_RBRACE;
         lexeme = "}";
+        break;
+    case '[':
+        type = T_LBRACKET;
+        lexeme = "[";
+        break;
+    case ']':
+        type = T_RBRACKET;
+        lexeme = "]";
         break;
     case ',':
         type = T_COOMA;

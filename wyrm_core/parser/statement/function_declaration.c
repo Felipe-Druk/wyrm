@@ -1,5 +1,6 @@
 #include "function_declaration.h"
-#include "../utils/error.h"
+#include "variable_declaration.h"
+#include "../../utils/error.h"
 #include "../parser_internal.h"
 #include "block_statement.h"
 #include <string.h>
@@ -22,6 +23,9 @@ void capture_function_args_type(parser_t *parser, wyrm_function_t *func_def) {
             token_type_t actual_type = peek(parser)->type;
             if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
                 advance(parser);
+                if (actual_type == T_VEC) {
+                    parse_vec_inner_type(parser);
+                }
                 if (func_def->arg_count >= capacity) {
                     capacity *= 2;
                     resize_function_args(func_def, capacity);
@@ -53,6 +57,9 @@ void capture_function_return_type(parser_t *parser, wyrm_function_t *func_def) {
     token_type_t actual_type = peek(parser)->type;
     if (actual_type >= MIN_TYPE && actual_type <= MAX_TYPE) {
         advance(parser);
+        if (actual_type == T_VEC) {
+            parse_vec_inner_type(parser);
+        }
         func_def->returned = token_to_value_type(actual_type);
     } else {
         panic(ERR_SYNTAX, "Syntax error: unexpected token in function return type");

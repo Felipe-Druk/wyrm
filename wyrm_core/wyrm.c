@@ -51,4 +51,5 @@ void terminate_wyrm() {
         destroy_environment(global_scope);
         global_scope = NULL;
     }
+    free_all_wyrm_vecs();
 }

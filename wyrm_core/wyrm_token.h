@@ -27,6 +27,9 @@ typedef enum {
     // Booleanos
     T_BOOL, // bool 1 byte
 
+    // Coleciones
+    T_VEC,
+
     // Palabras para booleanos
     T_TRUE,  // "true" sentencia verdadera
     T_FALSE, // "false" sentencia falsa
@@ -81,11 +84,13 @@ typedef enum {
     T_LBRACE,    // { encapsula "scopes" o bloques de ejecucion
     T_RBRACE,    // }
     T_COOMA,
+    T_LBRACKET, // [ para indenxar e isntanciar vectors
+    T_RBRACKET, // ]
 
 } TokenType;
 
 #define MIN_TYPE T_INT8
-#define MAX_TYPE T_BOOL
+#define MAX_TYPE T_VEC
 
 // Un token es un par de tipo y lexema.
 // El lexema es un string que representa el token en el codigo fuente.

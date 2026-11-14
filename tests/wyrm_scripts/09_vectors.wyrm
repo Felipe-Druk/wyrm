@@ -1,0 +1,14 @@
+vec<int32> numeros = [10, 20, 30, 40]; // nuevo tipo nativo vec (arreglo dinamico)
+
+numeros[0] = 99;
+int32 primero = numeros[0];  // indexa en n-1,
+
+(vec<int32>) -> int32 sumar_todo = (vector) -> {
+    int32 total = 0;
+    for (n <- vector) { // for exclusivopara vector (o ipoteticos arrays furuturos)
+        total = total + n;
+    }
+    total
+}
+
+sumar_todo(numeros) // 99 + 20 + 30 + 40 = 189

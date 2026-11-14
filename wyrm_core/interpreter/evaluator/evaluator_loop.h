@@ -9,3 +9,5 @@ Archivo que resuelve los loop como while y for
 
 // evalua el nodo siempre y cuando sea de tipo while
 wyrm_value_t eval_loop(ast_node_t *node, environment_t *env);
+
+wyrm_value_t eval_for(ast_node_t *node, environment_t *scope);

@@ -35,7 +35,6 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
         return NULL;
     }
     int actual_index = 0;
-    int temp_index = 0;
 
     int debug = scanner->flags & (DEBUG_MODE | SCANNER_MODE);
     while (input[actual_index] != '\0') {
@@ -47,28 +46,29 @@ token_vector_t *scanner_scan(char *input, scanner_t *scanner) {
             actual_index++;
             continue;
         }
-        actual_index = call_resolver(resolver_arigmetic_operator, input, actual_index, tokens);
-        actual_index = call_resolver(resolver_logical_operator, input, actual_index, tokens);
-        actual_index = call_resolver(resolver_numerit, input, actual_index, tokens);
-        actual_index = call_resolver(resolver_types, input, actual_index, tokens);
-        actual_index = call_resolver(resolver_boolean, input, actual_index, tokens);
-        actual_index = call_resolver(resolver_char, input, actual_index, tokens);
-        int temp_limiter = call_resolver(resolver_limiter, input, actual_index, tokens);
 
-        if (temp_limiter != -1 && temp_limiter != actual_index) {
-            actual_index = temp_limiter;
+        int start_index = actual_index;
+
+        if ((actual_index = call_resolver(resolver_arigmetic_operator, input, actual_index, tokens)) != start_index)
             continue;
-        }
+        if ((actual_index = call_resolver(resolver_logical_operator, input, actual_index, tokens)) != start_index)
+            continue;
+        if ((actual_index = call_resolver(resolver_numerit, input, actual_index, tokens)) != start_index)
+            continue;
+        if ((actual_index = call_resolver(resolver_types, input, actual_index, tokens)) != start_index)
+            continue;
+        if ((actual_index = call_resolver(resolver_boolean, input, actual_index, tokens)) != start_index)
+            continue;
+        if ((actual_index = call_resolver(resolver_char, input, actual_index, tokens)) != start_index)
+            continue;
+        if ((actual_index = call_resolver(resolver_limiter, input, actual_index, tokens)) != start_index)
+            continue;
 
         // Importante que este al final para no confundir con algun tipo de dato
-        temp_index = resolver_identifier(input, actual_index, tokens);
-        if (temp_index != -1 && temp_index != (int)actual_index) {
-            actual_index = temp_index;
-            continue; // el ultimo tiene un continue, para evitarl la llamda a ++ del
-                      // index,
-        }
-        // se llega si hay un character descnonocido, es un lugar posible para lanzar
-        // error
+        if ((actual_index = call_resolver(resolver_identifier, input, actual_index, tokens)) != start_index)
+            continue;
+
+        // se llega si hay un character desconocido, es un lugar posible para lanzar error
         if (input[actual_index] == '\0') {
             break;
         }

@@ -209,3 +209,9 @@ fn test_paridad_07_benchmarks_contador() {
 fn test_paridad_08_chars_como_nat8() {
     ejecutar_paridad_wyrm("tests/wyrm_scripts/08_chars.wyrm", val_nat8(97));
 }
+
+#[test]
+#[serial]
+fn test_paridad_09_vectors() {
+    ejecutar_paridad_wyrm("tests/wyrm_scripts/09_vectors.wyrm", val_int32(189));
+}

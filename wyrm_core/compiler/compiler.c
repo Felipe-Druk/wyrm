@@ -91,6 +91,18 @@ void compile_node(ast_node_t *node, compiler_t *compiler) {
         compile_call_expr(node, compiler);
         break;
     }
+    case AST_VEC_LITERAL: {
+        compile_vec_literal(node, compiler);
+        break;
+    }
+    case AST_VEC_ACCESS: {
+        compile_vec_access(node, compiler);
+        break;
+    }
+    case AST_FOR_EXPR: {
+        compile_for_expr(node, compiler);
+        break;
+    }
     default:
         panic(ERR_UNKNOWN_OP, "Unknown AST node type: %d", node->type);
     }

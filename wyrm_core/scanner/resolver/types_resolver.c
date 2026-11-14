@@ -16,22 +16,35 @@ const char *types[] = {
     // Booleanos
     "bool",
 
+    // Coleciones
+    "vec",
+
     NULL // marca el final del vector
 };
 
 // vector para resolver los toknes, debe respetar el orden del vector de arriba
 const token_type_t t_types[] = {
     // Enteros
-    T_INT8, T_INT16, T_INT32, T_INT64,
+    T_INT8,
+    T_INT16,
+    T_INT32,
+    T_INT64,
 
     // Naturales
-    T_NAT8, T_NAT16, T_NAT32, T_NAT64,
+    T_NAT8,
+    T_NAT16,
+    T_NAT32,
+    T_NAT64,
 
     // Flotantes
-    T_FLOAT32, T_FLOAT64,
+    T_FLOAT32,
+    T_FLOAT64,
 
     // Booleanos
-    T_BOOL
+    T_BOOL,
+
+    // Coleciones
+    T_VEC,
 
 };
 
@@ -49,7 +62,7 @@ int resolver_types(char *input, int index, token_vector_t *tokens) {
         actual_len = strlen(types[i]);
         if (!strncmp(input + index, types[i], actual_len)) {
             nex_char = input[index + actual_len];
-            if (!isalnum(nex_char)) {
+            if (!isalnum(nex_char) && nex_char != '_') {
                 if (charge_types(tokens, i) != ERROR_TOKEN_VECTOR) {
                     return index + actual_len;
                 }
