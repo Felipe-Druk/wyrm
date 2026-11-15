@@ -18,7 +18,9 @@ impl Config {
                     eprintln!("Unknown flag: {}", s);
                 }
                 s if fs::metadata(s).is_ok() => file_path = Some(s.to_string()),
-                _ => {} // espacio para nuevos flags
+                s => {
+                    eprintln!("Archivo no encontrado: {}", s);
+                } // espacio para nuevos flags
             }
         }
         Config { verbose, file_path }

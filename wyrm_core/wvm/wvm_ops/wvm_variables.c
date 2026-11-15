@@ -161,3 +161,44 @@ void wvm_op_write(wyrm_vm_t *vm) {
     };
     vm_push(vm, res);
 }
+
+void wvm_op_read(wyrm_vm_t *vm) {
+    wyrm_value_t count_val = vm_pop(vm);
+    wyrm_value_t fd_val = vm_pop(vm);
+
+    int fd = (int)get_cast_int64(fd_val);
+    int64_t count = get_cast_int64(count_val);
+    if (count < 0) {
+        panic(ERR_OVERFLOW, "VM error: 'read' byte count cannot be negative");
+    }
+
+    uint8_t *raw_buf = NULL;
+    ssize_t bytes_read = 0;
+    if (count > 0) {
+        raw_buf = malloc((size_t)count);
+        if (raw_buf == NULL) {
+            panic(ERR_OUT_MEMORY, "Could not allocate buffer for 'read' in VM");
+        }
+        bytes_read = read(fd, raw_buf, (size_t)count);
+        if (bytes_read < 0) {
+            bytes_read = 0;
+        }
+    }
+
+    size_t initial_cap = (bytes_read > 0) ? (size_t)bytes_read : 1;
+    wyrm_vec_t *vec = create_wyrm_vec(VAL_NAT8, initial_cap);
+    for (ssize_t i = 0; i < bytes_read; i++) {
+        wyrm_value_t item = {
+            .type = VAL_NAT8,
+            .value.nat8_val = raw_buf[i],
+        };
+        vector_push(&vec->items, &item);
+    }
+    free(raw_buf);
+
+    wyrm_value_t res = {
+        .type = VAL_VEC,
+        .value.vec_val = vec,
+    };
+    vm_push(vm, res);
+}

@@ -70,6 +70,13 @@ void compile_call_expr(ast_node_t *node, compiler_t *compiler) {
         chunk_write_byte(compiler->chunk, WYRM_OP_WRITE);
         return;
     }
+    if (strcmp(call.name, "read") == 0) {
+        if (call.arg_count != 2) {
+            panic(ERR_SYNTAX, "Compile error: 'read' expects 2 arguments (fd, count)");
+        }
+        chunk_write_byte(compiler->chunk, WYRM_OP_READ);
+        return;
+    }
 
     int func_id = resolve_function(compiler, call.name);
     if (func_id == ERRRESOLVER) {
