@@ -2,6 +2,8 @@
 #include "../parser_internal.h"
 #include "../../utils/error.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #define DEFAULTCAPACITY 4
 
@@ -59,6 +61,24 @@ static ast_node_t *parse_postfix_index(parser_t *parser, ast_node_t *expr) {
     return expr;
 }
 
+static ast_node_t *string_literal_expression(const char *str) {
+    size_t len = strlen(str);
+    ast_node_t *vec_node = create_block_node(len + 1);
+    vec_node->type = AST_VEC_LITERAL;
+
+    char num_buf[8];
+    for (size_t i = 0; i < len; i++) {
+        snprintf(num_buf, sizeof(num_buf), "%u", (unsigned char)str[i]);
+        vec_node->ast_node_value.block_expr.nodes[vec_node->ast_node_value.block_expr.size++] =
+            create_number_node(num_buf, T_NUMBER);
+    }
+
+    vec_node->ast_node_value.block_expr.nodes[vec_node->ast_node_value.block_expr.size++] =
+        create_number_node("0", T_NUMBER); // Agrega un 0 al final del string
+
+    return vec_node;
+}
+
 ast_node_t *primary(parser_t *parser) {
 
     if (match(parser, T_TRUE)) {
@@ -97,6 +117,12 @@ ast_node_t *primary(parser_t *parser) {
             expr = create_identifier_node(name);
         }
         return parse_postfix_index(parser, expr);
+    }
+
+    if (match(parser, T_STRING)) {
+        wyrm_token_t *previous = get_token(parser->tokens, parser->current_index - 1);
+        ast_node_t *str_vec = string_literal_expression(previous->lexeme);
+        return parse_postfix_index(parser, str_vec);
     }
 
     // Futuro error

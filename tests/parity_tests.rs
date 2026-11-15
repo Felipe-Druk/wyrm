@@ -159,6 +159,13 @@ fn val_nat8(v: u8) -> WyrmValue {
     }
 }
 
+fn val_nat16(v: u16) -> WyrmValue {
+    WyrmValue {
+        value_type: WyrmValueType::ValNat16,
+        value: WyrmValueData { nat16_val: v },
+    }
+}
+
 #[test]
 #[serial]
 fn test_paridad_01_aritmetica() {
@@ -214,4 +221,10 @@ fn test_paridad_08_chars_como_nat8() {
 #[serial]
 fn test_paridad_09_vectors() {
     ejecutar_paridad_wyrm("tests/wyrm_scripts/09_vectors.wyrm", val_int32(189));
+}
+
+#[test]
+#[serial]
+fn test_paridad_10_stings() {
+    ejecutar_paridad_wyrm("tests/wyrm_scripts/10_strings.wyrm", val_nat16(10));
 }

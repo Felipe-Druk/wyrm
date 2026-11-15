@@ -5,11 +5,33 @@
 #include <string.h>
 #include <stdint.h>
 
+int resolve_string(char *input, int index, token_vector_t *tokens) {
+    int end = index;
+    while (input[end] != '\0' && input[end] != '"') {
+        end++;
+    }
+    if (input[end] != '"') {
+        panic(ERR_SYNTAX, "Expected closing single quote \" for character literal");
+    }
+
+    size_t len = (size_t)(end - index);
+    char *str_lexeme = strndup(input + index, len);
+    wyrm_token_t str_token = {.type = T_STRING, .lexeme = str_lexeme};
+    if (push_token(tokens, str_token) == ERROR_TOKEN_VECTOR) {
+        free(str_lexeme);
+        panic(ERR_OUT_MEMORY, "Bad token in string resolver");
+    }
+    return end + 1;
+}
+
 int resolver_char(char *input, int index, token_vector_t *tokens) {
+    if (input[index] == '"') {
+        return resolve_string(input, index + 1, tokens);
+    }
+
     if (input[index] != '\'') {
         return index;
     }
-
     int new_index = index + 1;
     if (input[new_index] == '\0') {
         panic(ERR_SYNTAX, "Unterminated character literal");

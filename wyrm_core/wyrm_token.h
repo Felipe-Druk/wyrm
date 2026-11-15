@@ -73,9 +73,11 @@ typedef enum {
     // If/else
     T_IF,
     T_ELSE,
+
     // loops
     T_WHILE,
     T_FOR,
+
     // Limitadores
     T_EOF,       // End of file suele ser 0 char
     T_SEMICOLON, // ; para separar sentencias
