@@ -38,5 +38,7 @@ typedef enum WyrmOpcode {
     WYRM_OP_VEC_CAST = 0x19,
     WYRM_OP_VEC_GET = 0x1A,
     WYRM_OP_VEC_SET = 0x1B,
-    WYRM_OP_VEC_LEN = 0x1C
+    WYRM_OP_VEC_LEN = 0x1C,
+    WYRM_OP_WRITE = 0x1D,
+    WYRM_OP_READ = 0x1E,
 } wyrm_opcode_t;

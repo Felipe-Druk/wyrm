@@ -1,0 +1,6 @@
+(vec<nat8>) -> int64 print = (buffer) -> {
+    write(1, buffer) // write nativo para fd, la primitica 
+}
+
+int64 resultado = print("Hola mundo desde Wyrm!\n") // No hay print nativo
+resultado // deberia devolver el "largo" del mensaje escrito 23

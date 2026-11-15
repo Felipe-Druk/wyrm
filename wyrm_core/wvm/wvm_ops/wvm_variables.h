@@ -11,3 +11,5 @@ void wvm_op_vec_cast(wyrm_vm_t *vm);
 void wvm_op_vec_get(wyrm_vm_t *vm);
 void wvm_op_vec_set(wyrm_vm_t *vm);
 void wvm_op_vec_len(wyrm_vm_t *vm);
+
+void wvm_op_write(wyrm_vm_t *vm);

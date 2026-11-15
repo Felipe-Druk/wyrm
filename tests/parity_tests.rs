@@ -138,6 +138,13 @@ fn val_int32(v: i32) -> WyrmValue {
     }
 }
 
+fn val_int64(v: i64) -> WyrmValue {
+    WyrmValue {
+        value_type: WyrmValueType::ValInt64,
+        value: WyrmValueData { int64_val: v },
+    }
+}
+
 fn val_bool(v: bool) -> WyrmValue {
     WyrmValue {
         value_type: WyrmValueType::ValBool,
@@ -227,4 +234,10 @@ fn test_paridad_09_vectors() {
 #[serial]
 fn test_paridad_10_stings() {
     ejecutar_paridad_wyrm("tests/wyrm_scripts/10_strings.wyrm", val_nat16(10));
+}
+
+#[test]
+#[serial]
+fn test_paridad_11_print() {
+    ejecutar_paridad_wyrm("tests/wyrm_scripts/11_print.wyrm", val_int64(23));
 }

@@ -61,20 +61,57 @@ static ast_node_t *parse_postfix_index(parser_t *parser, ast_node_t *expr) {
     return expr;
 }
 
+void comprest_special_character(const char *str, size_t len, ast_node_t *vec_node) {
+    char num_buf[8];
+    for (size_t i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)str[i];
+        if (c == '\\' && i + 1 < len) {
+            i++;
+            switch (str[i]) {
+            case 'n':
+                c = '\n';
+                break;
+            case 't':
+                c = '\t';
+                break;
+            case 'r':
+                c = '\r';
+                break;
+            case '0':
+                c = '\0';
+                break;
+            case '\\':
+                c = '\\';
+                break;
+            case '"':
+                c = '"';
+                break;
+            default:
+                c = (unsigned char)str[i];
+                break;
+            }
+        }
+        snprintf(num_buf, sizeof(num_buf), "%u", c);
+        if (block_is_full(&vec_node->ast_node_value.block_expr)) {
+            resize_block(&vec_node->ast_node_value.block_expr);
+        }
+        vec_node->ast_node_value.block_expr.nodes[vec_node->ast_node_value.block_expr.size++] =
+            create_number_node(num_buf, T_NUMBER);
+    }
+}
+
 static ast_node_t *string_literal_expression(const char *str) {
     size_t len = strlen(str);
     ast_node_t *vec_node = create_block_node(len + 1);
     vec_node->type = AST_VEC_LITERAL;
 
-    char num_buf[8];
-    for (size_t i = 0; i < len; i++) {
-        snprintf(num_buf, sizeof(num_buf), "%u", (unsigned char)str[i]);
-        vec_node->ast_node_value.block_expr.nodes[vec_node->ast_node_value.block_expr.size++] =
-            create_number_node(num_buf, T_NUMBER);
-    }
+    comprest_special_character(str, len, vec_node);
 
+    if (block_is_full(&vec_node->ast_node_value.block_expr)) {
+        resize_block(&vec_node->ast_node_value.block_expr);
+    }
     vec_node->ast_node_value.block_expr.nodes[vec_node->ast_node_value.block_expr.size++] =
-        create_number_node("0", T_NUMBER); // Agrega un 0 al final del string
+        create_number_node("0", T_NUMBER);
 
     return vec_node;
 }

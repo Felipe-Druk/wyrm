@@ -62,6 +62,15 @@ void compile_call_expr(ast_node_t *node, compiler_t *compiler) {
     for (size_t i = 0; i < call.arg_count; i++) {
         compile_node(call.args[i], compiler);
     }
+
+    if (strcmp(call.name, "write") == 0) {
+        if (call.arg_count != 2) {
+            panic(ERR_SYNTAX, "Compile error: 'write' expects 2 arguments (fd, buffer)");
+        }
+        chunk_write_byte(compiler->chunk, WYRM_OP_WRITE);
+        return;
+    }
+
     int func_id = resolve_function(compiler, call.name);
     if (func_id == ERRRESOLVER) {
         panic(ERR_UNDEFINED_VAR, "Undefined function in call: %s", call.name);

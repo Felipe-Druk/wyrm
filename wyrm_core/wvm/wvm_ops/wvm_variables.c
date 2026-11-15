@@ -1,4 +1,6 @@
 #include "wvm_variables.h"
+#include <unistd.h>
+#include <stdlib.h>
 
 void wvm_op_constant(wyrm_vm_t *vm) {
     uint16_t const_idx = vm_read_uint16(vm);
@@ -124,4 +126,38 @@ void wvm_op_vec_len(wyrm_vm_t *vm) {
     len_val.type = VAL_INT64;
     len_val.value.int64_val = (int64_t)vec_val.value.vec_val->items.size;
     vm_push(vm, len_val);
+}
+
+void wvm_op_write(wyrm_vm_t *vm) {
+    wyrm_value_t buf_val = vm_pop(vm);
+    wyrm_value_t fd_val = vm_pop(vm);
+
+    if (buf_val.type != VAL_VEC || buf_val.value.vec_val == NULL) {
+        panic(ERR_TYPE_MISMATCH, "Second argument to 'write' in VM must be a vector");
+    }
+
+    int fd = (int)get_cast_int64(fd_val);
+    wyrm_vec_t *vec = buf_val.value.vec_val;
+    size_t len = vec->items.size;
+
+    uint8_t *raw_buf = NULL;
+    if (len > 0) {
+        raw_buf = malloc(len);
+        for (size_t i = 0; i < len; i++) {
+            wyrm_value_t item = *(wyrm_value_t *)vector_get(&vec->items, i);
+            raw_buf[i] = (uint8_t)get_cast_int64(item);
+        }
+        if (raw_buf[len - 1] == 0) {
+            len--;
+        }
+    }
+
+    ssize_t written = (len > 0) ? write(fd, raw_buf, len) : 0;
+    free(raw_buf);
+
+    wyrm_value_t res = {
+        .type = VAL_INT64,
+        .value.int64_val = (int64_t)written,
+    };
+    vm_push(vm, res);
 }

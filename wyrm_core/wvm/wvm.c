@@ -120,6 +120,9 @@ static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
         case WYRM_OP_CALL:
             wvm_op_call(vm);
             break;
+        case WYRM_OP_WRITE:
+            wvm_op_write(vm);
+            break;
         case WYRM_OP_RETURN:
             wyrm_value_t final_result = {.type = VAL_VOID};
             if (wvm_op_return(vm, &final_result)) {
