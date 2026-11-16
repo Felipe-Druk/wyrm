@@ -21,8 +21,9 @@ TIME_DIR = tests/time
 WYRM_BIN = ./target/release/wyrm
 WYRMC_BIN = ./target/release/wyrmc
 
+SCRIPTS_DIR = scripts
 
-.PHONY: install check build run run-v clean format help pre-commit tests memcheck memcheck-one tests-time
+.PHONY: install update check build run run-v clean format help pre-commit tests memcheck memcheck-one tests-time
 
 .DEFAULT_GOAL := help
 
@@ -36,6 +37,7 @@ help:
 	@echo "            |___/  "
 	@echo ""
 	@echo "- Install: Instala dependencias necesarias, solo se ejecuta una vez"
+	@echo "- make update: Actualiza el toolchain de Rust, Cargo.lock y pre-commit"
 	@echo "- check: Verfica la integridad del codigo y busca errores"
 	@echo "- build: Compila el proyecto como ejecutable"
 	@echo "- run: Ejecuta el programa, si no esta compilado lo compila"
@@ -43,6 +45,7 @@ help:
 	@echo "- format: Aplica linters al proyecto"
 	@echo "- tests: Ejecuta todos los test"
 	@echo "- tests-parity: Ejecuta tests de paridad con salida estadnar"
+	@echo "- tests-time: Ejecuta tests de tiempos, comparando con distintos lenguajes"
 	@echo "- memcheck: Ejecuta Valgrind para detectar leaks de memoria"
 	@echo "- memcheck-one: Ejecuta Valgrind en un solo test, debe ser llamdo con TEST=<nombre_test>"
 	@echo "- pre-commit: Ejecuta los pre-commits sobre todo el proyecto"
@@ -53,6 +56,14 @@ install:
 	rustup component add clippy rustfmt
 	pre-commit install
 	pre-commit autoupdate
+	@echo "Ejecutando script de instalacion..."
+	@chmod +x $(SCRIPTS_DIR)/install.sh
+	./$(SCRIPTS_DIR)/install.sh
+
+update:
+	@echo "Ejecutando script de actualizacion..."
+	@chmod +x $(SCRIPTS_DIR)/update.sh
+	./$(SCRIPTS_DIR)/update.sh
 
 check:
 	@echo "Comprobando el proyecto..."

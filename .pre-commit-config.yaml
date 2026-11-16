@@ -16,9 +16,11 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-  
-  - repo: https://github.com/crate-ci/typos
-    rev: v1.50.2
-    hooks:
+
       - id: typos
+        name: Verificar Ortografia (Typos)
+        entry: typos
+        language: system
+        types: [text]
         exclude: ^wyrm_core/.*\.o$
+      

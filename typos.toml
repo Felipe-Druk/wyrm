@@ -95,9 +95,9 @@ repetitivo = "repetitivo"
 aplicable = "aplicable"
 limite = "límite"
 fiel = "fiel"
+analisis = "análisis"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"
 unmut = "unmut"
-rust = "Rust"
-Rust = "Rust"
+rust = "rust"
