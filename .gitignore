@@ -24,3 +24,4 @@ core.*
 
 # Para tests
 !tests/wyrm_scripts/*.wyrm
+!tests/time/*.wyrm

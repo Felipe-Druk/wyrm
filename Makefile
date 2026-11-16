@@ -17,7 +17,12 @@ VALGRIND_RUNNER = valgrind $(VALGRIND_FLAGS)
 # Ejecuta directamente el binario de test que se encuentra en target/debug/deps/ y que empieza con "wyrm-"		
 TEST_BIN = $$(find target/debug/deps/ -maxdepth 1 -perm -111 -type f -name "wyrm-*" | head -n 1)
 
-.PHONY: install check build run run-v clean format help pre-commit tests memcheck memcheck-one
+TIME_DIR = tests/time
+WYRM_BIN = ./target/release/wyrm
+WYRMC_BIN = ./target/release/wyrmc
+
+
+.PHONY: install check build run run-v clean format help pre-commit tests memcheck memcheck-one tests-time
 
 .DEFAULT_GOAL := help
 
@@ -78,6 +83,50 @@ tests:
 tests-parity:
 	@echo "Ejecutanto tests de paridad..."
 	cargo test --test parity_tests -- --nocapture
+
+tests-time:
+	@echo "Compilando Wyrm en modo release..."
+	cargo build --release
+	@echo "Compilando C y Bytecode (.wrc)..."
+	cc -O3 $(TIME_DIR)/loop.c -o $(TIME_DIR)/loop_c
+	cc -O3 $(TIME_DIR)/fib.c -o $(TIME_DIR)/fib_c
+	rustc -C opt-level=3 $(TIME_DIR)/loop.rs -o $(TIME_DIR)/loop_rs
+	rustc -C opt-level=3 $(TIME_DIR)/fib.rs -o $(TIME_DIR)/fib_rs
+	go build -o $(TIME_DIR)/loop_go $(TIME_DIR)/loop.go
+	go build -o $(TIME_DIR)/fib_go $(TIME_DIR)/fib.go
+	javac $(TIME_DIR)/Loop.java $(TIME_DIR)/Fib.java
+	$(WYRMC_BIN) $(TIME_DIR)/loop.wyrm -o $(TIME_DIR)/loop.wrc
+	$(WYRMC_BIN) $(TIME_DIR)/fib.wyrm -o $(TIME_DIR)/fib.wrc
+
+	@echo "\n=== Bucle de 1.000.000 iteraciones ==="
+
+	hyperfine --warmup 3 \
+		--export-markdown $(TIME_DIR)/resultados_loop.md \
+		-n "C" "$(TIME_DIR)/loop_c" \
+		-n "Rust" "$(TIME_DIR)/loop_rs" \
+		-n "Go" "$(TIME_DIR)/loop_go" \
+		-n "Java (JVM)" "java -cp $(TIME_DIR) Loop" \
+		-n "Wyrm VM (.wrc)" "$(WYRM_BIN) $(TIME_DIR)/loop.wrc" \
+		-n "Python3" "python3 $(TIME_DIR)/loop.py" \
+		-n "Wyrm Intérprete (.wyrm)" "$(WYRM_BIN) $(TIME_DIR)/loop.wyrm"
+
+	@echo "\n=== Recursion Fibonacci(28) ==="
+	
+	hyperfine --warmup 2 \
+		--export-markdown $(TIME_DIR)/resultados_fib.md \
+		-n "C" "$(TIME_DIR)/fib_c" \
+		-n "Rust" "$(TIME_DIR)/fib_rs" \
+		-n "Go" "$(TIME_DIR)/fib_go" \
+		-n "Java (JVM)" "java -cp $(TIME_DIR) Fib" \
+		-n "Wyrm VM (.wrc)" "$(WYRM_BIN) $(TIME_DIR)/fib.wrc" \
+		-n "Python3" "python3 $(TIME_DIR)/fib.py" \
+		-n "Wyrm Intérprete (.wyrm)" "$(WYRM_BIN) $(TIME_DIR)/fib.wyrm"
+
+	@rm -f $(TIME_DIR)/loop_c $(TIME_DIR)/fib_c \
+		$(TIME_DIR)/loop_rs $(TIME_DIR)/fib_rs \
+		$(TIME_DIR)/loop_go $(TIME_DIR)/fib_go \
+		$(TIME_DIR)/*.class $(TIME_DIR)/*.wrc
+
 memcheck:
 	@echo "Ejecutando Valgrind..."
 	cargo test --no-run
