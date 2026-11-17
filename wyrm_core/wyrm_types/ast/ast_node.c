@@ -199,6 +199,7 @@ void destroy_assignment_node(ast_node_t *node) {
     }
     free(node->ast_node_value.assignment_expr.name);
     destroy_ast_node(node->ast_node_value.assignment_expr.value);
+    destroy_ast_node(node->ast_node_value.assignment_expr.index);
     free(node);
 }
 
@@ -278,6 +279,7 @@ void destroy_ast_node(ast_node_t *node) {
     case AST_IDENTIFIER:
         destroy_identifier_node(node);
         break;
+    case AST_VEC_ACCESS:
     case AST_BINARY_EXPR:
         destroy_binary_node(node);
         break;
@@ -287,6 +289,7 @@ void destroy_ast_node(ast_node_t *node) {
     case AST_VAR_DECLARATION:
         destroy_var_decl_node(node);
         break;
+    case AST_VEC_LITERAL:
     case AST_PROGRAM:
     case AST_BLOCK:
         destroy_block_node(node);
@@ -297,6 +300,7 @@ void destroy_ast_node(ast_node_t *node) {
     case AST_ASSIGNMENT:
         destroy_assignment_node(node);
         break;
+    case AST_FOR_EXPR:
     case AST_WHILE_EXPR:
         destroy_while_node(node);
         break;

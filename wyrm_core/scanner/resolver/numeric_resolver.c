@@ -40,5 +40,5 @@ int resolver_numerit(char *input, int index, token_vector_t *tokens) {
     char *lexeme = strndup(input + index, temp_index - index);
     int result = chrage_number(is_float, lexeme, tokens);
 
-    return result == ERROR_TOKEN_VECTOR ? -1 : temp_index - 1;
+    return result == ERROR_TOKEN_VECTOR ? -1 : temp_index;
 }

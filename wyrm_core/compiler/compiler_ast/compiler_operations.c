@@ -21,6 +21,9 @@ void compile_binary_expr(ast_node_t *node, compiler_t *compiler) {
     case T_MOD:
         chunk_write_byte(compiler->chunk, WYRM_OP_MOD);
         break;
+    case T_POW:
+        chunk_write_byte(compiler->chunk, WYRM_OP_POW);
+        break;
     case T_AND:
         chunk_write_byte(compiler->chunk, WYRM_OP_AND);
         break;

@@ -1,0 +1,2 @@
+vec<nat8> entrada = read(0, 64)
+write(1, entrada) // Imprime los 64 bytes (maximo) qie emtraon por stdin 

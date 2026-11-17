@@ -16,7 +16,7 @@ ast_node_t *block_statement(parser_t *parser) {
         block->ast_node_value.block_expr.nodes[block->ast_node_value.block_expr.size++] = stmt;
 
         if (stmt->type != AST_BLOCK && stmt->type != AST_IF_EXPR && stmt->type != AST_WHILE_EXPR &&
-            stmt->type != AST_FUNCTION_DECL) {
+            stmt->type != AST_FUNCTION_DECL && stmt->type != AST_FOR_EXPR) {
 
             if (!match(parser, T_SEMICOLON) && peek(parser)->type != T_RBRACE && peek(parser)->type != T_EOF) {
                 panic(ERR_SYNTAX, "Syntax error: ';' expected at the end of the statement");

@@ -1,0 +1,8 @@
+vec<nat8> string = "hola mundo" // es un string de bytes con 0 al final 
+                                // ['h','o','l','a',' ','m','u','n','d','o',0]
+
+nat16 i = 0
+while (string[i] ~= 0) {
+    i = i + 1
+}
+i // deberia ser 10

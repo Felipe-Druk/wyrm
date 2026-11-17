@@ -32,5 +32,16 @@ typedef enum WyrmOpcode {
     WYRM_OP_GREATER = 0x14,
     WYRM_OP_EQUAL = 0x15,
     WYRM_OP_NOT_EQUAL = 0x16,
-
+    // Opecodes que quedaron resagados
+    WYRM_OP_POW = 0x17,
+    WYRM_OP_BUILD_VEC = 0x18,
+    WYRM_OP_VEC_CAST = 0x19,
+    WYRM_OP_VEC_GET = 0x1A,
+    WYRM_OP_VEC_SET = 0x1B,
+    WYRM_OP_VEC_LEN = 0x1C,
+    WYRM_OP_WRITE = 0x1D,
+    WYRM_OP_READ = 0x1E,
+    // Opcodes de variables globales
+    WYRM_OP_GET_GLOBAL = 0x1F,
+    WYRM_OP_SET_GLOBAL = 0x20
 } wyrm_opcode_t;

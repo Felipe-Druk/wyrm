@@ -31,7 +31,13 @@ void compile_node(ast_node_t *node, compiler_t *compiler) {
     case AST_BLOCK: {
         ast_block_t block = node->ast_node_value.block_expr;
         for (size_t i = 0; i < block.size; i++) {
-            compile_node(block.nodes[i], compiler);
+            ast_node_t *stmt = block.nodes[i];
+            compile_node(stmt, compiler);
+
+            bool is_last = (i + 1 == block.size);
+            if (stmt->type == AST_CALL && (!is_last || compiler->scope_level >= 2)) {
+                chunk_write_byte(compiler->chunk, WYRM_OP_POP);
+            }
         }
         break;
     }
@@ -89,6 +95,18 @@ void compile_node(ast_node_t *node, compiler_t *compiler) {
     }
     case AST_CALL: {
         compile_call_expr(node, compiler);
+        break;
+    }
+    case AST_VEC_LITERAL: {
+        compile_vec_literal(node, compiler);
+        break;
+    }
+    case AST_VEC_ACCESS: {
+        compile_vec_access(node, compiler);
+        break;
+    }
+    case AST_FOR_EXPR: {
+        compile_for_expr(node, compiler);
         break;
     }
     default:

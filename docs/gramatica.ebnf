@@ -1,0 +1,154 @@
+(*Archivo para mostrar toda la notacion de Wyrm*)
+
+(*PROGRAMA Y SENTENCIAS*)
+
+program            = { statement } , EOF ;
+
+statement          = var_declaration , [ terminator ]
+                   | func_declaration , [ terminator ]
+                   | assignment_stmt , [ terminator ]
+                   | if_statement
+                   | while_statement
+                   | block_statement
+                   | expression_stmt , [ terminator ] ;
+
+(* El Scanner aplica  Semicolon en los saltos de linea *)
+terminator         = ";" | NEWLINE ;
+
+block_statement    = "{" , { statement } , "}" ;
+
+
+
+(*TYPADO ESTRICTO*)
+
+
+type               = primitive_type
+                   | vector_type
+                   | function_type ;
+
+primitive_type     = int_type
+                   | nat_type
+                   | float_type
+                   | bool_type ;
+
+int_type           = "int8" | "int16" | "int32" | "int64" ;
+nat_type           = "nat8" | "nat16" | "nat32" | "nat64" ;
+float_type         = "float32" | "float64" ;
+bool_type          = "bool" ;
+
+vector_type        = "vec" , "<" , type , ">" ;
+
+return_type        = type
+                   | "(" , ")" ; (* Tipo vacio*)
+
+function_type      = "(" , [ type_list ] , ")" , "->" , return_type ;
+type_list          = type , { "," , type } ;
+
+
+(*DECLARACIONES Y ASIGNACIONES*)
+
+var_declaration    = type , identifier , [ "=" | "<-" , expression ] ; (* "=" asigna mientras que "<-" asigna con retorno *)
+
+(* (Tipos) -> Retorno nombre = (params) -> { cuerpo } *)
+func_declaration   = "(" , [ type_list ] , ")" , "->" , return_type ,
+                     identifier , "=" | "<-"  ,
+                     "(" , [ param_list ] , ")" , "->" , block_statement ;
+
+param_list         = identifier , { "," , identifier } ;
+
+(* Variables mutables por defecto, y vectores con asignacion por indexacion*)
+assignment_stmt    = identifier , "=" | "<-" , expression
+                   | identifier , "[" , expression , "]" , "=" | "<-" , expression ;
+
+(* Saltos condiconales *)
+if_statement       = "if" , "(" , expression , ")" , block_statement ,
+                     { "else" , "if" , "(" , expression , ")" , block_statement } ,
+                     [ "else" , block_statement ] ;
+
+(*Lopp while*)
+while_statement    = "while" , "(" , expression , ")" , block_statement ;
+
+expression_stmt    = expression ;
+
+
+(*JERARQUIA DE EXPRESIONES*)
+
+expression         = logical_or ;
+
+(* Jerearqui 1: Disyuncion logica y Disyuncion exclusiva *)
+logical_or         = logical_and , { ( "or" | "xor" ) , logical_and } ;
+
+(* Jerearqui 2: Conjuncion logica *)
+logical_and        = equality , { "and" , equality } ;
+
+(* Jerearqui 3: Igualdad y Desigualdad *)
+equality           = comparison , { ( "==" | "~=" ) , comparison } ;
+
+(* Jerearqui 4: Comparadores relacionales *)
+comparison         = term , { ( "<" | ">" | "<=" | ">=" ) , term } ;
+
+(* Jerearqui 5: Adicion y Sustraccion *)
+term               = factor , { ( "+" | "-" ) , factor } ;
+
+(* Jerearqui 6: multiplicación, Division y Modulo *)
+factor             = unary , { ( "*" | "/" | "%" ) , unary } ;
+
+(* Jerearqui 7: Operadores Unarios (Negacion aritmetica y logica) *)
+unary              = ( "-" | "not" ) , unary
+                   | power ;
+
+(* Jerearqui 8: Potenciacion *)
+power              = postfix , { "^" , unary } ;
+
+(* Jerearqui 9: Llamadas a funciones, primitivas de I/O e indexacion vectorial *)
+
+(*Funiones*)
+
+postfix            = call_expression
+                   | primary , { "[" , expression , "]" } ;
+
+(*Indexacion*)
+call_expression    = ( identifier | native_primitive ) , "(" , [ arg_list ] , ")" ;
+arg_list           = expression , { "," , expression } ;
+
+(* Primitivas nativas del sistema*)
+native_primitive   = "write" | "read" ;
+
+(*Jerearqui 10: Expresiones primarias y agrupacion *)
+primary            = number_literal
+                   | bool_literal
+                   | string_literal
+                   | vec_literal
+                   | identifier
+                   | "(" , expression , ")"
+                   | block_statement ;
+
+
+(*LITERALES Y REGLAS LEXICAS*)
+
+vec_literal        = "[" , [ arg_list ] , "]" ;
+
+(* Azucar sintactico: se transforma en vec<nat8> terminado en byte nulo 0 *)
+string_literal     = '"' , { char_element | escape_sequence } , '"' ;
+escape_sequence    = '\n' | '\t' | '\r' | '\0' | "\\" | '\"' ;
+char_element       = ? cualquier caracter ASCII excepto '"', '\' o salto de linea ? ;
+
+bool_literal       = "true" | "false" ;
+
+number_literal     = integer_literal
+                   | float_literal ;
+
+integer_literal    = digit , { digit } ;
+float_literal      = digit , { digit } , "." , digit , { digit } ;
+
+identifier         = ( letter | "_" ) , { letter | digit | "_" } ;
+
+letter             = 'a' .. 'z' | 'A' .. 'Z' ;
+digit              = '0' .. '9' ;
+
+(* Comentarios estilo C*)
+comment            = "//" , { ? cualquier caracter excepto salto de linea ? } , NEWLINE ;
+
+NEWLINE = '\n' ;
+
+EOF = '\0';

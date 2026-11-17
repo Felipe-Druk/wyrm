@@ -1,0 +1,10 @@
+nat8 mayuscula = 'A';
+nat8 desplazamiento = 'a' - 'A';
+nat8 minuscula = mayuscula + desplazamiento;
+nat8 fin_cadena = '\0';
+
+nat8 resultado = 0;
+if (minuscula == 97 and minuscula == 'a' and fin_cadena == 0) {
+    resultado = minuscula;
+}
+resultado;

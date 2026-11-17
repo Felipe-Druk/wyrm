@@ -27,6 +27,7 @@ pub enum WyrmValueType {
     ValFloat64,
     ValBool,
     ValFunction,
+    ValVec,
 }
 
 #[repr(C)]
@@ -44,6 +45,7 @@ pub union WyrmValueData {
     pub float64_val: f64,
     pub bool_val: bool,
     pub function_val: WyrmFunction,
+    pub vec_val: *mut std::ffi::c_void,
 }
 
 #[repr(C)]
@@ -97,6 +99,36 @@ impl fmt::Display for WyrmValue {
     }
 }
 
+// permite comparar wyrmValue
+impl PartialEq for WyrmValue {
+    fn eq(&self, other: &Self) -> bool {
+        if self.value_type != other.value_type {
+            return false;
+        }
+        unsafe {
+            match self.value_type {
+                WyrmValueType::ValVoid => true,
+                WyrmValueType::ValNat8 => self.value.nat8_val == other.value.nat8_val,
+                WyrmValueType::ValNat16 => self.value.nat16_val == other.value.nat16_val,
+                WyrmValueType::ValNat32 => self.value.nat32_val == other.value.nat32_val,
+                WyrmValueType::ValNat64 => self.value.nat64_val == other.value.nat64_val,
+                WyrmValueType::ValInt8 => self.value.int8_val == other.value.int8_val,
+                WyrmValueType::ValInt16 => self.value.int16_val == other.value.int16_val,
+                WyrmValueType::ValInt32 => self.value.int32_val == other.value.int32_val,
+                WyrmValueType::ValInt64 => self.value.int64_val == other.value.int64_val,
+                WyrmValueType::ValFloat32 => {
+                    (self.value.float32_val - other.value.float32_val).abs() < f32::EPSILON
+                }
+                WyrmValueType::ValFloat64 => {
+                    (self.value.float64_val - other.value.float64_val).abs() < f64::EPSILON
+                }
+                WyrmValueType::ValBool => self.value.bool_val == other.value.bool_val,
+                _ => false,
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,6 +141,7 @@ mod tests {
             root: *mut AstNode,
             scope: *mut std::ffi::c_void,
         ) -> *mut Interpreter;
+
         pub fn destroy_interpreter(interpreter: *mut Interpreter);
     }
 

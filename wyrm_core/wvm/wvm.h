@@ -18,14 +18,19 @@ typedef struct wyrmCallFrame {
 
 typedef struct WyrmVm {
     wyrm_chunk_t *chunk;
+
+    const uint8_t *code; // mismo que chunk
+    size_t code_size;
+    const wyrm_value_t *constants;
+
     uint32_t ip;
     wyrm_value_t *stack;
     size_t stack_top;
     size_t stack_capacity;
+    size_t base_slot;
 
     wyrm_call_frame_t frames[FRAMES_MAX];
     size_t frame_count;
-
     int flags;
 } wyrm_vm_t;
 

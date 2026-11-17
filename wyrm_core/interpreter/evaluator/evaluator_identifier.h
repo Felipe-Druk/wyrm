@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../wyrm_types/ast/ast_node.h"
-#include "../wyrm_types/wyrm_value/wyrm_value.h"
-#include "../wyrm_types/environment/environment.h"
+#include "../../wyrm_types/ast/ast_node.h"
+#include "../../wyrm_types/wyrm_value/wyrm_value.h"
+#include "../../wyrm_types/environment/environment.h"
 
 /*
 Archivo que resuelve la declaración de variables
@@ -16,3 +16,9 @@ wyrm_value_t eval_identifier(ast_node_t *node, environment_t *env);
 
 // evalua simpere y cuando sea un assignment, reasigna el valor en la variable
 wyrm_value_t eval_assignment(ast_node_t *node, environment_t *env, wyrm_value_t expr_value);
+
+// Evalua un literal de vector: [expr1, expr2, ...]
+wyrm_value_t eval_vec_literal(ast_node_t *node, environment_t *env);
+
+// Evalua el acceso por indice: vector[index]
+wyrm_value_t eval_vec_access(ast_node_t *node, environment_t *env);

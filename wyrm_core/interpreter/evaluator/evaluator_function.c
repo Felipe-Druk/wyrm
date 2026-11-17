@@ -1,7 +1,9 @@
 #include "evaluator_function.h"
 #include "interpreter_internal.h"
-#include "../utils/error.h"
+#include "../../utils/error.h"
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 wyrm_value_t eval_function_decl(ast_node_t *node, environment_t *scope) {
     wyrm_function_t function = node->ast_node_value.function_decl.function;
@@ -15,10 +17,98 @@ wyrm_value_t eval_function_decl(ast_node_t *node, environment_t *scope) {
     return (wyrm_value_t){.type = VAL_VOID};
 }
 
+static wyrm_value_t eval_native_read(size_t arg_count, ast_node_t **args, environment_t *scope) {
+    if (arg_count != 2) {
+        panic(ERR_TYPE, "Runtime error: 'read' expects 2 arguments (fd, count), got %zu", arg_count);
+    }
+
+    wyrm_value_t fd_val = eval_node(args[0], scope);
+    wyrm_value_t count_val = eval_node(args[1], scope);
+
+    int fd = (int)get_cast_int64(fd_val);
+    int64_t count = get_cast_int64(count_val);
+    if (count < 0) {
+        panic(ERR_OVERFLOW, "Runtime error: 'read' byte count cannot be negative");
+    }
+
+    uint8_t *raw_buf = NULL;
+    ssize_t bytes_read = 0;
+    if (count > 0) {
+        raw_buf = malloc((size_t)count);
+        if (raw_buf == NULL) {
+            panic(ERR_OUT_MEMORY, "Could not allocate buffer for 'read'");
+        }
+        bytes_read = read(fd, raw_buf, (size_t)count);
+        if (bytes_read < 0) {
+            bytes_read = 0;
+        }
+    }
+
+    size_t initial_cap = (bytes_read > 0) ? (size_t)bytes_read : 1;
+    wyrm_vec_t *vec = create_wyrm_vec(VAL_NAT8, initial_cap);
+    for (ssize_t i = 0; i < bytes_read; i++) {
+        wyrm_value_t item = {
+            .type = VAL_NAT8,
+            .value.nat8_val = raw_buf[i],
+        };
+        vector_push(&vec->items, &item);
+    }
+    free(raw_buf);
+
+    return (wyrm_value_t){
+        .type = VAL_VEC,
+        .value.vec_val = vec,
+    };
+}
+
+static wyrm_value_t eval_native_write(size_t arg_count, ast_node_t **args, environment_t *scope) {
+    if (arg_count != 2) {
+        panic(ERR_TYPE, "Runtime error: 'write' expects 2 arguments (fd, buffer), got %zu", arg_count);
+    }
+
+    wyrm_value_t fd_val = eval_node(args[0], scope);
+    wyrm_value_t buf_val = eval_node(args[1], scope);
+
+    if (buf_val.type != VAL_VEC || buf_val.value.vec_val == NULL) {
+        panic(ERR_TYPE, "Runtime error: Second argument to 'write' must be a vector");
+    }
+
+    int fd = (int)get_cast_int64(fd_val);
+    wyrm_vec_t *vec = buf_val.value.vec_val;
+    size_t len = vec->items.size;
+
+    uint8_t *raw_buf = NULL;
+    if (len > 0) {
+        raw_buf = malloc(len);
+        for (size_t i = 0; i < len; i++) {
+            wyrm_value_t item = *(wyrm_value_t *)vector_get(&vec->items, i);
+            raw_buf[i] = (uint8_t)get_cast_int64(item);
+        }
+        if (raw_buf[len - 1] == 0) {
+            len--;
+        }
+    }
+
+    ssize_t written = (len > 0) ? write(fd, raw_buf, len) : 0;
+    free(raw_buf);
+
+    return (wyrm_value_t){
+        .type = VAL_INT64,
+        .value.int64_val = (int64_t)written,
+    };
+}
+
 wyrm_value_t eval_call(ast_node_t *node, environment_t *scope) {
     char *func_name = node->ast_node_value.call_expr.name;
     size_t arg_count = node->ast_node_value.call_expr.arg_count;
     ast_node_t **args = node->ast_node_value.call_expr.args;
+
+    if (strcmp(func_name, "write") == 0) {
+        return eval_native_write(arg_count, args, scope);
+    }
+    if (strcmp(func_name, "read") == 0) {
+        return eval_native_read(arg_count, args, scope);
+    }
 
     wyrm_value_t *func_val = environment_get(scope, func_name);
     if (func_val == NULL) {

@@ -2,7 +2,10 @@
 
 extern crate wyrm_lib;
 
+use std::env;
 use std::path::Path;
+use std::process;
+use wyrm_lib::config::Config;
 
 pub struct Wyrmc {
     verbose: bool,
@@ -74,6 +77,12 @@ impl Wyrmc {
         }
     }
 
+    pub fn from_config(config: &Config) -> Option<Self> {
+        let input = config.get_file_path()?.clone();
+        let output = config.get_output_path().cloned();
+        Some(Wyrmc::new(config.get_verbose(), input, output))
+    }
+
     pub fn compile(&self) {
         let file_path = &self.input_files_path;
         let wr_path = Path::new(file_path);
@@ -84,7 +93,10 @@ impl Wyrmc {
                     let input_file_path = std::ffi::CString::new(file_path.as_str()).unwrap();
                     let output_file_path = match &self.output_files_path {
                         Some(output_path) => std::ffi::CString::new(output_path.as_str()).unwrap(),
-                        None => std::ffi::CString::new(DEFAULT_OUTPUT_FILE_NAME).unwrap(),
+                        None => {
+                            let default_path = wr_path.with_file_name(DEFAULT_OUTPUT_FILE_NAME);
+                            std::ffi::CString::new(default_path.to_str().unwrap()).unwrap()
+                        }
                     };
                     let flags = if self.verbose { 0xFFFF } else { 0 };
                     let wyrmc =
@@ -100,9 +112,15 @@ impl Wyrmc {
 }
 
 fn main() {
-    // leer arguementos
-    // let wyrmc = Wyrmc::new(...);
-    // wyrmc.compile();
+    let config = Config::build(env::args());
+
+    match Wyrmc::from_config(&config) {
+        Some(wyrmc) => wyrmc.compile(),
+        None => {
+            eprintln!("Uso: wyrmc <archivo.wyrm> [-o <salida.wrc>] [-v|--verbose]");
+            process::exit(1);
+        }
+    }
 }
 
 #[cfg(test)]

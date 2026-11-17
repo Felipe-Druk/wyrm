@@ -13,3 +13,9 @@ void compile_identifier(ast_node_t *node, compiler_t *compiler);
 
 // Resuleve situaciones del tipo variable (= | <-) valor, compila llamando a la variable y asignando el valor del stack
 void compile_assignment(ast_node_t *node, compiler_t *compiler);
+
+// Compila un literal de vector: [expr1, expr2, ...]
+void compile_vec_literal(ast_node_t *node, compiler_t *compiler);
+
+// Compila un acceso por indice: vec[index]
+void compile_vec_access(ast_node_t *node, compiler_t *compiler);

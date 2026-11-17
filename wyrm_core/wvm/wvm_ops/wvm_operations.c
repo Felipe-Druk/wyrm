@@ -61,6 +61,18 @@ void wvm_op_binary_arith(wyrm_vm_t *vm, wyrm_opcode_t op) {
             res.value.nat64_val = get_cast_nat64(left) % get_cast_nat64(right);
         }
         break;
+    case WYRM_OP_POW:
+        if (has_float) {
+            res.type = VAL_FLOAT64;
+            res.value.float64_val = pow(get_cast_float64(left), get_cast_float64(right));
+        } else if (has_int) {
+            res.type = VAL_INT64;
+            res.value.int64_val = (int64_t)pow((double)get_cast_int64(left), (double)get_cast_int64(right));
+        } else {
+            res.type = VAL_NAT64;
+            res.value.nat64_val = (uint64_t)pow((double)get_cast_nat64(left), (double)get_cast_nat64(right));
+        }
+        break;
     default:
         panic(ERR_UNKNOWN_OP, "Invalid arithmetic opcode: %d", op);
     }
@@ -69,32 +81,29 @@ void wvm_op_binary_arith(wyrm_vm_t *vm, wyrm_opcode_t op) {
 }
 
 void wvm_op_not(wyrm_vm_t *vm) {
-    wyrm_value_t val = vm_pop(vm);
-    if (val.type != VAL_BOOL) {
+    wyrm_value_t *top = &vm->stack[vm->stack_top - 1];
+    if (top->type != VAL_BOOL) {
         panic(ERR_TYPE_MISMATCH, "The 'not' operator in VM requires a boolean");
     }
-    wyrm_value_t res = {0};
-    res.type = VAL_BOOL;
-    res.value.bool_val = !val.value.bool_val;
-    vm_push(vm, res);
+    top->value.bool_val = !top->value.bool_val;
 }
 
 void wvm_op_binary_logic(wyrm_vm_t *vm, wyrm_opcode_t op) {
-    wyrm_value_t right = vm_pop(vm);
-    wyrm_value_t left = vm_pop(vm);
+    wyrm_value_t right = vm->stack[--vm->stack_top];
+    wyrm_value_t *left = &vm->stack[vm->stack_top - 1];
 
-    if (left.type != VAL_BOOL || right.type != VAL_BOOL) {
+    if (left->type != VAL_BOOL || right.type != VAL_BOOL) {
         panic(ERR_TYPE_MISMATCH, "Logical operators in VM require booleans");
     }
 
     wyrm_value_t res = {0};
     res.type = VAL_BOOL;
     if (op == WYRM_OP_AND) {
-        res.value.bool_val = left.value.bool_val && right.value.bool_val;
+        res.value.bool_val = left->value.bool_val && right.value.bool_val;
     } else if (op == WYRM_OP_OR) {
-        res.value.bool_val = left.value.bool_val || right.value.bool_val;
+        res.value.bool_val = left->value.bool_val || right.value.bool_val;
     }
-    vm_push(vm, res);
+    vm->stack[vm->stack_top - 1] = res;
 }
 
 void wvm_op_binary_cmp(wyrm_vm_t *vm, wyrm_opcode_t op) {

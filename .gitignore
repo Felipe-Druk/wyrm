@@ -21,3 +21,8 @@ core.*
 *.wyrm_history
 *.wyrm
 *.wrc
+
+# Para tests
+!tests/wyrm_scripts/*.wyrm
+!tests/time/*.wyrm
+!docs/*.wyrm

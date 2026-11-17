@@ -32,7 +32,7 @@ impl Wyrm {
         println!("Entrada recibida: {}", input);
     }
 
-    fn call_wyrm(&self, input: &str) -> WyrmValue {
+    pub fn call_wyrm(&self, input: &str) -> WyrmValue {
         let c_input = CString::new(input).expect("Error al convertir a CString");
         unsafe {
             run_wyrm(
@@ -75,11 +75,16 @@ impl Wyrm {
                 && path_ref.is_file()
                 && let Some(extension) = path_ref.extension()
             {
-                if extension != "wrc" {
-                    eprintln!("El archivo debe tener extensión .wrc");
-                } else {
+                if extension == "wrc" {
                     let result = self.call_vm(path_ref.to_str().unwrap());
                     println!("{}", result);
+                } else if extension == "wyrm" {
+                    let content = std::fs::read_to_string(path_ref)
+                        .expect("No se pudo leer el archivo .wyrm");
+                    let result = self.call_wyrm(&content);
+                    println!("{}", result);
+                } else {
+                    eprintln!("El archivo debe tener extensión .wrc o .wyrm");
                 }
             }
 

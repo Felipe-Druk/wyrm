@@ -1,0 +1,10 @@
+(int64) -> int64 fib = (n) -> {
+    int64 res = 0
+    if (n < 2) {
+        res = n
+    } else {
+        res = fib(n - 1) + fib(n - 2)
+    }
+    res
+}
+fib(28)

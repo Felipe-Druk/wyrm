@@ -1,0 +1,5 @@
+int32 actual = 0;
+while (actual < 5) {
+    actual = actual + 1;
+    }
+actual

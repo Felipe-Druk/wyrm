@@ -13,15 +13,18 @@ son demaciado especificos y poco reutilizables, por lo tanto poco escalables
 typedef enum {
     AST_NUMBER_LITERAL,
     AST_BOOL_LITERAL,
+    AST_VEC_LITERAL,
     AST_IDENTIFIER,
     AST_BINARY_EXPR,
     AST_VAR_DECLARATION,
+    AST_VEC_ACCESS,
     AST_UNARY_EXPR,
     AST_BLOCK,
     AST_PROGRAM, // especial para raiz del programa
     AST_IF_EXPR,
     AST_ASSIGNMENT,
     AST_WHILE_EXPR,
+    AST_FOR_EXPR, // se trabaja igual que un while
     AST_FUNCTION_DECL,
     AST_CALL
 } ast_node_type_t;
@@ -71,6 +74,7 @@ typedef AstUnaryExpr ast_unary_expr_t;
 // Declaraciones de variables
 typedef struct {
     token_type_t var_type;
+    token_type_t element_type;  // Solo para T_VEC
     char *identifier;           // Nombre de la variable
     struct ASTNode *expression; // Lo que guardaremos en la variable
     token_type_t assign_op;     // Con que operador se isntancio
@@ -99,6 +103,7 @@ typedef struct {
     char *name;            // nombre de la variable a reasignar
     token_type_t operator; // opredor de asignacion
     struct ASTNode *value; // nuevo valor
+    struct ASTNode *index; // NULL si no es vector
 } AstAssignment;
 
 typedef AstAssignment ast_assignment_t;

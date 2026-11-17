@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "../../wyrm_token.h"
+#include "../../utils/wyrm_vector.h"
 
 /*
 Como se decicido que cada "bloque" tenga un retorno si o si, esta estrutura representa los posibles valores de esos
@@ -29,8 +30,8 @@ typedef enum {
 
     VAL_BOOL, // bool
 
-    VAL_FUNCTION // function()
-
+    VAL_FUNCTION, // function()
+    VAL_VEC,      // vector nativo
 } WyrmValueType;
 
 struct ASTNode; // esto parece un error queda como TODO crear el tipo "scope"
@@ -53,6 +54,14 @@ typedef struct {
 
 typedef WyrmFunction wyrm_function_t;
 
+typedef struct WyrmVec wyrm_vec_t;
+
+typedef struct WyrmVec {
+    WyrmValueType element_type; // Tipo de los elementos
+    wyrm_vector_t items;
+    wyrm_vec_t *next_allocated;
+} WyrmVec; // evita "useless storage class specifier in empty declaration"
+
 // En general todo lo que pueda retornar un "source" de wyrm, inlcuso si no hay retorno.
 struct WyrmValue {
     WyrmValueType type;
@@ -71,6 +80,7 @@ struct WyrmValue {
         _Float64 float64_val;
         bool bool_val;
         wyrm_function_t wyrm_function_val;
+        wyrm_vec_t *vec_val;
     } value;
 };
 
@@ -105,3 +115,7 @@ int is_float(wyrm_value_type_t type);
 int is_int(wyrm_value_type_t type);
 
 int is_zero(wyrm_value_t value);
+
+wyrm_vec_t *create_wyrm_vec(wyrm_value_type_t element_type, size_t initial_capacity);
+
+void free_all_wyrm_vecs();

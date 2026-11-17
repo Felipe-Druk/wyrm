@@ -17,7 +17,13 @@ VALGRIND_RUNNER = valgrind $(VALGRIND_FLAGS)
 # Ejecuta directamente el binario de test que se encuentra en target/debug/deps/ y que empieza con "wyrm-"		
 TEST_BIN = $$(find target/debug/deps/ -maxdepth 1 -perm -111 -type f -name "wyrm-*" | head -n 1)
 
-.PHONY: install check build run run-v clean format help pre-commit tests memcheck memcheck-one
+TIME_DIR = tests/time
+WYRM_BIN = ./target/release/wyrm
+WYRMC_BIN = ./target/release/wyrmc
+
+SCRIPTS_DIR = scripts
+
+.PHONY: install update check build run run-v demo clean format help pre-commit tests memcheck memcheck-one tests-time
 
 .DEFAULT_GOAL := help
 
@@ -30,13 +36,18 @@ help:
 	@echo "    \_/\_/  \__, |_|  |_| |_| |_|"
 	@echo "            |___/  "
 	@echo ""
-	@echo "- Install: Instala dependencias necesarias, solo se ejecuta una vez"
+	@echo "- install: Instala dependencias necesarias, solo se ejecuta una vez"
+	@echo "- make update: Actualiza el toolchain de Rust, Cargo.lock y pre-commit"
 	@echo "- check: Verfica la integridad del codigo y busca errores"
 	@echo "- build: Compila el proyecto como ejecutable"
 	@echo "- run: Ejecuta el programa, si no esta compilado lo compila"
 	@echo "- run-v: Ejecuta el programa con la flag de seguimiento, si no esta compilado lo compila"
+	@echo "- demo-i: Ejecuta el programa demo con el intérprete"
+	@echo "- demo-vm: Ejecuta el programa demo con la vm"
 	@echo "- format: Aplica linters al proyecto"
 	@echo "- tests: Ejecuta todos los test"
+	@echo "- tests-parity: Ejecuta tests de paridad con salida estadnar"
+	@echo "- tests-time: Ejecuta tests de tiempos, comparando con distintos lenguajes"
 	@echo "- memcheck: Ejecuta Valgrind para detectar leaks de memoria"
 	@echo "- memcheck-one: Ejecuta Valgrind en un solo test, debe ser llamdo con TEST=<nombre_test>"
 	@echo "- pre-commit: Ejecuta los pre-commits sobre todo el proyecto"
@@ -47,6 +58,14 @@ install:
 	rustup component add clippy rustfmt
 	pre-commit install
 	pre-commit autoupdate
+	@echo "Ejecutando script de instalacion..."
+	@chmod +x $(SCRIPTS_DIR)/install.sh
+	./$(SCRIPTS_DIR)/install.sh
+
+update:
+	@echo "Ejecutando script de actualizacion..."
+	@chmod +x $(SCRIPTS_DIR)/update.sh
+	./$(SCRIPTS_DIR)/update.sh
 
 check:
 	@echo "Comprobando el proyecto..."
@@ -65,6 +84,17 @@ run-v:
 	@echo "Ejecutando el proyecto en modo verbose..."
 	cargo run -- --verbose
 
+demo-i:	
+	cargo build --release
+	./target/release/wyrm  docs/recreacion_TP1_ALGO1.wyrm
+	
+demo-vm:
+	cargo build --release
+	./target/release/wyrmc  docs/recreacion_TP1_ALGO1.wyrm
+	./target/release/wyrm  docs/output.wrc                
+	rm docs/output.wrc 
+
+
 format:
 	@echo "Formato para Rust..."
 	cargo fmt
@@ -73,6 +103,53 @@ format:
 tests:
 	@echo "Ejecutanto tests..."
 	cargo test
+
+tests-parity:
+	@echo "Ejecutanto tests de paridad..."
+	cargo test --test parity_tests -- --nocapture
+
+tests-time:
+	@echo "Compilando Wyrm en modo release..."
+	cargo build --release
+	@echo "Compilando C y Bytecode (.wrc)..."
+	cc -O3 $(TIME_DIR)/loop.c -o $(TIME_DIR)/loop_c
+	cc -O3 $(TIME_DIR)/fib.c -o $(TIME_DIR)/fib_c
+	rustc -C opt-level=3 $(TIME_DIR)/loop.rs -o $(TIME_DIR)/loop_rs
+	rustc -C opt-level=3 $(TIME_DIR)/fib.rs -o $(TIME_DIR)/fib_rs
+	go build -o $(TIME_DIR)/loop_go $(TIME_DIR)/loop.go
+	go build -o $(TIME_DIR)/fib_go $(TIME_DIR)/fib.go
+	javac $(TIME_DIR)/Loop.java $(TIME_DIR)/Fib.java
+	$(WYRMC_BIN) $(TIME_DIR)/loop.wyrm -o $(TIME_DIR)/loop.wrc
+	$(WYRMC_BIN) $(TIME_DIR)/fib.wyrm -o $(TIME_DIR)/fib.wrc
+
+	@echo "\n=== Bucle de 1.000.000 iteraciones ==="
+
+	hyperfine --warmup 3 \
+		--export-markdown $(TIME_DIR)/resultados_loop.md \
+		-n "C" "$(TIME_DIR)/loop_c" \
+		-n "Rust" "$(TIME_DIR)/loop_rs" \
+		-n "Go" "$(TIME_DIR)/loop_go" \
+		-n "Java (JVM)" "java -cp $(TIME_DIR) Loop" \
+		-n "Wyrm VM (.wrc)" "$(WYRM_BIN) $(TIME_DIR)/loop.wrc" \
+		-n "Python3" "python3 $(TIME_DIR)/loop.py" \
+		-n "Wyrm Intérprete (.wyrm)" "$(WYRM_BIN) $(TIME_DIR)/loop.wyrm"
+
+	@echo "\n=== Recursion Fibonacci(28) ==="
+	
+	hyperfine --warmup 2 \
+		--export-markdown $(TIME_DIR)/resultados_fib.md \
+		-n "C" "$(TIME_DIR)/fib_c" \
+		-n "Rust" "$(TIME_DIR)/fib_rs" \
+		-n "Go" "$(TIME_DIR)/fib_go" \
+		-n "Java (JVM)" "java -cp $(TIME_DIR) Fib" \
+		-n "Wyrm VM (.wrc)" "$(WYRM_BIN) $(TIME_DIR)/fib.wrc" \
+		-n "Python3" "python3 $(TIME_DIR)/fib.py" \
+		-n "Wyrm Intérprete (.wyrm)" "$(WYRM_BIN) $(TIME_DIR)/fib.wyrm"
+
+	@rm -f $(TIME_DIR)/loop_c $(TIME_DIR)/fib_c \
+		$(TIME_DIR)/loop_rs $(TIME_DIR)/fib_rs \
+		$(TIME_DIR)/loop_go $(TIME_DIR)/fib_go \
+		$(TIME_DIR)/*.class $(TIME_DIR)/*.wrc
 
 memcheck:
 	@echo "Ejecutando Valgrind..."

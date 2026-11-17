@@ -1,0 +1,6 @@
+bool booleano = true;
+booleano = booleano and true
+booleano = booleano or false
+booleano = not booleano
+booleano = booleano xor true;
+booleano;

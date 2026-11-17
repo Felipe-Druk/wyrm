@@ -9,15 +9,18 @@ use std::os::raw::c_char;
 pub enum AstNodeType {
     AstNumberLiteral = 0,
     AstBoolLiteral,
+    AstVecLiteral,
     AstIdentifier,
     AstBinaryExpr,
     AstVarDeclaration,
+    AstVecAccess,
     AstUnaryExpr,
     AstBlock,
     AstProgram,
     AstIfExpr,
     AstAssignment,
     AstWhileExpr,
+    AstForExpr,
     AstFunctionDecl,
     AstCall,
 }
@@ -77,6 +80,7 @@ pub struct UnaryExprStruct {
 #[derive(Clone, Copy, Debug)]
 pub struct VarDeclExprStruct {
     pub var_type: TokenType,
+    pub element_type: TokenType,
     pub identifier: *mut c_char,
     pub expression: *mut AstNode,
     pub assign_op: TokenType,
@@ -110,6 +114,7 @@ pub struct AstAssignment {
     pub name: *mut c_char,
     pub operator: TokenType,
     pub value: *mut AstNode,
+    pub index: *mut AstNode,
 }
 
 #[repr(C)]

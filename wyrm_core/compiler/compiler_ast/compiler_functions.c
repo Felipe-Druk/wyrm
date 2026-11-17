@@ -33,6 +33,9 @@ void compile_function_decl(ast_node_t *node, compiler_t *compiler) {
     vector_push(&compiler->func_symbols, &sym);
     wyrm_vector_t outer_locals = compiler->locals;
     int outer_scope = compiler->scope_level;
+    if (outer_scope == 0) {
+        compiler->globals = outer_locals; // si el anterior es el global lo copia
+    }
 
     compiler->locals = create_vector(sizeof(wyrm_local_t), INITIAL_FUNC_LOCALS);
     compiler->scope_level = 1;
@@ -55,6 +58,9 @@ void compile_function_decl(ast_node_t *node, compiler_t *compiler) {
     destroy_vector(&compiler->locals);
     compiler->locals = outer_locals;
     compiler->scope_level = outer_scope;
+    if (outer_scope == 0) {
+        compiler->globals = (wyrm_vector_t){0};
+    }
 }
 
 void compile_call_expr(ast_node_t *node, compiler_t *compiler) {
@@ -62,6 +68,22 @@ void compile_call_expr(ast_node_t *node, compiler_t *compiler) {
     for (size_t i = 0; i < call.arg_count; i++) {
         compile_node(call.args[i], compiler);
     }
+
+    if (strcmp(call.name, "write") == 0) {
+        if (call.arg_count != 2) {
+            panic(ERR_SYNTAX, "Compile error: 'write' expects 2 arguments (fd, buffer)");
+        }
+        chunk_write_byte(compiler->chunk, WYRM_OP_WRITE);
+        return;
+    }
+    if (strcmp(call.name, "read") == 0) {
+        if (call.arg_count != 2) {
+            panic(ERR_SYNTAX, "Compile error: 'read' expects 2 arguments (fd, count)");
+        }
+        chunk_write_byte(compiler->chunk, WYRM_OP_READ);
+        return;
+    }
+
     int func_id = resolve_function(compiler, call.name);
     if (func_id == ERRRESOLVER) {
         panic(ERR_UNDEFINED_VAR, "Undefined function in call: %s", call.name);
