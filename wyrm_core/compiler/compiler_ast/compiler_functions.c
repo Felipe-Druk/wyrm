@@ -33,6 +33,9 @@ void compile_function_decl(ast_node_t *node, compiler_t *compiler) {
     vector_push(&compiler->func_symbols, &sym);
     wyrm_vector_t outer_locals = compiler->locals;
     int outer_scope = compiler->scope_level;
+    if (outer_scope == 0) {
+        compiler->globals = outer_locals; // si el anterior es el global lo copia
+    }
 
     compiler->locals = create_vector(sizeof(wyrm_local_t), INITIAL_FUNC_LOCALS);
     compiler->scope_level = 1;
@@ -55,6 +58,9 @@ void compile_function_decl(ast_node_t *node, compiler_t *compiler) {
     destroy_vector(&compiler->locals);
     compiler->locals = outer_locals;
     compiler->scope_level = outer_scope;
+    if (outer_scope == 0) {
+        compiler->globals = (wyrm_vector_t){0};
+    }
 }
 
 void compile_call_expr(ast_node_t *node, compiler_t *compiler) {

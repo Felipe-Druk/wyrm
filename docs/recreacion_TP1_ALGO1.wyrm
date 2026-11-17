@@ -1,0 +1,150 @@
+// El intento es recrear de memoria mi primer trabajo practico de la facultad
+// La idea era una serie de preguntas re revelaban una contraseña secreta, pasando por varios algoritmos
+
+// print, va a ser necesario tener un print comun 
+vec<nat8> CONTRASENA = "XXXXXXX" // se revela como mcqueen
+
+(vec<nat8>) -> int64 print = (buffer) -> {
+    write(1, buffer) // write nativo para fd, la primitica 
+}
+
+// no nos dejaban usar strings.h, igual no hay atoi nativo en Wyrm
+(vec<nat8>) -> nat64 atoi = (cadena) -> {
+    nat64 resultado = 0;
+    nat64 i = 0;
+
+    while (cadena[i] >= '0' and cadena[i] <= '9') {
+        resultado = resultado * 10 + (cadena[i] - '0');
+        i = i+1
+    }
+    resultado;
+}
+
+// comparar cadenas creo que tenimaos algo asi, aunque puede que sea la version con ints
+(vec<nat8>, vec<nat8>) -> bool cadenas_iguales = (s1, s2) ->{
+    nat64 i = 0;
+    bool iguales = true
+    while((s1[i] ~= 0) and (s2[i] ~= 0) and iguales){
+        if(s1[i] ~= s2[i]){
+            iguales = false
+        }
+        i = i+1
+    }
+    (s1[i] == 0 or s1[i] == '\n') and (s2[i] == 0 or s2[i] == '\n') and iguales // read no limpia \n
+}
+
+// Recurdo que nos tomaron la famosa "es_primo"
+(nat64) -> bool es_primo = (n) -> { 
+    nat64 corte = (n/2) +1
+    nat64 i = 2;
+    bool es_primo = true
+    while((i < corte ) and es_primo){
+        es_primo = (n%i) ~= 0
+        i = i+1
+    }
+    es_primo
+}
+
+// El tp evaluva la mayoria de algoritmos basicos
+(nat64) -> nat64 factorial = (n) -> {
+    nat64 i = 1
+    nat64 resultado = i;
+    while(i < n){
+        resultado = (resultado*i)
+        i = i+1
+    }
+    resultado * n
+}
+
+() -> nat8 etapa_1 = () -> {
+    print("> Ingrese el numero del Rayo o un numero primo mayor a 10\n> ")
+    vec<nat8> entrada = read(0, 32)
+    nat64 num = atoi(entrada)
+
+    if (es_primo(num) and num > 10) {
+        print("> Correcto! Se revelan las primeras 2 letras.\n")
+        CONTRASENA[0] = 'm' 
+        CONTRASENA[1] = 'c'
+        2;
+    } else {
+        print("[X] Error.... Pista: Ka-chow!.\n")
+        1;
+    }
+}
+
+() -> nat8 etapa_2 = () -> {
+    print("> Cuanto vale 5!...?\n> ")
+    vec<nat8> entrada = read(0, 32)
+    nat64 resp = atoi(entrada)
+
+    if (resp == factorial(5)) {
+        print("> Excelente! Desbloqueaste otras 2 letras.\n")
+        CONTRASENA[2] = 'q'
+        CONTRASENA[3] = 'u'
+        3
+    } else {
+        print("[X] Error... Incorrecto. Recorda que n! ~= n ...\n")
+        2;
+    }
+}
+
+() -> nat8 etapa_3 = () -> {
+    print("> Ingrese un numero par, multiplo de 19, menor a 50\n> ")
+    vec<nat8> entrada = read(0, 32)
+    nat64 resp = atoi(entrada)
+
+    if (resp > 0 and resp < 50 and (resp % 2 == 0) and (resp % 19 == 0)) {
+        print("\n> Excelente! Desbloqueaste otras 2 letras.\n")
+        CONTRASENA[4] = 'e'
+        CONTRASENA[5] = 'e' 
+        4;
+    } else {
+        print("[X] Error... No cumple las condiciones. Intenta de nuevo!\n")
+        3
+    }
+}
+
+() -> nat8 etapa_4 = () -> {
+    print("> Como se toma el mate?\n> ")
+    vec<nat8> entrada = read(0, 32)
+    nat64 resp = atoi(entrada)
+
+    if (cadenas_iguales(entrada, "amargo")) {
+        print("\n> Impecable! Desbloqueaste toda la contrasena.\n")
+        CONTRASENA[6] = 'n'
+        5;
+    } else {
+        print("[X] Error... le pones azucar?  recurda las minusculas\n")
+        4
+    }
+}
+
+// en C teniamos un main, en wyrm al menos por ahora no 
+print("> Bienvenido\n")
+nat8 etapa = 1
+bool jugando = true
+
+// Segun mi memoria la tematica era "los incribles" pero la cambio por Cars 
+// while principal
+while (jugando) {
+    print("\n> Contrasena actual: ")
+    print(CONTRASENA)
+    print("\n")
+
+    if (etapa == 1) {
+        etapa  = etapa_1()
+    } else if (etapa == 2) {
+        etapa  = etapa_2()
+    } else if (etapa == 3) {
+        etapa = etapa_3()
+    } else if (etapa == 4) {
+        etapa = etapa_4()
+    } else {
+        print("\n +==== FELICITACIONES! Contrasena secreta descubierta ====+ \n> ") // yo ponia muchas == para decorar
+        print(CONTRASENA)
+        print("\n> Ka-chow!\n")
+        jugando = false
+    }
+}
+
+// Creo que auqnue primitivo Wyrm quedo muy bien de sintaxis, hay mucho margen de mejora pero estoy muy contento con como se ve

@@ -17,3 +17,7 @@ void wvm_op_vec_len(wyrm_vm_t *vm);
 // native io
 void wvm_op_write(wyrm_vm_t *vm);
 void wvm_op_read(wyrm_vm_t *vm);
+
+// variables globales
+void wvm_op_get_global(wyrm_vm_t *vm);
+void wvm_op_set_global(wyrm_vm_t *vm);

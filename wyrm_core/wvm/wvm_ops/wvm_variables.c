@@ -15,15 +15,9 @@ void wvm_op_cast(wyrm_vm_t *vm) {
     }
 }
 
-void wvm_op_get_local(wyrm_vm_t *vm) {
-    uint16_t slot = vm_read_uint16(vm);
-    vm_push(vm, vm->stack[vm->base_slot + slot]);
-}
-
-void wvm_op_set_local(wyrm_vm_t *vm) {
-    uint16_t slot = vm_read_uint16(vm);
+static void wvm_assign_at_index(wyrm_vm_t *vm, size_t target_idx) {
     wyrm_value_t new_val = vm_pop(vm);
-    wyrm_value_t *dest = &vm->stack[vm->base_slot + slot];
+    wyrm_value_t *dest = &vm->stack[target_idx];
 
     if (dest->type == VAL_VEC && dest->value.vec_val != NULL && new_val.type == VAL_VEC &&
         new_val.value.vec_val != NULL) {
@@ -42,6 +36,32 @@ void wvm_op_set_local(wyrm_vm_t *vm) {
     } else {
         *dest = cast_to_value_type(new_val, dest->type);
     }
+
+    if (target_idx >= vm->stack_top) {
+        vm->stack_top = target_idx + 1;
+    }
+}
+
+void wvm_op_get_local(wyrm_vm_t *vm) {
+    uint16_t slot = vm_read_uint16(vm);
+    size_t base = vm_current_base_slot(vm);
+    vm_push(vm, vm->stack[base + slot]);
+}
+
+void wvm_op_set_local(wyrm_vm_t *vm) {
+    uint16_t slot = vm_read_uint16(vm);
+    size_t base = vm_current_base_slot(vm);
+    wvm_assign_at_index(vm, base + slot);
+}
+
+void wvm_op_get_global(wyrm_vm_t *vm) {
+    uint16_t slot = vm_read_uint16(vm);
+    vm_push(vm, vm->stack[slot]);
+}
+
+void wvm_op_set_global(wyrm_vm_t *vm) {
+    uint16_t slot = vm_read_uint16(vm);
+    wvm_assign_at_index(vm, (size_t)slot);
 }
 
 void wvm_op_build_vec(wyrm_vm_t *vm) {

@@ -23,7 +23,7 @@ WYRMC_BIN = ./target/release/wyrmc
 
 SCRIPTS_DIR = scripts
 
-.PHONY: install update check build run run-v clean format help pre-commit tests memcheck memcheck-one tests-time
+.PHONY: install update check build run run-v demo clean format help pre-commit tests memcheck memcheck-one tests-time
 
 .DEFAULT_GOAL := help
 
@@ -36,12 +36,14 @@ help:
 	@echo "    \_/\_/  \__, |_|  |_| |_| |_|"
 	@echo "            |___/  "
 	@echo ""
-	@echo "- Install: Instala dependencias necesarias, solo se ejecuta una vez"
+	@echo "- install: Instala dependencias necesarias, solo se ejecuta una vez"
 	@echo "- make update: Actualiza el toolchain de Rust, Cargo.lock y pre-commit"
 	@echo "- check: Verfica la integridad del codigo y busca errores"
 	@echo "- build: Compila el proyecto como ejecutable"
 	@echo "- run: Ejecuta el programa, si no esta compilado lo compila"
 	@echo "- run-v: Ejecuta el programa con la flag de seguimiento, si no esta compilado lo compila"
+	@echo "- demo-i: Ejecuta el programa demo con el intérprete"
+	@echo "- demo-vm: Ejecuta el programa demo con la vm"
 	@echo "- format: Aplica linters al proyecto"
 	@echo "- tests: Ejecuta todos los test"
 	@echo "- tests-parity: Ejecuta tests de paridad con salida estadnar"
@@ -81,6 +83,17 @@ run:
 run-v:
 	@echo "Ejecutando el proyecto en modo verbose..."
 	cargo run -- --verbose
+
+demo-i:	
+	cargo build --release
+	./target/release/wyrm  docs/recreacion_TP1_ALGO1.wyrm
+	
+demo-vm:
+	cargo build --release
+	./target/release/wyrmc  docs/recreacion_TP1_ALGO1.wyrm
+	./target/release/wyrm  docs/output.wrc                
+	rm docs/output.wrc 
+
 
 format:
 	@echo "Formato para Rust..."

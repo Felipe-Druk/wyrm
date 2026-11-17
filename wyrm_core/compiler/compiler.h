@@ -20,6 +20,7 @@ typedef struct Compiler {
     ast_node_t *root_ast;
     wyrm_chunk_t *chunk;
     wyrm_vector_t locals;
+    wyrm_vector_t globals;
     wyrm_vector_t func_symbols;
     int scope_level;
     int flags;

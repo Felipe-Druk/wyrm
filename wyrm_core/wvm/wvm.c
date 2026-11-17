@@ -55,6 +55,9 @@ static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
         wyrm_opcode_t instruction = (wyrm_opcode_t)vm_read_byte(vm);
 
         switch (instruction) {
+        case WYRM_OP_POP:
+            vm_pop(vm);
+            break;
         case WYRM_OP_CONSTANT:
             wvm_op_constant(vm);
             break;
@@ -66,6 +69,12 @@ static wyrm_value_t vm_execute(wyrm_vm_t *vm) {
             break;
         case WYRM_OP_SET_LOCAL:
             wvm_op_set_local(vm);
+            break;
+        case WYRM_OP_GET_GLOBAL:
+            wvm_op_get_global(vm);
+            break;
+        case WYRM_OP_SET_GLOBAL:
+            wvm_op_set_global(vm);
             break;
         case WYRM_OP_BUILD_VEC:
             wvm_op_build_vec(vm);

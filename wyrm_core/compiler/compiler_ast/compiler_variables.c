@@ -24,7 +24,13 @@ void compile_var_declaration(ast_node_t *node, compiler_t *compiler) {
         chunk_write_byte(compiler->chunk, (uint8_t)target_type);
     }
 
-    add_local_slot(compiler, decl.identifier, target_type, 0);
+    int existing_slot = resolve_local(compiler, decl.identifier);
+    uint16_t slot = (existing_slot != ERRRESOLVER) ? (uint16_t)existing_slot
+                                                   : add_local_slot(compiler, decl.identifier, target_type, 0);
+
+    if (compiler->scope_level >= 2 || existing_slot != ERRRESOLVER) {
+        emit_local_op(compiler->chunk, WYRM_OP_SET_LOCAL, slot);
+    }
 }
 
 void compile_identifier(ast_node_t *node, compiler_t *compiler) {
@@ -32,7 +38,7 @@ void compile_identifier(ast_node_t *node, compiler_t *compiler) {
     int slot = resolve_local(compiler, name);
 
     if (slot == ERRRESOLVER) {
-        panic(ERR_UNDEFINED_VAR, "Error UNDEFINED_VAR: %s", name);
+        panic(ERR_UNDEFINED_VAR, "Error UNDEFINED_VAR in compiler: %s", name);
     }
 
     emit_local_op(compiler->chunk, WYRM_OP_GET_LOCAL, (uint16_t)slot);
@@ -41,12 +47,20 @@ void compile_identifier(ast_node_t *node, compiler_t *compiler) {
 void compile_assignment(ast_node_t *node, compiler_t *compiler) {
     ast_assignment_t assign = node->ast_node_value.assignment_expr;
     int slot = resolve_local(compiler, assign.name);
+    bool is_global = false;
+
+    if (slot == ERRRESOLVER) {
+        slot = resolve_global(compiler, assign.name);
+        is_global = true;
+    }
+
     if (slot == ERRRESOLVER) {
         panic(ERR_UNDEFINED_VAR, "Error UNDEFINED_VAR in assignment: %s", assign.name);
     }
 
     if (assign.index != NULL) {
-        emit_local_op(compiler->chunk, WYRM_OP_GET_LOCAL, (uint16_t)slot);
+        wyrm_opcode_t get_op = is_global ? WYRM_OP_GET_GLOBAL : WYRM_OP_GET_LOCAL;
+        emit_local_op(compiler->chunk, get_op, (uint16_t)slot);
         compile_node(assign.index, compiler);
         compile_node(assign.value, compiler);
         chunk_write_byte(compiler->chunk, WYRM_OP_VEC_SET);
@@ -54,7 +68,8 @@ void compile_assignment(ast_node_t *node, compiler_t *compiler) {
     }
 
     compile_node(assign.value, compiler);
-    emit_local_op(compiler->chunk, WYRM_OP_SET_LOCAL, (uint16_t)slot);
+    wyrm_opcode_t set_op = is_global ? WYRM_OP_SET_GLOBAL : WYRM_OP_SET_LOCAL;
+    emit_local_op(compiler->chunk, set_op, (uint16_t)slot);
 }
 
 void compile_vec_literal(ast_node_t *node, compiler_t *compiler) {

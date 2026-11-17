@@ -4,12 +4,12 @@
 
 token_type_t parse_vec_inner_type(parser_t *parser) {
     if (!match(parser, T_LESS)) {
-        panic(ERR_SYNTAX, "Syntax error: expected '<' after 'vec'");
+        panic(ERR_SYNTAX, "Syntax error parser: expected '<' after 'vec'");
     }
 
     token_type_t inner = peek(parser)->type;
     if (inner < MIN_TYPE || inner > MAX_TYPE) {
-        panic(ERR_SYNTAX, "Syntax error: expected a valid type inside 'vec<...>'");
+        panic(ERR_SYNTAX, "Syntax error parser: expected a valid type inside 'vec<...>'");
     }
     advance(parser);
 
@@ -18,7 +18,7 @@ token_type_t parse_vec_inner_type(parser_t *parser) {
     }
 
     if (!match(parser, T_GREATER)) {
-        panic(ERR_SYNTAX, "Syntax error: expected '>' to close 'vec<...>'");
+        panic(ERR_SYNTAX, "Syntax error parser: expected '>' to close 'vec<...>'");
     }
 
     return inner;
@@ -33,7 +33,7 @@ ast_node_t *variable_declaration(parser_t *parser) {
     }
 
     if (!match(parser, T_IDENTIFIER)) {
-        panic(ERR_SYNTAX, "Syntax error: variable needs a name");
+        panic(ERR_SYNTAX, "Syntax error parser: variable needs a name");
     }
     char *name = get_token(parser->tokens, parser->current_index - 1)->lexeme;
 
@@ -44,7 +44,8 @@ ast_node_t *variable_declaration(parser_t *parser) {
     }
 
     if (!match(parser, T_ASSIGN) && !match(parser, T_LARROW)) {
-        panic(ERR_SYNTAX, "Syntax error: missing '=' or '<-' symbol");
+        panic(ERR_SYNTAX, "Syntax error parser: missing '=' or '<-' symbol in variable '%s' (got '%s')", name,
+              peek(parser)->lexeme ? peek(parser)->lexeme : "EOF");
     }
 
     token_type_t assign_op = get_token(parser->tokens, parser->current_index - 1)->type;

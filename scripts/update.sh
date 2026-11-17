@@ -14,4 +14,4 @@ if command -v pre-commit >/dev/null 2>&1 && [ -f ".pre-commit-config.yaml" ]; th
     pre-commit autoupdate
 fi
 
-echo "Wyrm actualizado correctamente"
+echo "Wyrm actualizado correctamente"   

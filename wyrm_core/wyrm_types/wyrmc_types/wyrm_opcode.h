@@ -41,4 +41,7 @@ typedef enum WyrmOpcode {
     WYRM_OP_VEC_LEN = 0x1C,
     WYRM_OP_WRITE = 0x1D,
     WYRM_OP_READ = 0x1E,
+    // Opcodes de variables globales
+    WYRM_OP_GET_GLOBAL = 0x1F,
+    WYRM_OP_SET_GLOBAL = 0x20
 } wyrm_opcode_t;

@@ -25,7 +25,9 @@ static inline wyrm_value_t vm_pop(wyrm_vm_t *vm) {
         wyrm_value_t empty = {.type = VAL_VOID};
         return empty;
     }
-    return vm->stack[--vm->stack_top];
+    wyrm_value_t val = vm->stack[--vm->stack_top];
+    vm->stack[vm->stack_top] = (wyrm_value_t){.type = VAL_VOID};
+    return val;
 }
 
 static inline uint8_t vm_read_byte(wyrm_vm_t *vm) { return vm->code[vm->ip++]; }

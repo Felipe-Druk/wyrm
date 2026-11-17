@@ -17,6 +17,18 @@ void compile_node(ast_node_t *node, compiler_t *compiler);
 // devuelve el indice de la variable, si esta en el "scope" local
 int resolve_local(compiler_t *compiler, const char *name);
 
+static inline int resolve_global(compiler_t *compiler, const char *name) {
+    if (compiler->scope_level > 0 && compiler->globals.data != NULL) {
+        wyrm_local_t *globals_arr = (wyrm_local_t *)compiler->globals.data;
+        for (int i = (int)compiler->globals.size - 1; i >= 0; i--) {
+            if (strcmp(globals_arr[i].name, name) == 0) {
+                return i;
+            }
+        }
+    }
+    return ERRRESOLVER;
+}
+
 // devuleve el indcie de la función
 int resolve_function(compiler_t *compiler, const char *name);
 
