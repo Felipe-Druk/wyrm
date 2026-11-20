@@ -26,3 +26,7 @@ core.*
 !tests/wyrm_scripts/*.wyrm
 !tests/time/*.wyrm
 !docs/*.wyrm
+
+#web
+web/wyrm.js
+web/wyrm.wasm
