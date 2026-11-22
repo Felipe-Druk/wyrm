@@ -2,7 +2,8 @@
 
 use crate::engine::{self, ExecutionMode, ExecutionRequest, ExecutionResult};
 use crate::examples::{self, EXAMPLES};
-use leptos::html::{Div, Textarea};
+use crate::highlight;
+use leptos::html::{Div, Pre, Textarea};
 use leptos::prelude::*;
 use web_sys::{KeyboardEvent, MouseEvent};
 
@@ -33,6 +34,15 @@ fn utf16_offset_to_byte_index(text: &str, utf16_offset: usize) -> usize {
         utf16_count += ch.len_utf16();
     }
     text.len()
+}
+
+/// Calcula línea y columna (1-indexadas) para un desplazamiento UTF-16 del cursor.
+fn cursor_line_col(text: &str, utf16_offset: usize) -> (usize, usize) {
+    let byte_idx = utf16_offset_to_byte_index(text, utf16_offset);
+    let prefix = &text[..byte_idx];
+    let line = prefix.bytes().filter(|&b| b == b'\n').count() + 1;
+    let col = prefix.rsplit('\n').next().map_or(0, |s| s.chars().count()) + 1;
+    (line, col)
 }
 
 /// Componente raíz del Playground de Wyrm.
@@ -315,23 +325,75 @@ fn EditorPanel(
     on_run: Callback<()>,
 ) -> impl IntoView {
     let textarea_ref = NodeRef::<Textarea>::new();
+    let highlight_ref = NodeRef::<Pre>::new();
     let gutter_ref = NodeRef::<Div>::new();
+
+    let cursor_line = RwSignal::new(1usize);
+    let cursor_col = RwSignal::new(1usize);
 
     let line_count = Memo::new(move |_| count_lines(&code.get()));
     let char_count = Memo::new(move |_| code.get().chars().count());
+    let tokens = Memo::new(move |_| highlight::tokenize(&code.get()));
+    let needs_trailing_space = Memo::new(move |_| {
+        let current = code.get();
+        current.is_empty() || current.ends_with('\n')
+    });
 
     let example_description = move || {
         let current_id = selected_example_id.get();
         examples::find_by_id(&current_id).map(|example| example.description)
     };
 
-    let sync_gutter_scroll = move |_| {
-        if let (Some(textarea), Some(gutter)) =
-            (textarea_ref.get_untracked(), gutter_ref.get_untracked())
-        {
-            gutter.set_scroll_top(textarea.scroll_top());
+    let sync_editor_scroll = move || {
+        if let Some(textarea) = textarea_ref.get_untracked() {
+            let scroll_top = textarea.scroll_top();
+            let scroll_left = textarea.scroll_left();
+            if let Some(gutter) = gutter_ref.get_untracked() {
+                gutter.set_scroll_top(scroll_top);
+            }
+            if let Some(pre) = highlight_ref.get_untracked() {
+                pre.set_scroll_top(scroll_top);
+                pre.set_scroll_left(scroll_left);
+            }
         }
     };
+
+    let update_cursor = move || {
+        if let Some(textarea) = textarea_ref.get_untracked() {
+            let value = textarea.value();
+            let pos_utf16 = textarea.selection_start().ok().flatten().unwrap_or(0) as usize;
+            let (line, col) = cursor_line_col(&value, pos_utf16);
+            cursor_line.set(line);
+            cursor_col.set(col);
+        }
+    };
+
+    // Desactiva autocorrect en Safari/iOS una vez montado el textarea
+    Effect::new(move |_| {
+        if let Some(el) = textarea_ref.get() {
+            let _ = el.set_attribute("autocorrect", "off");
+        }
+    });
+
+    // Al cambiar de ejemplo, reiniciamos scroll en todas las capas y el cursor en Ln 1, Col 1
+    Effect::new(move |_| {
+        let current_id = selected_example_id.get();
+        if !current_id.is_empty() {
+            cursor_line.set(1);
+            cursor_col.set(1);
+            if let Some(textarea) = textarea_ref.get_untracked() {
+                textarea.set_scroll_top(0);
+                textarea.set_scroll_left(0);
+            }
+            if let Some(pre) = highlight_ref.get_untracked() {
+                pre.set_scroll_top(0);
+                pre.set_scroll_left(0);
+            }
+            if let Some(gutter) = gutter_ref.get_untracked() {
+                gutter.set_scroll_top(0);
+            }
+        }
+    });
 
     let on_editor_keydown = move |ev: KeyboardEvent| {
         if (ev.ctrl_key() || ev.meta_key()) && ev.key() == "Enter" {
@@ -366,14 +428,18 @@ fn EditorPanel(
                 updated.push_str(&current_value[end_byte..]);
 
                 let next_cursor_utf16 = (start_utf16 + TAB_SPACES.len()) as u32;
+                let (line, col) = cursor_line_col(&updated, next_cursor_utf16 as usize);
                 textarea.set_value(&updated);
                 let _ = textarea.set_selection_range(next_cursor_utf16, next_cursor_utf16);
 
                 code.set(updated);
                 selected_example_id.set(String::new());
+                cursor_line.set(line);
+                cursor_col.set(col);
 
                 request_animation_frame(move || {
                     let _ = textarea.set_selection_range(next_cursor_utf16, next_cursor_utf16);
+                    sync_editor_scroll();
                 });
             }
         }
@@ -387,6 +453,10 @@ fn EditorPanel(
                     <span class="file-name">"main.wyrm"</span>
                 </div>
                 <div class="editor-stats" aria-live="polite">
+                    <span class="cursor-pos">
+                        {move || format!("Ln {}, Col {}", cursor_line.get(), cursor_col.get())}
+                    </span>
+                    <span class="stats-sep" aria-hidden="true">"·"</span>
                     <span>
                         {move || {
                             let lines = line_count.get();
@@ -425,28 +495,60 @@ fn EditorPanel(
                     {move || {
                         (1..=line_count.get())
                             .map(|line_number| {
-                                view! { <span class="gutter-number">{line_number}</span> }
+                                let line_class = move || {
+                                    if cursor_line.get() == line_number {
+                                        "gutter-number line-number--active"
+                                    } else {
+                                        "gutter-number"
+                                    }
+                                };
+                                view! { <span class=line_class>{line_number}</span> }
                             })
                             .collect_view()
                     }}
                 </div>
 
-                <textarea
-                    node_ref=textarea_ref
-                    class="code-textarea"
-                    aria-label="Código fuente en Wyrm"
-                    placeholder="// Escribí tu programa en Wyrm aquí...\n// Atajo: Ctrl + Enter para ejecutar | Tab agrega 4 espacios"
-                    spellcheck="false"
-                    autocomplete="off"
-                    autocapitalize="off"
-                    prop:value=move || code.get()
-                    on:input=move |ev| {
-                        code.set(event_target_value(&ev));
-                        selected_example_id.set(String::new());
-                    }
-                    on:keydown=on_editor_keydown
-                    on:scroll=sync_gutter_scroll
-                />
+                <div class="editor-stage">
+                    <pre
+                        node_ref=highlight_ref
+                        class="code-highlight"
+                        aria-hidden="true"
+                    >
+                        <code>
+                            {move || {
+                                tokens
+                                    .get()
+                                    .into_iter()
+                                    .map(|(kind, text)| {
+                                        view! { <span class=kind.css_class()>{text}</span> }
+                                    })
+                                    .collect_view()
+                            }}
+                            {move || if needs_trailing_space.get() { " " } else { "" }}
+                        </code>
+                    </pre>
+
+                    <textarea
+                        node_ref=textarea_ref
+                        class="code-input"
+                        aria-label="Código fuente en Wyrm"
+                        placeholder="// Escribí tu programa en Wyrm aquí...\n// Atajo: Ctrl + Enter para ejecutar | Tab agrega 4 espacios"
+                        spellcheck="false"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        prop:value=move || code.get()
+                        on:input=move |ev| {
+                            code.set(event_target_value(&ev));
+                            selected_example_id.set(String::new());
+                            update_cursor();
+                            sync_editor_scroll();
+                        }
+                        on:keydown=on_editor_keydown
+                        on:keyup=move |_| update_cursor()
+                        on:click=move |_| update_cursor()
+                        on:scroll=move |_| sync_editor_scroll()
+                    />
+                </div>
             </div>
         </section>
     }
