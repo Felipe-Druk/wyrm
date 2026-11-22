@@ -141,6 +141,7 @@ self.onmessage = async (event) => {
       id,
       stdout: wasmLoadError,
       return_value: null,
+      return_type: "",
       inspector_log: "",
       elapsed_ms: 0,
       is_error: true,
@@ -204,6 +205,7 @@ self.onmessage = async (event) => {
         "Detalle: " +
         detail,
       return_value: null,
+      return_type: "",
       inspector_log: "",
       elapsed_ms: 0,
       is_error: true,
@@ -214,6 +216,7 @@ self.onmessage = async (event) => {
   let isError = false;
   let exitStatusCode = 0;
   let returnValue = null;
+  let returnType = "";
   let caughtExceptionText = "";
 
   const startedAt = performance.now();
@@ -232,6 +235,15 @@ self.onmessage = async (event) => {
       if (retPtr) {
         const formatted = instance.UTF8ToString(retPtr);
         returnValue = formatted.length > 0 ? formatted : null;
+      }
+      const retTypePtr = instance.ccall(
+        "wyrm_web_last_return_type",
+        "number",
+        [],
+        []
+      );
+      if (retTypePtr) {
+        returnType = instance.UTF8ToString(retTypePtr);
       }
     }
   } catch (err) {
@@ -274,12 +286,14 @@ self.onmessage = async (event) => {
     }
     finalStdout = errorParts.join("\n\n");
     returnValue = null;
+    returnType = "";
   }
 
   self.postMessage({
     id,
     stdout: finalStdout,
     return_value: returnValue,
+    return_type: returnType,
     inspector_log: inspectorLog,
     elapsed_ms: elapsedMs,
     is_error: isError,

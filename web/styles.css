@@ -130,12 +130,14 @@ input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
+  gap: 8px 12px;
+  padding: 8px 14px;
   background-color: var(--bg-panel);
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
   flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbar-brand {
@@ -143,6 +145,7 @@ input {
   align-items: center;
   gap: 10px;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .brand-emblem {
@@ -190,24 +193,34 @@ input {
 .topbar-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
 }
 
 .control-group {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
+  flex: 0 1 210px;
+  max-width: 210px;
 }
 
 .select-input {
+  width: 100%;
+  min-width: 0;
+  max-width: 210px;
   height: 34px;
-  padding: 0 28px 0 10px;
+  padding: 0 22px 0 9px;
   background-color: var(--bg-canvas);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
+  text-overflow: ellipsis;
   cursor: pointer;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -235,13 +248,14 @@ input {
 
 .mode-btn {
   height: 28px;
-  padding: 0 11px;
+  padding: 0 9px;
   border: 1px solid transparent;
   border-radius: 4px;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease,
     border-color 0.15s ease;
@@ -332,19 +346,23 @@ input {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   height: 34px;
-  padding: 0 14px;
+  padding: 0 11px;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   border: 1px solid transparent;
   transition: background-color 0.15s ease, border-color 0.15s ease,
@@ -615,28 +633,33 @@ input {
 
 .output-header {
   flex-wrap: wrap;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  row-gap: 6px;
+  column-gap: 8px;
+  padding: 6px 12px;
+  min-width: 0;
 }
 
 .tab-bar {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 32px;
-  padding: 0 11px;
+  gap: 6px;
+  height: 30px;
+  padding: 0 9px;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: color 0.15s ease, background-color 0.15s ease,
     border-color 0.15s ease;
@@ -667,6 +690,9 @@ input {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .badge {
@@ -679,6 +705,9 @@ input {
   font-size: 11.5px;
   font-weight: 500;
   border: 1px solid var(--border-subtle);
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 .badge-idle {
@@ -690,6 +719,8 @@ input {
   background-color: var(--accent-emerald-dim);
   border-color: var(--accent-emerald-border);
   color: var(--accent-emerald);
+  max-width: 185px;
+  overflow: hidden;
 }
 
 .badge-return.error {
@@ -700,16 +731,21 @@ input {
 
 .badge-key {
   opacity: 0.78;
+  flex-shrink: 0;
 }
 
 .badge-val {
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .badge-time {
   background-color: var(--accent-amber-dim);
   border-color: var(--accent-amber-border);
   color: var(--accent-amber);
+  flex-shrink: 0;
 }
 
 .badge-running {
@@ -779,12 +815,20 @@ input {
   color: var(--text-primary);
 }
 
+.console-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
 .console-block,
 .inspector-block {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background-color: var(--bg-canvas);
   overflow: hidden;
+  min-width: 0;
 }
 
 .console-block.error {
@@ -838,8 +882,83 @@ input {
   color: #ffa198;
 }
 
+.terminal-pre.muted {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .inspector-pre {
   color: #e3c27a;
+}
+
+/* Program return value card */
+.return-block {
+  border: 1px solid var(--accent-emerald-border);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-canvas);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.return-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 12px;
+  background-color: rgba(63, 185, 80, 0.08);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.return-header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.return-type-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background-color: var(--accent-emerald-dim);
+  border: 1px solid var(--accent-emerald-border);
+  color: var(--accent-emerald);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.return-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.return-prefix {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: var(--accent-emerald);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.return-value-pre {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 /* Collapsible stdin / fd 0 block */
@@ -1151,6 +1270,18 @@ input {
 /* ==========================================================================
    Responsive (Móvil / Tablet apilado)
    ========================================================================== */
+
+@media (max-width: 1380px) {
+  .shortcut-hint {
+    display: none;
+  }
+
+  .control-group,
+  .select-input {
+    max-width: 190px;
+    flex-basis: 190px;
+  }
+}
 
 @media (max-width: 900px) {
   html,

@@ -49,6 +49,7 @@ pub struct ExecutionRequest {
 pub struct ExecutionResult {
     pub stdout: String,
     pub return_value: Option<String>,
+    pub return_type: String,
     pub inspector_log: String,
     pub elapsed_ms: f64,
     pub is_error: bool,
@@ -157,6 +158,7 @@ pub fn cancel() {
         (job.on_complete)(ExecutionResult {
             stdout: "Ejecución detenida por el usuario (Web Worker terminado).".to_string(),
             return_value: None,
+            return_type: String::new(),
             inspector_log: String::new(),
             elapsed_ms,
             is_error: true,
@@ -280,6 +282,7 @@ fn parse_worker_response(data: &JsValue) -> Option<(u64, ExecutionResult)> {
 
     let stdout = get_string_prop(data, "stdout").unwrap_or_default();
     let return_value = get_string_prop(data, "return_value").filter(|val| !val.is_empty());
+    let return_type = get_string_prop(data, "return_type").unwrap_or_default();
     let inspector_log = get_string_prop(data, "inspector_log").unwrap_or_default();
     let elapsed_ms = Reflect::get(data, &JsValue::from_str("elapsed_ms"))
         .ok()
@@ -295,6 +298,7 @@ fn parse_worker_response(data: &JsValue) -> Option<(u64, ExecutionResult)> {
         ExecutionResult {
             stdout,
             return_value,
+            return_type,
             inspector_log,
             elapsed_ms,
             is_error,
@@ -312,6 +316,7 @@ fn error_result(message: String, elapsed_ms: f64) -> ExecutionResult {
     ExecutionResult {
         stdout: message,
         return_value: None,
+        return_type: String::new(),
         inspector_log: String::new(),
         elapsed_ms,
         is_error: true,

@@ -62,7 +62,7 @@ emcc \
     -sENVIRONMENT=web,worker \
     -sFORCE_FILESYSTEM=1 \
     -sALLOW_MEMORY_GROWTH=1 \
-    -sEXPORTED_FUNCTIONS='["_wyrm_web_exec","_wyrm_web_last_return","_malloc","_free"]' \
+    -sEXPORTED_FUNCTIONS='["_wyrm_web_exec","_wyrm_web_last_return","_wyrm_web_last_return_type","_malloc","_free"]' \
     -sEXPORTED_RUNTIME_METHODS='["ccall","UTF8ToString","FS"]' \
     -o "${OUT_DIR}/wyrm_core.js"
 

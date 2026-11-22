@@ -524,7 +524,7 @@ fn OutputPanel(
                                     if is_error {
                                         "error".to_string()
                                     } else {
-                                        "void".to_string()
+                                        "∅".to_string()
                                     }
                                 });
                                 let time_label = format!("{:.2} ms", res.elapsed_ms);
@@ -596,26 +596,69 @@ fn OutputPanel(
 
                         (OutputTab::Console, Some(res)) => {
                             let is_error = res.is_error;
-                            let stdout_content = if res.stdout.is_empty() {
-                                "(stdout vacío — el programa no escribió en fd 1)".to_string()
-                            } else {
+                            let has_stdout = !res.stdout.is_empty();
+                            let stdout_content = if has_stdout {
                                 res.stdout
+                            } else {
+                                "(sin salida en stdout)".to_string()
                             };
                             let status_label = if is_error {
                                 "Error de ejecución"
                             } else {
                                 "stdout (fd 1)"
                             };
+                            let return_display =
+                                res.return_value.unwrap_or_else(|| "∅".to_string());
+                            let return_type = if res.return_type.is_empty() {
+                                "void".to_string()
+                            } else {
+                                res.return_type
+                            };
+                            let show_return_block = !is_error;
+                            let is_empty_stdout = !has_stdout && !is_error;
 
                             view! {
-                                <div class="console-block" class:error=is_error>
-                                    <div class="stream-header">
-                                        <span class="stream-dot" class:error=is_error></span>
-                                        <span class="stream-label">{status_label}</span>
+                                <div class="console-stack">
+                                    <div class="console-block" class:error=is_error>
+                                        <div class="stream-header">
+                                            <span class="stream-dot" class:error=is_error></span>
+                                            <span class="stream-label">{status_label}</span>
+                                        </div>
+                                        <pre
+                                            class="terminal-pre"
+                                            class:error=is_error
+                                            class:muted=is_empty_stdout
+                                        >
+                                            {stdout_content}
+                                        </pre>
                                     </div>
-                                    <pre class="terminal-pre" class:error=is_error>
-                                        {stdout_content}
-                                    </pre>
+
+                                    <Show when=move || show_return_block>
+                                        <div class="return-block">
+                                            <div class="return-header">
+                                                <div class="return-header-left">
+                                                    <span class="stream-dot"></span>
+                                                    <span class="stream-label">
+                                                        "Retorno del programa"
+                                                    </span>
+                                                </div>
+                                                <span
+                                                    class="return-type-badge"
+                                                    title="Tipo Wyrm del valor retornado"
+                                                >
+                                                    {return_type.clone()}
+                                                </span>
+                                            </div>
+                                            <div class="return-body">
+                                                <span class="return-prefix" aria-hidden="true">
+                                                    "=>"
+                                                </span>
+                                                <pre class="return-value-pre">
+                                                    {return_display.clone()}
+                                                </pre>
+                                            </div>
+                                        </div>
+                                    </Show>
                                 </div>
                             }
                             .into_any()

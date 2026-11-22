@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -21,13 +22,15 @@
 #include "wyrmc.h"
 
 #define WYRM_WEB_RET_BUF_SIZE 4096
-#define WYRM_WEB_MAX_VEC_ITEMS 24
-#define WYRM_WEB_MAX_STR_PREVIEW 96
-#define WYRM_WEB_MAX_DEPTH 3
+#define WYRM_WEB_TYPE_BUF_SIZE 128
+#define WYRM_WEB_MAX_VEC_ITEMS 64
+#define WYRM_WEB_MAX_STR_PREVIEW 256
+#define WYRM_WEB_MAX_DEPTH 4
 #define WYRM_WEB_TMP_SRC "/tmp/main.wyrm"
 #define WYRM_WEB_TMP_WRC "/tmp/main.wrc"
 
 static char g_last_return[WYRM_WEB_RET_BUF_SIZE];
+static char g_last_return_type[WYRM_WEB_TYPE_BUF_SIZE];
 
 static const char *value_type_name(wyrm_value_type_t type) {
     switch (type) {
@@ -84,6 +87,63 @@ static void buf_append(char *buf, size_t cap, size_t *offset, const char *fmt, .
     }
 }
 
+static void format_wyrm_type_inner(
+    wyrm_value_t val,
+    char *buf,
+    size_t cap,
+    size_t *offset,
+    int depth
+) {
+    if (val.type != VAL_VEC) {
+        buf_append(buf, cap, offset, "%s", value_type_name(val.type));
+        return;
+    }
+
+    const wyrm_vec_t *vec = val.value.vec_val;
+    if (vec == NULL || depth >= WYRM_WEB_MAX_DEPTH) {
+        buf_append(buf, cap, offset, "vec");
+        return;
+    }
+
+    buf_append(buf, cap, offset, "vec<");
+    if (vec->element_type == VAL_VEC && vec->items.size > 0) {
+        const wyrm_value_t *first = (const wyrm_value_t *)vector_get(&vec->items, 0);
+        if (first != NULL && first->type == VAL_VEC) {
+            format_wyrm_type_inner(*first, buf, cap, offset, depth + 1);
+        } else {
+            buf_append(buf, cap, offset, "%s", value_type_name(vec->element_type));
+        }
+    } else {
+        buf_append(buf, cap, offset, "%s", value_type_name(vec->element_type));
+    }
+    buf_append(buf, cap, offset, ">");
+}
+
+static void format_wyrm_type(wyrm_value_t val, char *buf, size_t cap) {
+    if (cap == 0) {
+        return;
+    }
+    buf[0] = '\0';
+    size_t offset = 0;
+    format_wyrm_type_inner(val, buf, cap, &offset, 0);
+}
+
+static void format_float_cli(double value, bool is_f32, char *buf, size_t cap, size_t *offset) {
+    if (isnan(value)) {
+        buf_append(buf, cap, offset, "NaN");
+        return;
+    }
+    if (isinf(value)) {
+        buf_append(buf, cap, offset, value < 0.0 ? "-inf" : "inf");
+        return;
+    }
+    if (value == 0.0) {
+        buf_append(buf, cap, offset, signbit(value) ? "-0" : "0");
+        return;
+    }
+    buf_append(buf, cap, offset, is_f32 ? "%.7g" : "%.15g", value);
+}
+
 static bool is_printable_nat8_string(const wyrm_vec_t *vec) {
     if (vec == NULL || vec->element_type != VAL_NAT8 || vec->items.size < 2) {
         return false;
@@ -134,87 +194,54 @@ static void format_nat8_string(const wyrm_vec_t *vec, char *buf, size_t cap, siz
     buf_append(buf, cap, offset, "\"");
 }
 
+/*
+ * Formatea `wyrm_value_t` replicando `impl fmt::Display for WyrmValue` de `src/interpreter.rs`
+ * (sin sufijo de tipo, con `∅` para VAL_VOID, enteros/naturales/floats/bool idénticos al CLI)
+ * y extendiendo la vista de vectores y funciones para el Playground.
+ */
 static void format_wyrm_value_inner(
     wyrm_value_t val,
     char *buf,
     size_t cap,
     size_t *offset,
-    int depth,
-    bool include_type
+    int depth
 ) {
     switch (val.type) {
     case VAL_VOID:
-        buf_append(buf, cap, offset, "void");
+        buf_append(buf, cap, offset, "\xE2\x88\x85");
         break;
     case VAL_INT8:
         buf_append(buf, cap, offset, "%" PRId8, val.value.int8_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (int8)");
-        }
         break;
     case VAL_INT16:
         buf_append(buf, cap, offset, "%" PRId16, val.value.int16_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (int16)");
-        }
         break;
     case VAL_INT32:
         buf_append(buf, cap, offset, "%" PRId32, val.value.int32_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (int32)");
-        }
         break;
     case VAL_INT64:
         buf_append(buf, cap, offset, "%" PRId64, val.value.int64_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (int64)");
-        }
         break;
     case VAL_NAT8:
         buf_append(buf, cap, offset, "%" PRIu8, val.value.nat8_val);
-        if (include_type) {
-            if (val.value.nat8_val >= 32 && val.value.nat8_val <= 126) {
-                buf_append(buf, cap, offset, " '%c' (nat8)", (char)val.value.nat8_val);
-            } else {
-                buf_append(buf, cap, offset, " (nat8)");
-            }
-        }
         break;
     case VAL_NAT16:
         buf_append(buf, cap, offset, "%" PRIu16, val.value.nat16_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (nat16)");
-        }
         break;
     case VAL_NAT32:
         buf_append(buf, cap, offset, "%" PRIu32, val.value.nat32_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (nat32)");
-        }
         break;
     case VAL_NAT64:
         buf_append(buf, cap, offset, "%" PRIu64, val.value.nat64_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (nat64)");
-        }
         break;
     case VAL_FLOAT32:
-        buf_append(buf, cap, offset, "%g", (double)val.value.float32_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (float32)");
-        }
+        format_float_cli((double)val.value.float32_val, true, buf, cap, offset);
         break;
     case VAL_FLOAT64:
-        buf_append(buf, cap, offset, "%g", (double)val.value.float64_val);
-        if (include_type) {
-            buf_append(buf, cap, offset, " (float64)");
-        }
+        format_float_cli((double)val.value.float64_val, false, buf, cap, offset);
         break;
     case VAL_BOOL:
         buf_append(buf, cap, offset, "%s", val.value.bool_val ? "true" : "false");
-        if (include_type) {
-            buf_append(buf, cap, offset, " (bool)");
-        }
         break;
     case VAL_FUNCTION:
         buf_append(
@@ -225,14 +252,11 @@ static void format_wyrm_value_inner(
             val.value.wyrm_function_val.arg_count,
             value_type_name(val.value.wyrm_function_val.returned)
         );
-        if (include_type) {
-            buf_append(buf, cap, offset, " (function)");
-        }
         break;
     case VAL_VEC: {
         const wyrm_vec_t *vec = val.value.vec_val;
         if (vec == NULL) {
-            buf_append(buf, cap, offset, include_type ? "[] (vec)" : "[]");
+            buf_append(buf, cap, offset, "[]");
             break;
         }
         if (depth >= WYRM_WEB_MAX_DEPTH) {
@@ -251,7 +275,7 @@ static void format_wyrm_value_inner(
                 }
                 const wyrm_value_t *item = (const wyrm_value_t *)vector_get(&vec->items, i);
                 if (item != NULL) {
-                    format_wyrm_value_inner(*item, buf, cap, offset, depth + 1, false);
+                    format_wyrm_value_inner(*item, buf, cap, offset, depth + 1);
                 }
             }
             if (total > shown) {
@@ -259,24 +283,19 @@ static void format_wyrm_value_inner(
             }
             buf_append(buf, cap, offset, "]");
         }
-        if (include_type) {
-            buf_append(buf, cap, offset, " (vec<%s>)", value_type_name(vec->element_type));
-        }
         break;
     }
     default:
-        buf_append(buf, cap, offset, "<unknown>");
+        buf_append(buf, cap, offset, "<tipo desconocido>");
         break;
     }
 }
 
-static void format_wyrm_value(wyrm_value_t val, char *buf, size_t cap) {
-    if (cap == 0) {
-        return;
-    }
-    buf[0] = '\0';
+static void capture_return_value(wyrm_value_t val) {
+    g_last_return[0] = '\0';
     size_t offset = 0;
-    format_wyrm_value_inner(val, buf, cap, &offset, 0, true);
+    format_wyrm_value_inner(val, g_last_return, sizeof(g_last_return), &offset, 0);
+    format_wyrm_type(val, g_last_return_type, sizeof(g_last_return_type));
 }
 
 static int write_source_to_file(const char *path, const char *source) {
@@ -301,8 +320,14 @@ const char *wyrm_web_last_return(void) {
 }
 
 EMSCRIPTEN_KEEPALIVE
+const char *wyrm_web_last_return_type(void) {
+    return g_last_return_type;
+}
+
+EMSCRIPTEN_KEEPALIVE
 int wyrm_web_exec(const char *source, int mode, int verbose) {
     g_last_return[0] = '\0';
+    g_last_return_type[0] = '\0';
 
     if (source == NULL) {
         fprintf(stderr, "Error: código fuente nulo.\n");
@@ -316,10 +341,10 @@ int wyrm_web_exec(const char *source, int mode, int verbose) {
         : 0;
 
     if (mode == 0) {
-        // Entorno limpio por ejecución en el intérprete
         terminate_wyrm();
         wyrm_value_t result = run_wyrm(source, flags);
-        format_wyrm_value(result, g_last_return, sizeof(g_last_return));
+        // Capturar valor y tipo ANTES de liberar scope/vectores
+        capture_return_value(result);
         terminate_wyrm();
     } else if (mode == 1) {
         if (write_source_to_file(WYRM_WEB_TMP_SRC, source) != 0) {
@@ -330,7 +355,6 @@ int wyrm_web_exec(const char *source, int mode, int verbose) {
         }
 
         wyrmc_t *wyrmc = create_wyrmc(WYRM_WEB_TMP_SRC, WYRM_WEB_TMP_WRC, flags);
-        // create_wyrmc reinicia wyrmc->flags a 0; aplicamos explícitamente las flags de verbose
         set_wyrmc_flags(wyrmc, flags);
         compile_file(wyrmc);
         destroy_wyrmc(wyrmc);
@@ -340,7 +364,8 @@ int wyrm_web_exec(const char *source, int mode, int verbose) {
         }
 
         wyrm_value_t result = run_wvm(WYRM_WEB_TMP_WRC, flags);
-        format_wyrm_value(result, g_last_return, sizeof(g_last_return));
+        // Capturar valor y tipo ANTES de liberar vectores de la VM
+        capture_return_value(result);
         free_all_wyrm_vecs();
 
         remove(WYRM_WEB_TMP_SRC);
