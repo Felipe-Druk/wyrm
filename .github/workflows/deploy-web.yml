@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build-and-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -26,13 +26,30 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
+      - name: Instalar Rust + target wasm32
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache de dependencias Cargo (web/)
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "web -> target"
+
+      - name: Instalar Trunk (binario precompilado)
+        uses: taiki-e/install-action@trunk
+
+      - name: Compilar frontend Leptos (WASM)
+        working-directory: web
+        run: trunk build --release --public-url /wyrm/
+
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Empaquetar carpeta web/
+      - name: Empaquetar web/dist
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "web"
+          path: "web/dist"
 
       - name: Publicar en GitHub Pages
         id: deployment
