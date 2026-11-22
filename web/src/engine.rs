@@ -1,7 +1,12 @@
-//! Interfaz desacoplada del motor de ejecución de Wyrm para el Playground web.
-//!
-//! En la siguiente fase, la implementación mock de [`execute`] se reemplazará por el puente
-//! hacia el binario WebAssembly compilado desde `wyrm_core` (`wyrm.js` / `wyrm.wasm`).
+//! Motor de ejecución asíncrono del Playground de Wyrm mediante un Web Worker + WebAssembly.
+
+use js_sys::{Object, Reflect};
+use std::cell::RefCell;
+use wasm_bindgen::closure::Closure;
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{ErrorEvent, MessageEvent, Worker};
+
+const WORKER_SCRIPT_URL: &str = "./wyrm_worker.js";
 
 /// Modo de ejecución elegido en el Playground.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,11 +26,11 @@ impl ExecutionMode {
         }
     }
 
-    /// Descripción del pipeline interno correspondiente al modo elegido.
-    pub fn pipeline_summary(self) -> &'static str {
+    /// Código numérico esperado por `wyrm_web_exec(source, mode, verbose)`.
+    pub fn as_code(self) -> i32 {
         match self {
-            Self::Interpreter => "Scanner -> Parser (AST) -> Intérprete",
-            Self::CompilerVm => "Scanner -> Parser (AST) -> Compilador (.wrc) -> Wyrm VM",
+            Self::Interpreter => 0,
+            Self::CompilerVm => 1,
         }
     }
 }
@@ -49,107 +54,267 @@ pub struct ExecutionResult {
     pub is_error: bool,
 }
 
-/// Ejecuta un programa Wyrm usando la configuración solicitada.
-///
-/// # Punto de integración WASM (Fase siguiente)
-/// Cuando `wyrm.js` y `wyrm.wasm` compilados desde `wyrm_core` estén listos en el
-/// entorno del navegador, esta función invocará directamente el puente `wasm-bindgen` / JS
-/// pasando `source_code`, `mode`, `verbose` y `stdin` (vinculado al descriptor virtual `fd 0`)
-/// y devolverá el `ExecutionResult` real sin modificar ningún componente de `app.rs`.
-pub fn execute(request: &ExecutionRequest) -> ExecutionResult {
-    let started_at_ms = now_ms();
-
-    // TODO(wasm-bridge): Reemplazar `execute_mock` por la llamada al módulo `wyrm.wasm`:
-    //   - Interpreter => `wyrm_eval_interpreter(source, stdin, verbose)`
-    //   - CompilerVm  => `wyrm_compile_and_run_vm(source, stdin, verbose)`
-    execute_mock(request, started_at_ms)
+struct WorkerHandle {
+    worker: Worker,
+    _on_message: Closure<dyn FnMut(MessageEvent)>,
+    _on_error: Closure<dyn FnMut(ErrorEvent)>,
 }
 
-fn execute_mock(request: &ExecutionRequest, started_at_ms: f64) -> ExecutionResult {
-    let line_count = request.source_code.split('\n').count();
-    let source_bytes = request.source_code.len();
-    let source_chars = request.source_code.chars().count();
-    let stdin_bytes = request.stdin.len();
+struct ActiveJob {
+    id: u64,
+    started_at_ms: f64,
+    on_complete: Box<dyn FnOnce(ExecutionResult)>,
+}
 
-    let stdin_summary = if request.stdin.is_empty() {
-        "(vacía — 0 bytes)".to_string()
-    } else {
-        let preview: String = request.stdin.chars().take(64).collect();
-        let ellipsis = if request.stdin.chars().count() > 64 {
-            "..."
-        } else {
-            ""
-        };
-        format!("{} bytes ({:?}{})", stdin_bytes, preview, ellipsis)
-    };
+#[derive(Default)]
+struct EngineState {
+    next_id: u64,
+    worker_handle: Option<WorkerHandle>,
+    worker_broken: bool,
+    active_job: Option<ActiveJob>,
+}
 
-    let stdout = format!(
-        "[wyrm-web :: mock] El motor WASM de wyrm_core aún no está enlazado.\n\
-         \n\
-         Parámetros recibidos por el motor:\n\
-         • Modo      : {} ({})\n\
-         • Verbose   : {}\n\
-         • Código    : {} líneas | {} caracteres | {} bytes\n\
-         • stdin fd0 : {}\n\
-         \n\
-         En la próxima fase se conectará wyrm.wasm / wyrm.js en `web/src/engine.rs`.",
-        request.mode.label(),
-        request.mode.pipeline_summary(),
-        if request.verbose {
-            "habilitado"
-        } else {
-            "deshabilitado"
-        },
-        line_count,
-        source_chars,
-        source_bytes,
-        stdin_summary,
-    );
+thread_local! {
+    static ENGINE: RefCell<EngineState> = RefCell::new(EngineState::default());
+}
 
-    let inspector_log = if request.verbose {
-        let mode_stage = match request.mode {
-            ExecutionMode::Interpreter => {
-                "[DEBUG][AST]    Aquí se mostrará el árbol sintáctico evaluado por el intérprete."
+/// Ejecuta un programa Wyrm de forma asíncrona dentro de un Web Worker.
+///
+/// Si ya había un programa corriendo, detiene el Worker anterior antes de iniciar uno nuevo.
+pub fn execute_async<F>(request: ExecutionRequest, on_complete: F)
+where
+    F: FnOnce(ExecutionResult) + 'static,
+{
+    let on_complete: Box<dyn FnOnce(ExecutionResult)> = Box::new(on_complete);
+
+    let launch_outcome: Result<(), (Box<dyn FnOnce(ExecutionResult)>, ExecutionResult)> =
+        ENGINE.with(|cell| {
+            let mut state = cell.borrow_mut();
+
+            // Si había una tarea corriendo o el worker previo falló, lo reiniciamos limpiamente
+            if state.active_job.is_some() || state.worker_broken {
+                terminate_worker_locked(&mut state);
+                state.active_job = None;
             }
-            ExecutionMode::CompilerVm => {
-                "[DEBUG][WRC]    Aquí se mostrarán las constantes, opcodes .wrc y la traza de pila de la WVM."
+
+            if state.worker_handle.is_none() {
+                match spawn_worker() {
+                    Ok(handle) => state.worker_handle = Some(handle),
+                    Err(err_msg) => {
+                        return Err((on_complete, error_result(err_msg, 0.0)));
+                    }
+                }
             }
-        };
 
-        let first_non_empty = request
-            .source_code
-            .lines()
-            .find(|line| !line.trim().is_empty())
-            .unwrap_or("(programa vacío)");
+            state.next_id = state.next_id.wrapping_add(1).max(1);
+            let job_id = state.next_id;
+            let payload = build_worker_payload(job_id, &request);
 
+            let post_res = state
+                .worker_handle
+                .as_ref()
+                .expect("worker inicializado")
+                .worker
+                .post_message(&payload);
+
+            match post_res {
+                Ok(()) => {
+                    state.active_job = Some(ActiveJob {
+                        id: job_id,
+                        started_at_ms: now_ms(),
+                        on_complete,
+                    });
+                    Ok(())
+                }
+                Err(err) => {
+                    terminate_worker_locked(&mut state);
+                    Err((
+                        on_complete,
+                        error_result(
+                            format!("No se pudo enviar el código al Web Worker: {err:?}"),
+                            0.0,
+                        ),
+                    ))
+                }
+            }
+        });
+
+    if let Err((callback, result)) = launch_outcome {
+        callback(result);
+    }
+}
+
+/// Detiene el Web Worker en ejecución (corta bucles infinitos) e informa la cancelación al callback.
+pub fn cancel() {
+    let cancelled_job = ENGINE.with(|cell| {
+        let mut state = cell.borrow_mut();
+        terminate_worker_locked(&mut state);
+        state.active_job.take()
+    });
+
+    if let Some(job) = cancelled_job {
+        let elapsed_ms = (now_ms() - job.started_at_ms).max(0.0);
+        (job.on_complete)(ExecutionResult {
+            stdout: "Ejecución detenida por el usuario (Web Worker terminado).".to_string(),
+            return_value: None,
+            inspector_log: String::new(),
+            elapsed_ms,
+            is_error: true,
+        });
+    }
+}
+
+/// Detiene el Web Worker sin emitir mensaje de cancelación (útil al limpiar el Playground).
+pub fn cancel_silent() {
+    ENGINE.with(|cell| {
+        let mut state = cell.borrow_mut();
+        terminate_worker_locked(&mut state);
+        state.active_job = None;
+    });
+}
+
+fn terminate_worker_locked(state: &mut EngineState) {
+    if let Some(handle) = state.worker_handle.take() {
+        handle.worker.set_onmessage(None);
+        handle.worker.set_onerror(None);
+        handle.worker.terminate();
+    }
+    state.worker_broken = false;
+}
+
+fn spawn_worker() -> Result<WorkerHandle, String> {
+    let worker = Worker::new(WORKER_SCRIPT_URL).map_err(|err| {
         format!(
-            "[MOCK INSPECTOR :: VERBOSE]\n\
-             [DEBUG][ENGINE] Estado      : Motor WASM de wyrm_core pendiente de enlace\n\
-             [DEBUG][MODE]   Pipeline    : {}\n\
-             [DEBUG][SOURCE] Tamaño      : {} líneas ({} bytes)\n\
-             [DEBUG][SOURCE] Inicio      : {}\n\
-             [DEBUG][STDIN]  Buffer fd 0 : {} bytes\n\
-             [DEBUG][LEXER]  Aquí se listarán los tokens emitidos por el scanner de Wyrm.\n\
-             {}",
-            request.mode.pipeline_summary(),
-            line_count,
-            source_bytes,
-            first_non_empty,
-            stdin_bytes,
-            mode_stage,
+            "No se pudo iniciar el Web Worker '{WORKER_SCRIPT_URL}': {err:?}"
         )
-    } else {
-        String::new()
-    };
+    })?;
 
-    let elapsed_ms = (now_ms() - started_at_ms).max(0.0);
+    let on_message = Closure::<dyn FnMut(MessageEvent)>::new(move |event: MessageEvent| {
+        let data = event.data();
+        let Some((msg_id, result)) = parse_worker_response(&data) else {
+            return;
+        };
 
+        let matching_job = ENGINE.with(|cell| {
+            let mut state = cell.borrow_mut();
+            match state.active_job.as_ref() {
+                Some(job) if job.id == msg_id => state.active_job.take(),
+                _ => None,
+            }
+        });
+
+        if let Some(job) = matching_job {
+            (job.on_complete)(result);
+        }
+    });
+
+    let on_error = Closure::<dyn FnMut(ErrorEvent)>::new(move |event: ErrorEvent| {
+        let raw_msg = event.message();
+        let detail = if raw_msg.is_empty() {
+            "Error inesperado dentro del Web Worker de Wyrm.".to_string()
+        } else {
+            format!("Error en el Web Worker de Wyrm: {raw_msg}")
+        };
+
+        // Marcamos el worker como dañado y lo terminamos sin liberar el Closure actual en el stack
+        let pending_job = ENGINE.with(|cell| {
+            let mut state = cell.borrow_mut();
+            state.worker_broken = true;
+            if let Some(handle) = state.worker_handle.as_ref() {
+                handle.worker.terminate();
+            }
+            state.active_job.take()
+        });
+
+        if let Some(job) = pending_job {
+            let elapsed_ms = (now_ms() - job.started_at_ms).max(0.0);
+            (job.on_complete)(error_result(detail, elapsed_ms));
+        }
+    });
+
+    worker.set_onmessage(Some(on_message.as_ref().unchecked_ref()));
+    worker.set_onerror(Some(on_error.as_ref().unchecked_ref()));
+
+    Ok(WorkerHandle {
+        worker,
+        _on_message: on_message,
+        _on_error: on_error,
+    })
+}
+
+fn build_worker_payload(job_id: u64, request: &ExecutionRequest) -> JsValue {
+    let payload = Object::new();
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("id"),
+        &JsValue::from_f64(job_id as f64),
+    );
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("code"),
+        &JsValue::from_str(&request.source_code),
+    );
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("mode"),
+        &JsValue::from_f64(request.mode.as_code() as f64),
+    );
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("verbose"),
+        &JsValue::from_bool(request.verbose),
+    );
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("stdin"),
+        &JsValue::from_str(&request.stdin),
+    );
+    payload.into()
+}
+
+fn parse_worker_response(data: &JsValue) -> Option<(u64, ExecutionResult)> {
+    let id = Reflect::get(data, &JsValue::from_str("id"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .map(|num| num as u64)?;
+
+    let stdout = get_string_prop(data, "stdout").unwrap_or_default();
+    let return_value = get_string_prop(data, "return_value").filter(|val| !val.is_empty());
+    let inspector_log = get_string_prop(data, "inspector_log").unwrap_or_default();
+    let elapsed_ms = Reflect::get(data, &JsValue::from_str("elapsed_ms"))
+        .ok()
+        .and_then(|val| val.as_f64())
+        .unwrap_or(0.0);
+    let is_error = Reflect::get(data, &JsValue::from_str("is_error"))
+        .ok()
+        .and_then(|val| val.as_bool())
+        .unwrap_or(false);
+
+    Some((
+        id,
+        ExecutionResult {
+            stdout,
+            return_value,
+            inspector_log,
+            elapsed_ms,
+            is_error,
+        },
+    ))
+}
+
+fn get_string_prop(target: &JsValue, key: &str) -> Option<String> {
+    Reflect::get(target, &JsValue::from_str(key))
+        .ok()
+        .and_then(|val| val.as_string())
+}
+
+fn error_result(message: String, elapsed_ms: f64) -> ExecutionResult {
     ExecutionResult {
-        stdout,
-        return_value: Some("mock::void (WASM pendiente)".to_string()),
-        inspector_log,
+        stdout: message,
+        return_value: None,
+        inspector_log: String::new(),
         elapsed_ms,
-        is_error: false,
+        is_error: true,
     }
 }
 

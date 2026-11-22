@@ -6,7 +6,7 @@ use leptos::html::{Div, Textarea};
 use leptos::prelude::*;
 use web_sys::{KeyboardEvent, MouseEvent};
 
-const PLAYGROUND_VERSION: &str = "v0.1.0";
+const PLAYGROUND_VERSION: &str = "v0.2.0";
 const REPO_URL: &str = "https://github.com/Felipe-Druk/wyrm";
 const TAB_SPACES: &str = "    ";
 
@@ -47,21 +47,35 @@ pub fn App() -> impl IntoView {
     let stdin_text = RwSignal::new(initial.default_stdin.to_string());
     let stdin_open = RwSignal::new(false);
     let active_tab = RwSignal::new(OutputTab::Console);
+    let is_running = RwSignal::new(false);
     let result = RwSignal::new(None::<ExecutionResult>);
     let show_syntax_modal = RwSignal::new(false);
 
     let on_run = Callback::new(move |()| {
+        if is_running.get_untracked() {
+            return;
+        }
         let request = ExecutionRequest {
             source_code: code.get_untracked(),
             mode: mode.get_untracked(),
             verbose: verbose.get_untracked(),
             stdin: stdin_text.get_untracked(),
         };
-        let execution_result = engine::execute(&request);
-        result.set(Some(execution_result));
+        is_running.set(true);
+        engine::execute_async(request, move |execution_result| {
+            result.set(Some(execution_result));
+            is_running.set(false);
+        });
+    });
+
+    let on_stop = Callback::new(move |()| {
+        engine::cancel();
+        is_running.set(false);
     });
 
     let on_clear = Callback::new(move |()| {
+        engine::cancel_silent();
+        is_running.set(false);
         code.set(String::new());
         result.set(None);
         selected_example_id.set(String::new());
@@ -69,6 +83,10 @@ pub fn App() -> impl IntoView {
 
     let on_select_example = Callback::new(move |example_id: String| {
         if let Some(example) = examples::find_by_id(&example_id) {
+            if is_running.get_untracked() {
+                engine::cancel_silent();
+                is_running.set(false);
+            }
             selected_example_id.set(example.id.to_string());
             code.set(example.code.to_string());
             stdin_text.set(example.default_stdin.to_string());
@@ -88,8 +106,10 @@ pub fn App() -> impl IntoView {
                 selected_example_id=selected_example_id
                 mode=mode
                 verbose=verbose
+                is_running=is_running
                 on_select_example=on_select_example
                 on_run=on_run
+                on_stop=on_stop
                 on_clear=on_clear
             />
 
@@ -104,13 +124,17 @@ pub fn App() -> impl IntoView {
                     mode=mode
                     verbose=verbose
                     active_tab=active_tab
+                    is_running=is_running
                     result=result
                     stdin_text=stdin_text
                     stdin_open=stdin_open
                 />
             </main>
 
-            <FooterBar show_syntax_modal=show_syntax_modal />
+            <FooterBar
+                is_running=is_running
+                show_syntax_modal=show_syntax_modal
+            />
 
             <Show when=move || show_syntax_modal.get()>
                 <SyntaxGuideModal show_syntax_modal=show_syntax_modal />
@@ -125,8 +149,10 @@ fn TopBar(
     selected_example_id: RwSignal<String>,
     mode: RwSignal<ExecutionMode>,
     verbose: RwSignal<bool>,
+    is_running: RwSignal<bool>,
     on_select_example: Callback<String>,
     on_run: Callback<()>,
+    on_stop: Callback<()>,
     on_clear: Callback<()>,
 ) -> impl IntoView {
     view! {
@@ -239,12 +265,34 @@ fn TopBar(
                 <button
                     type="button"
                     class="btn btn-primary"
+                    class:running=move || is_running.get()
+                    disabled=move || is_running.get()
                     title="Ejecutar código (Ctrl + Enter)"
                     on:click=move |_| on_run.run(())
                 >
-                    <span class="run-glyph" aria-hidden="true">"▶"</span>
-                    <span>"Ejecutar"</span>
-                    <kbd class="shortcut-hint">"Ctrl+↵"</kbd>
+                    <Show
+                        when=move || is_running.get()
+                        fallback=move || {
+                            view! {
+                                <span class="run-glyph" aria-hidden="true">"▶"</span>
+                                <span>"Ejecutar"</span>
+                                <kbd class="shortcut-hint">"Ctrl+↵"</kbd>
+                            }
+                        }
+                    >
+                        <span class="spinner-dot" aria-hidden="true"></span>
+                        <span>"Ejecutando..."</span>
+                    </Show>
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-danger"
+                    disabled=move || !is_running.get()
+                    title="Detener el Web Worker actual (corta bucles infinitos)"
+                    on:click=move |_| on_stop.run(())
+                >
+                    <span class="stop-glyph" aria-hidden="true">"■"</span>
+                    <span>"Detener"</span>
                 </button>
                 <button
                     type="button"
@@ -410,6 +458,7 @@ fn OutputPanel(
     mode: RwSignal<ExecutionMode>,
     verbose: RwSignal<bool>,
     active_tab: RwSignal<OutputTab>,
+    is_running: RwSignal<bool>,
     result: RwSignal<Option<ExecutionResult>>,
     stdin_text: RwSignal<String>,
     stdin_open: RwSignal<bool>,
@@ -457,126 +506,161 @@ fn OutputPanel(
                 </div>
 
                 <div class="result-badges">
-                    {move || match result.get() {
-                        Some(res) => {
-                            let return_label = res
-                                .return_value
-                                .unwrap_or_else(|| "void".to_string());
-                            let time_label = format!("{:.2} ms", res.elapsed_ms);
-                            let is_error = res.is_error;
-                            view! {
-                                <div class="badge-group">
-                                    <span
-                                        class="badge badge-return"
-                                        class:error=is_error
-                                        title="Valor de retorno implícito del programa"
-                                    >
-                                        <span class="badge-key">"Retorno:"</span>
-                                        <span class="badge-val">{return_label}</span>
-                                    </span>
-                                    <span class="badge badge-time" title="Tiempo total de ejecución">
-                                        {time_label}
-                                    </span>
-                                </div>
+                    {move || {
+                        if is_running.get() {
+                            return view! {
+                                <span class="badge badge-running">
+                                    <span class="spinner-dot" aria-hidden="true"></span>
+                                    {format!("Ejecutando · {}", mode.get().label())}
+                                </span>
                             }
-                            .into_any()
+                            .into_any();
                         }
-                        None => view! {
-                            <span class="badge badge-idle">
-                                {move || format!("Listo · {}", mode.get().label())}
-                            </span>
+
+                        match result.get() {
+                            Some(res) => {
+                                let is_error = res.is_error;
+                                let return_label = res.return_value.unwrap_or_else(|| {
+                                    if is_error {
+                                        "error".to_string()
+                                    } else {
+                                        "void".to_string()
+                                    }
+                                });
+                                let time_label = format!("{:.2} ms", res.elapsed_ms);
+                                view! {
+                                    <div class="badge-group">
+                                        <span
+                                            class="badge badge-return"
+                                            class:error=is_error
+                                            title="Valor de retorno implícito del programa"
+                                        >
+                                            <span class="badge-key">"Retorno:"</span>
+                                            <span class="badge-val">{return_label}</span>
+                                        </span>
+                                        <span class="badge badge-time" title="Tiempo total de ejecución">
+                                            {time_label}
+                                        </span>
+                                    </div>
+                                }
+                                .into_any()
+                            }
+                            None => view! {
+                                <span class="badge badge-idle">
+                                    {move || format!("Listo · {}", mode.get().label())}
+                                </span>
+                            }
+                            .into_any(),
                         }
-                        .into_any(),
                     }}
                 </div>
             </div>
 
             <div class="output-viewport">
-                {move || match (active_tab.get(), result.get()) {
-                    (OutputTab::Console, None) => view! {
-                        <div class="empty-state">
-                            <p class="empty-title">"Sin ejecución todavía"</p>
-                            <p class="empty-hint">
-                                "Presioná "
-                                <kbd>"▶ Ejecutar"</kbd>
-                                " o "
-                                <kbd>"Ctrl + Enter"</kbd>
-                                " dentro del editor para evaluar "
-                                <code>"main.wyrm"</code>
-                                " con "
-                                <strong>{move || mode.get().label()}</strong>
-                                "."
-                            </p>
-                        </div>
-                    }
-                    .into_any(),
-
-                    (OutputTab::Console, Some(res)) => {
-                        let is_error = res.is_error;
-                        let stdout_content = if res.stdout.is_empty() {
-                            "(stdout vacío — el programa no escribió en fd 1)".to_string()
-                        } else {
-                            res.stdout
-                        };
-                        let status_label = if is_error {
-                            "Error de ejecución"
-                        } else {
-                            "stdout (fd 1)"
-                        };
-
-                        view! {
-                            <div class="console-block" class:error=is_error>
-                                <div class="stream-header">
-                                    <span class="stream-dot" class:error=is_error></span>
-                                    <span class="stream-label">{status_label}</span>
-                                </div>
-                                <pre class="terminal-pre" class:error=is_error>
-                                    {stdout_content}
-                                </pre>
+                {move || {
+                    if is_running.get() {
+                        return view! {
+                            <div class="empty-state">
+                                <div class="running-pulse" aria-hidden="true"></div>
+                                <p class="empty-title">
+                                    {format!("Ejecutando en Web Worker ({})...", mode.get().label())}
+                                </p>
+                                <p class="empty-hint">
+                                    "Si tu programa entró en un bucle sin fin, presioná "
+                                    <kbd>"■ Detener"</kbd>
+                                    " en la barra superior."
+                                </p>
                             </div>
                         }
-                        .into_any()
+                        .into_any();
                     }
 
-                    (OutputTab::Inspector, None) => view! {
-                        <div class="empty-state">
-                            <p class="empty-title">"Inspector en espera"</p>
-                            <p class="empty-hint">
-                                "Habilitá el switch "
-                                <strong>"Verbose"</strong>
-                                " en la barra superior y ejecutá el programa para inspeccionar tokens, AST o bytecode "
-                                <code>".wrc"</code>
-                                "."
-                            </p>
-                        </div>
-                    }
-                    .into_any(),
+                    match (active_tab.get(), result.get()) {
+                        (OutputTab::Console, None) => view! {
+                            <div class="empty-state">
+                                <p class="empty-title">"Sin ejecución todavía"</p>
+                                <p class="empty-hint">
+                                    "Presioná "
+                                    <kbd>"▶ Ejecutar"</kbd>
+                                    " o "
+                                    <kbd>"Ctrl + Enter"</kbd>
+                                    " dentro del editor para evaluar "
+                                    <code>"main.wyrm"</code>
+                                    " con "
+                                    <strong>{move || mode.get().label()}</strong>
+                                    "."
+                                </p>
+                            </div>
+                        }
+                        .into_any(),
 
-                    (OutputTab::Inspector, Some(res)) => {
-                        if res.inspector_log.is_empty() {
-                            let hint = if verbose.get() {
-                                "Volvé a ejecutar el código para capturar la traza en modo Verbose."
+                        (OutputTab::Console, Some(res)) => {
+                            let is_error = res.is_error;
+                            let stdout_content = if res.stdout.is_empty() {
+                                "(stdout vacío — el programa no escribió en fd 1)".to_string()
                             } else {
-                                "El modo Verbose estaba deshabilitado en la última ejecución. Habilitá el switch Verbose y ejecutá nuevamente."
+                                res.stdout
                             };
+                            let status_label = if is_error {
+                                "Error de ejecución"
+                            } else {
+                                "stdout (fd 1)"
+                            };
+
                             view! {
-                                <div class="empty-state">
-                                    <p class="empty-title">"Sin traza de inspección"</p>
-                                    <p class="empty-hint">{hint}</p>
-                                </div>
-                            }
-                            .into_any()
-                        } else {
-                            view! {
-                                <div class="inspector-block">
+                                <div class="console-block" class:error=is_error>
                                     <div class="stream-header">
-                                        <span class="stream-dot inspector"></span>
-                                        <span class="stream-label">"Traza Verbose del motor"</span>
+                                        <span class="stream-dot" class:error=is_error></span>
+                                        <span class="stream-label">{status_label}</span>
                                     </div>
-                                    <pre class="terminal-pre inspector-pre">{res.inspector_log}</pre>
+                                    <pre class="terminal-pre" class:error=is_error>
+                                        {stdout_content}
+                                    </pre>
                                 </div>
                             }
                             .into_any()
+                        }
+
+                        (OutputTab::Inspector, None) => view! {
+                            <div class="empty-state">
+                                <p class="empty-title">"Inspector en espera"</p>
+                                <p class="empty-hint">
+                                    "Habilitá el switch "
+                                    <strong>"Verbose"</strong>
+                                    " en la barra superior y ejecutá el programa para inspeccionar tokens, AST o bytecode "
+                                    <code>".wrc"</code>
+                                    "."
+                                </p>
+                            </div>
+                        }
+                        .into_any(),
+
+                        (OutputTab::Inspector, Some(res)) => {
+                            if res.inspector_log.is_empty() {
+                                let hint = if verbose.get() {
+                                    "Volvé a ejecutar el código para capturar la traza en modo Verbose."
+                                } else {
+                                    "El modo Verbose estaba deshabilitado en la última ejecución. Habilitá el switch Verbose y ejecutá nuevamente."
+                                };
+                                view! {
+                                    <div class="empty-state">
+                                        <p class="empty-title">"Sin traza de inspección"</p>
+                                        <p class="empty-hint">{hint}</p>
+                                    </div>
+                                }
+                                .into_any()
+                            } else {
+                                view! {
+                                    <div class="inspector-block">
+                                        <div class="stream-header">
+                                            <span class="stream-dot inspector"></span>
+                                            <span class="stream-label">"Traza Verbose del motor"</span>
+                                        </div>
+                                        <pre class="terminal-pre inspector-pre">{res.inspector_log}</pre>
+                                    </div>
+                                }
+                                .into_any()
+                            }
                         }
                     }
                 }}
@@ -633,15 +717,28 @@ fn OutputPanel(
 
 /// Pie de página con versión, estado del motor, guía de sintaxis y enlace a GitHub.
 #[component]
-fn FooterBar(show_syntax_modal: RwSignal<bool>) -> impl IntoView {
+fn FooterBar(
+    is_running: RwSignal<bool>,
+    show_syntax_modal: RwSignal<bool>,
+) -> impl IntoView {
     view! {
         <footer class="footer-bar">
             <div class="footer-left">
                 <span class="footer-version">{format!("WYRM Playground {PLAYGROUND_VERSION}")}</span>
                 <span class="footer-sep" aria-hidden="true">"·"</span>
                 <span class="footer-status">
-                    <span class="status-dot-amber" aria-hidden="true"></span>
-                    "Motor WASM: mock listo para enlace"
+                    <span
+                        class="status-dot-engine"
+                        class:running=move || is_running.get()
+                        aria-hidden="true"
+                    ></span>
+                    {move || {
+                        if is_running.get() {
+                            "Motor WASM: ejecutando en Web Worker..."
+                        } else {
+                            "Motor WASM: wyrm_core (Web Worker)"
+                        }
+                    }}
                 </span>
             </div>
 

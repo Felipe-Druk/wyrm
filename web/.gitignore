@@ -5,3 +5,5 @@ dist/
 # Archivos emitidos del motor WASM de wyrm_core
 wyrm.js
 wyrm.wasm
+wasm_dist/wyrm_core.js
+wasm_dist/wyrm_core.wasm

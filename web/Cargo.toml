@@ -8,16 +8,21 @@ license = "MIT"
 [dependencies]
 leptos = { version = "0.8", features = ["csr"] }
 console_error_panic_hook = "0.1"
+js-sys = "0.3"
+wasm-bindgen = "0.2"
 web-sys = { version = "0.3", features = [
     "Element",
+    "ErrorEvent",
     "Event",
     "HtmlDivElement",
     "HtmlElement",
     "HtmlTextAreaElement",
     "KeyboardEvent",
+    "MessageEvent",
     "MouseEvent",
     "Performance",
     "Window",
+    "Worker",
 ] }
 
 [workspace]
