@@ -1,0 +1,11 @@
+[build]
+target = "index.html"
+dist = "dist"
+public_url = "/wyrm/"
+filehash = true
+inject_scripts = true
+
+[serve]
+addresses = ["127.0.0.1"]
+port = 8080
+open = false

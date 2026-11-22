@@ -1,0 +1,7 @@
+# Archivos de compilación de Cargo y Trunk
+target/
+dist/
+
+# Archivos emitidos del motor WASM de wyrm_core
+wyrm.js
+wyrm.wasm
