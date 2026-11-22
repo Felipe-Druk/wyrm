@@ -26,6 +26,14 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
+      - name: Instalar Emscripten (emsdk)
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Compilar wyrm_core a WebAssembly (emcc)
+        run: bash web/build_wasm.sh
+
       - name: Instalar Rust + target wasm32
         uses: dtolnay/rust-toolchain@stable
         with:
