@@ -89,7 +89,7 @@ mod tests {
                 .unwrap_or(0);
             assert!(
                 (min_cols..=max_cols).contains(&max_width),
-                "{name} tiene {max_width} columnas fuera del rango {min_cols}..={max_cols}"
+                "{name} tiene {max_width} cols fuera del rango {min_cols}..={max_cols}"
             );
             for line in lines {
                 assert_eq!(

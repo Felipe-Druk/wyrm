@@ -2,6 +2,8 @@ mod app;
 mod engine;
 mod examples;
 mod highlight;
+mod trace;
+mod tutor;
 mod wyrm_art;
 
 use app::App;

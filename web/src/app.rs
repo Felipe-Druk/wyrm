@@ -1,8 +1,10 @@
 //! Componente principal y vistas de interfaz para WYRM Playground ("Códice de Obsidiana").
 
-use crate::engine::{self, ExecutionMode, ExecutionRequest, ExecutionResult};
+use crate::engine::{self, ExecutionMode, ExecutionRequest, ExecutionResult, TraceRequest};
 use crate::examples::{self, EXAMPLES};
 use crate::highlight;
+use crate::trace::TraceSession;
+use crate::tutor::TutorPanel;
 use crate::wyrm_art;
 use leptos::html::{Div, Pre, Textarea};
 use leptos::leptos_dom::helpers::{set_timeout_with_handle, TimeoutHandle};
@@ -16,15 +18,17 @@ const TAB_SPACES: &str = "    ";
 const THEME_STORAGE_KEY: &str = "wyrm-theme";
 const RUNNING_INDICATOR_DELAY_MS: u64 = 150;
 const RUN_PULSE_DURATION_MS: u64 = 300;
+const TUTOR_MAX_STEPS: u32 = 1500;
 
 /// Pestaña elegida en el panel de resultados.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum OutputTab {
     Console,
     Inspector,
+    Tutor,
 }
 
-/// Tema dracónico conmutable del Playground.
+/// Paleta visual conmutable del Playground.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Theme {
     Obsidian,
@@ -69,8 +73,8 @@ impl Theme {
 
     fn toggle_title(self) -> &'static str {
         match self {
-            Self::Obsidian => "Cambiar a tema Plata (Dragón Blanco)",
-            Self::Silver => "Cambiar a tema Obsidiana",
+            Self::Obsidian => "Cambiar a paleta Plata (Dragón Blanco)",
+            Self::Silver => "Cambiar a paleta Obsidiana",
         }
     }
 }
@@ -83,7 +87,7 @@ fn mode_short_label(mode: ExecutionMode) -> &'static str {
     }
 }
 
-/// Recupera el tema persistido en `window.localStorage`.
+/// Recupera la paleta persistida en `window.localStorage`.
 fn load_saved_theme() -> Theme {
     web_sys::window()
         .and_then(|window| window.local_storage().ok().flatten())
@@ -92,7 +96,7 @@ fn load_saved_theme() -> Theme {
         .unwrap_or(Theme::Obsidian)
 }
 
-/// Persiste el tema activo en `window.localStorage`.
+/// Persiste la paleta activa en `window.localStorage`.
 fn save_theme(theme: Theme) {
     if let Some(storage) = web_sys::window().and_then(|window| window.local_storage().ok().flatten())
     {
@@ -128,7 +132,7 @@ fn utf16_offset_to_byte_index(text: &str, utf16_offset: usize) -> usize {
     text.len()
 }
 
-/// Calcula línea y columna (1-indexadas) para un desplazamiento UTF-16 del cursor.
+/// Calcula línea y col (1-indexadas) para un desplazamiento UTF-16 del cursor.
 fn cursor_line_col(text: &str, utf16_offset: usize) -> (usize, usize) {
     let byte_idx = utf16_offset_to_byte_index(text, utf16_offset);
     let prefix = &text[..byte_idx];
@@ -172,7 +176,22 @@ pub fn App() -> impl IntoView {
     let run_count = RwSignal::new(0u32);
     let pulse_phase = RwSignal::new(0u8);
     let result = RwSignal::new(None::<ExecutionResult>);
+    let trace_session = RwSignal::new(None::<TraceSession>);
+    let trace_error = RwSignal::new(None::<String>);
+    let trace_step_idx = RwSignal::new(0usize);
     let show_codex_modal = RwSignal::new(false);
+
+    let tutor_highlight_line = Memo::new(move |_| {
+        if active_tab.get() != OutputTab::Tutor {
+            return None;
+        }
+        let idx = trace_step_idx.get();
+        trace_session.with(|opt| {
+            let session = opt.as_ref()?;
+            let step = session.steps.get(idx)?;
+            (step.line > 0).then_some(step.line)
+        })
+    });
 
     let run_generation = StoredValue::new(0u64);
     let running_timer = StoredValue::new(None::<TimeoutHandle>);
@@ -287,6 +306,91 @@ pub fn App() -> impl IntoView {
         });
     });
 
+    let on_trace = Callback::new(move |()| {
+        if is_running.get_untracked() {
+            return;
+        }
+        let request = TraceRequest {
+            source_code: code.get_untracked(),
+            stdin: stdin_text.get_untracked(),
+            max_steps: TUTOR_MAX_STEPS,
+        };
+
+        clear_running_timer();
+        let current_gen = run_generation.get_value().wrapping_add(1);
+        run_generation.set_value(current_gen);
+        is_running.set(true);
+
+        if let Ok(handle) = set_timeout_with_handle(
+            move || {
+                if run_generation.get_value() == current_gen && is_running.get_untracked() {
+                    show_running_indicator.set(true);
+                }
+            },
+            Duration::from_millis(RUNNING_INDICATOR_DELAY_MS),
+        ) {
+            running_timer.set_value(Some(handle));
+        }
+
+        engine::execute_trace_async(request, move |trace_res| {
+            if run_generation.get_value() != current_gen {
+                return;
+            }
+            clear_running_timer();
+            is_running.set(false);
+
+            let next_run = run_count.get_untracked().wrapping_add(1);
+            run_count.set(next_run);
+            last_mode.set(ExecutionMode::CompilerVm);
+
+            let exec_summary = ExecutionResult {
+                stdout: trace_res.stdout.clone(),
+                return_value: trace_res.return_value.clone(),
+                return_type: trace_res.return_type.clone(),
+                inspector_log: String::new(),
+                elapsed_ms: trace_res.elapsed_ms,
+                is_error: trace_res.is_error,
+            };
+            result.set(Some(exec_summary));
+
+            if trace_res.is_error {
+                let err_msg = if trace_res.stdout.trim().is_empty() {
+                    "Error al ejecutar la traza paso a paso en la Wyrm VM.".to_string()
+                } else {
+                    trace_res.stdout
+                };
+                trace_session.set(None);
+                trace_error.set(Some(err_msg));
+                trace_step_idx.set(0);
+            } else {
+                match trace_res.trace_json.as_deref() {
+                    Some(raw_json) => match TraceSession::from_json(raw_json) {
+                        Ok(session) => {
+                            trace_error.set(None);
+                            trace_step_idx.set(0);
+                            trace_session.set(Some(session));
+                        }
+                        Err(err) => {
+                            trace_session.set(None);
+                            trace_error.set(Some(err));
+                            trace_step_idx.set(0);
+                        }
+                    },
+                    None => {
+                        trace_session.set(None);
+                        trace_error.set(Some(
+                            "El motor WASM no devolvió datos de traza JSON.".to_string(),
+                        ));
+                        trace_step_idx.set(0);
+                    }
+                }
+            }
+
+            active_tab.set(OutputTab::Tutor);
+            trigger_run_pulse(next_run);
+        });
+    });
+
     let on_stop = Callback::new(move |()| {
         clear_running_timer();
         engine::cancel();
@@ -301,6 +405,9 @@ pub fn App() -> impl IntoView {
         is_running.set(false);
         code.set(String::new());
         result.set(None);
+        trace_session.set(None);
+        trace_error.set(None);
+        trace_step_idx.set(0);
         run_count.set(0);
         selected_example_id.set(String::new());
     });
@@ -318,6 +425,9 @@ pub fn App() -> impl IntoView {
             code.set(example.code.to_string());
             stdin_text.set(example.default_stdin.to_string());
             result.set(None);
+            trace_session.set(None);
+            trace_error.set(None);
+            trace_step_idx.set(0);
             run_count.set(0);
         }
     });
@@ -344,6 +454,7 @@ pub fn App() -> impl IntoView {
                 on_toggle_theme=on_toggle_theme
                 on_select_example=on_select_example
                 on_run=on_run
+                on_trace=on_trace
                 on_stop=on_stop
             />
 
@@ -351,7 +462,9 @@ pub fn App() -> impl IntoView {
                 <EditorPanel
                     code=code
                     selected_example_id=selected_example_id
+                    tutor_highlight_line=tutor_highlight_line
                     on_run=on_run
+                    on_trace=on_trace
                 />
 
                 <OutputPanel
@@ -359,13 +472,18 @@ pub fn App() -> impl IntoView {
                     last_mode=last_mode
                     verbose=verbose
                     active_tab=active_tab
+                    is_running=is_running
                     show_running_indicator=show_running_indicator
                     run_count=run_count
                     pulse_phase=pulse_phase
                     result=result
+                    trace_session=trace_session
+                    trace_error=trace_error
+                    trace_step_idx=trace_step_idx
                     stdin_text=stdin_text
                     stdin_open=stdin_open
                     on_clear=on_clear
+                    on_trace=on_trace
                 />
             </main>
 
@@ -481,6 +599,7 @@ fn TopBar(
     on_toggle_theme: Callback<()>,
     on_select_example: Callback<String>,
     on_run: Callback<()>,
+    on_trace: Callback<()>,
     on_stop: Callback<()>,
 ) -> impl IntoView {
     view! {
@@ -585,6 +704,16 @@ fn TopBar(
             </div>
 
             <div class="topbar-actions">
+                <button
+                    type="button"
+                    class="topbar-segment step-trace-btn"
+                    disabled=move || is_running.get()
+                    title="Trazar paso a paso en Wyrm Tutor (Ctrl + Shift + Enter)"
+                    on:click=move |_| on_trace.run(())
+                >
+                    <span class="step-trace-glyph" aria-hidden="true">"▷"</span>
+                    <span>"PASO A PASO"</span>
+                </button>
                 <Show
                     when=move || show_running_indicator.get()
                     fallback=move || {
@@ -623,7 +752,9 @@ fn TopBar(
 fn EditorPanel(
     code: RwSignal<String>,
     selected_example_id: RwSignal<String>,
+    tutor_highlight_line: Memo<Option<usize>>,
     on_run: Callback<()>,
+    on_trace: Callback<()>,
 ) -> impl IntoView {
     let textarea_ref = NodeRef::<Textarea>::new();
     let highlight_ref = NodeRef::<Pre>::new();
@@ -699,7 +830,11 @@ fn EditorPanel(
     let on_editor_keydown = move |ev: KeyboardEvent| {
         if (ev.ctrl_key() || ev.meta_key()) && ev.key() == "Enter" {
             ev.prevent_default();
-            on_run.run(());
+            if ev.shift_key() {
+                on_trace.run(());
+            } else {
+                on_run.run(());
+            }
             return;
         }
 
@@ -788,10 +923,15 @@ fn EditorPanel(
                         (1..=line_count.get())
                             .map(|line_number| {
                                 let line_class = move || {
-                                    if cursor_line.get() == line_number {
-                                        "gutter-number line-number--active"
-                                    } else {
-                                        "gutter-number"
+                                    let is_cursor = cursor_line.get() == line_number;
+                                    let is_tutor = tutor_highlight_line.get() == Some(line_number);
+                                    match (is_cursor, is_tutor) {
+                                        (true, true) => {
+                                            "gutter-number line-number--active line-number--tutor"
+                                        }
+                                        (true, false) => "gutter-number line-number--active",
+                                        (false, true) => "gutter-number line-number--tutor",
+                                        (false, false) => "gutter-number",
                                     }
                                 };
                                 view! { <span class=line_class>{line_number}</span> }
@@ -846,20 +986,25 @@ fn EditorPanel(
     }
 }
 
-/// Panel derecho con pestañas `Consola` e `Inspector`, telemetría fija, `Limpiar` y `stdin / fd 0`.
+/// Panel derecho con pestañas `Consola`, `Inspector` y `Tutor`, telemetría fija, `Limpiar` y `stdin / fd 0`.
 #[component]
 fn OutputPanel(
     mode: RwSignal<ExecutionMode>,
     last_mode: RwSignal<ExecutionMode>,
     verbose: RwSignal<bool>,
     active_tab: RwSignal<OutputTab>,
+    is_running: RwSignal<bool>,
     show_running_indicator: RwSignal<bool>,
     run_count: RwSignal<u32>,
     pulse_phase: RwSignal<u8>,
     result: RwSignal<Option<ExecutionResult>>,
+    trace_session: RwSignal<Option<TraceSession>>,
+    trace_error: RwSignal<Option<String>>,
+    trace_step_idx: RwSignal<usize>,
     stdin_text: RwSignal<String>,
     stdin_open: RwSignal<bool>,
     on_clear: Callback<()>,
+    on_trace: Callback<()>,
 ) -> impl IntoView {
     let has_inspector_output = Memo::new(move |_| {
         result
@@ -867,6 +1012,7 @@ fn OutputPanel(
             .map(|res| !res.inspector_log.is_empty())
             .unwrap_or(false)
     });
+    let has_trace_session = Memo::new(move |_| trace_session.with(|opt| opt.is_some()));
 
     let stdin_bytes = Memo::new(move |_| stdin_text.get().len());
     let is_pulsing_a = move || pulse_phase.get() == 1;
@@ -905,6 +1051,28 @@ fn OutputPanel(
                             <span
                                 class="tab-ready-glyph"
                                 title="Traza verbose lista"
+                                aria-hidden="true"
+                            >
+                                "◈"
+                            </span>
+                        </Show>
+                    </button>
+                    <button
+                        type="button"
+                        role="tab"
+                        class="tab-btn"
+                        class:active=move || active_tab.get() == OutputTab::Tutor
+                        aria-selected=move || {
+                            if active_tab.get() == OutputTab::Tutor { "true" } else { "false" }
+                        }
+                        on:click=move |_| active_tab.set(OutputTab::Tutor)
+                    >
+                        <span class="tab-glyph" aria-hidden="true">"::"</span>
+                        <span>"TUTOR"</span>
+                        <Show when=move || has_trace_session.get()>
+                            <span
+                                class="tab-ready-glyph"
+                                title="Traza paso a paso lista"
                                 aria-hidden="true"
                             >
                                 "◈"
@@ -986,7 +1154,21 @@ fn OutputPanel(
 
             <div class="output-viewport">
                 {move || {
+                    if active_tab.get() == OutputTab::Tutor {
+                        return view! {
+                            <TutorPanel
+                                trace_session=trace_session
+                                trace_error=trace_error
+                                step_idx=trace_step_idx
+                                is_running=is_running
+                                on_trace=on_trace
+                            />
+                        }
+                        .into_any();
+                    }
+
                     match (active_tab.get(), result.get()) {
+                        (OutputTab::Tutor, _) => unreachable!(),
                         (OutputTab::Console, None) => view! {
                             <div class="empty-state empty-state--console">
                                 <WyrmAsciiArt

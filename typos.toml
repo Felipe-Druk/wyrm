@@ -108,6 +108,10 @@ clases = "clases"
 clase = "clase"
 columnas = "columnas"
 tema = "tema"
+interactivo = "interactivo"
+controles = "controles"
+avance = "avance"
+comparte = "comparte"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"

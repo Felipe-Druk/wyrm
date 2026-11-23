@@ -131,20 +131,24 @@ function splitVerboseOutput(rawStdout) {
 self.onmessage = async (event) => {
   const payload = event.data || {};
   const id = payload.id;
+  const action = payload.action === "trace" ? "trace" : "run";
   const code = typeof payload.code === "string" ? payload.code : "";
   const mode = Number(payload.mode) || 0;
   const verbose = Boolean(payload.verbose);
   const stdin = typeof payload.stdin === "string" ? payload.stdin : "";
+  const maxSteps = Number(payload.max_steps) || 1500;
 
   if (wasmLoadError !== null) {
     self.postMessage({
       id,
+      action,
       stdout: wasmLoadError,
       return_value: null,
       return_type: "",
       inspector_log: "",
       elapsed_ms: 0,
       is_error: true,
+      trace_json: null,
     });
     return;
   }
@@ -199,6 +203,7 @@ self.onmessage = async (event) => {
     const detail = err && err.message ? err.message : String(err);
     self.postMessage({
       id,
+      action,
       stdout:
         "No se pudo inicializar el módulo WebAssembly de wyrm_core.\n" +
         "Verificá que exista web/wasm_dist/wyrm_core.wasm (ejecutá ./web/build_wasm.sh).\n\n" +
@@ -209,6 +214,7 @@ self.onmessage = async (event) => {
       inspector_log: "",
       elapsed_ms: 0,
       is_error: true,
+      trace_json: null,
     });
     return;
   }
@@ -217,33 +223,82 @@ self.onmessage = async (event) => {
   let exitStatusCode = 0;
   let returnValue = null;
   let returnType = "";
+  let traceJson = null;
   let caughtExceptionText = "";
 
   const startedAt = performance.now();
   try {
-    const execStatus = instance.ccall(
-      "wyrm_web_exec",
-      "number",
-      ["string", "number", "number"],
-      [code, mode, verbose ? 1 : 0]
-    );
-    if (execStatus !== 0) {
-      isError = true;
-      exitStatusCode = execStatus;
-    } else {
-      const retPtr = instance.ccall("wyrm_web_last_return", "number", [], []);
-      if (retPtr) {
-        const formatted = instance.UTF8ToString(retPtr);
-        returnValue = formatted.length > 0 ? formatted : null;
+    if (action === "trace") {
+      if (typeof instance._wyrm_web_trace !== "function") {
+        isError = true;
+        caughtExceptionText =
+          "El binario WASM cargado no incluye el motor paso a paso (wyrm_web_trace). Recompilá ejecutando ./web/build_wasm.sh.";
+      } else {
+        const traceStatus = instance.ccall(
+          "wyrm_web_trace",
+          "number",
+          ["string", "number"],
+          [code, maxSteps]
+        );
+        if (traceStatus !== 0) {
+          isError = true;
+          exitStatusCode = traceStatus;
+        } else {
+          const tracePtr = instance.ccall(
+            "wyrm_web_trace_json",
+            "number",
+            [],
+            []
+          );
+          if (tracePtr) {
+            traceJson = instance.UTF8ToString(tracePtr);
+          }
+          const retPtr = instance.ccall(
+            "wyrm_web_last_return",
+            "number",
+            [],
+            []
+          );
+          if (retPtr) {
+            const formatted = instance.UTF8ToString(retPtr);
+            returnValue = formatted.length > 0 ? formatted : null;
+          }
+          const retTypePtr = instance.ccall(
+            "wyrm_web_last_return_type",
+            "number",
+            [],
+            []
+          );
+          if (retTypePtr) {
+            returnType = instance.UTF8ToString(retTypePtr);
+          }
+        }
       }
-      const retTypePtr = instance.ccall(
-        "wyrm_web_last_return_type",
+    } else {
+      const execStatus = instance.ccall(
+        "wyrm_web_exec",
         "number",
-        [],
-        []
+        ["string", "number", "number"],
+        [code, mode, verbose ? 1 : 0]
       );
-      if (retTypePtr) {
-        returnType = instance.UTF8ToString(retTypePtr);
+      if (execStatus !== 0) {
+        isError = true;
+        exitStatusCode = execStatus;
+      } else {
+        const retPtr = instance.ccall("wyrm_web_last_return", "number", [], []);
+        if (retPtr) {
+          const formatted = instance.UTF8ToString(retPtr);
+          returnValue = formatted.length > 0 ? formatted : null;
+        }
+        const retTypePtr = instance.ccall(
+          "wyrm_web_last_return_type",
+          "number",
+          [],
+          []
+        );
+        if (retTypePtr) {
+          returnType = instance.UTF8ToString(retTypePtr);
+        }
       }
     }
   } catch (err) {
@@ -262,7 +317,7 @@ self.onmessage = async (event) => {
   let finalStdout = rawStdout;
   let inspectorLog = "";
 
-  if (verbose) {
+  if (action === "run" && verbose) {
     const separated = splitVerboseOutput(rawStdout);
     finalStdout = separated.stdout;
     inspectorLog = separated.inspectorLog;
@@ -287,10 +342,26 @@ self.onmessage = async (event) => {
     finalStdout = errorParts.join("\n\n");
     returnValue = null;
     returnType = "";
+    traceJson = null;
+  }
+
+  if (action === "trace") {
+    self.postMessage({
+      id,
+      action: "trace",
+      stdout: finalStdout,
+      return_value: returnValue,
+      return_type: returnType,
+      elapsed_ms: elapsedMs,
+      is_error: isError,
+      trace_json: traceJson,
+    });
+    return;
   }
 
   self.postMessage({
     id,
+    action: "run",
     stdout: finalStdout,
     return_value: returnValue,
     return_type: returnType,

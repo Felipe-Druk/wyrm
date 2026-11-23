@@ -4,7 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WYRM_CORE_DIR="${REPO_ROOT}/wyrm_core"
-WASM_BRIDGE="${SCRIPT_DIR}/wasm_core/wyrm_wasm.c"
+WASM_CORE_DIR="${SCRIPT_DIR}/wasm_core"
+WASM_BRIDGE="${WASM_CORE_DIR}/wyrm_wasm.c"
+WASM_STEPPER="${WASM_CORE_DIR}/wyrm_stepper.c"
 OUT_DIR="${SCRIPT_DIR}/wasm_dist"
 
 if ! command -v emcc >/dev/null 2>&1; then
@@ -23,7 +25,12 @@ if [[ ! -f "${WASM_BRIDGE}" ]]; then
     exit 1
 fi
 
-INCLUDE_FLAGS=()
+if [[ ! -f "${WASM_STEPPER}" ]]; then
+    echo "Error: no se encontró el stepper C '${WASM_STEPPER}'." >&2
+    exit 1
+fi
+
+INCLUDE_FLAGS=("-I${WASM_CORE_DIR}")
 while IFS= read -r dir; do
     INCLUDE_FLAGS+=("-I${dir}")
 done < <(find "${WYRM_CORE_DIR}" -type d | sort)
@@ -32,7 +39,7 @@ C_SOURCES=()
 while IFS= read -r src; do
     C_SOURCES+=("${src}")
 done < <(find "${WYRM_CORE_DIR}" -type f -name "*.c" | sort)
-C_SOURCES+=("${WASM_BRIDGE}")
+C_SOURCES+=("${WASM_BRIDGE}" "${WASM_STEPPER}")
 
 # Detección de flags de compatibilidad para Clang/Emscripten (C23 en wvm.c y _Float32/_Float64 en wyrm_value.h)
 COMPAT_FLAGS=()
@@ -62,7 +69,7 @@ emcc \
     -sENVIRONMENT=web,worker \
     -sFORCE_FILESYSTEM=1 \
     -sALLOW_MEMORY_GROWTH=1 \
-    -sEXPORTED_FUNCTIONS='["_wyrm_web_exec","_wyrm_web_last_return","_wyrm_web_last_return_type","_malloc","_free"]' \
+    -sEXPORTED_FUNCTIONS='["_wyrm_web_exec","_wyrm_web_last_return","_wyrm_web_last_return_type","_wyrm_web_trace","_wyrm_web_trace_json","_malloc","_free"]' \
     -sEXPORTED_RUNTIME_METHODS='["ccall","UTF8ToString","FS"]' \
     -o "${OUT_DIR}/wyrm_core.js"
 

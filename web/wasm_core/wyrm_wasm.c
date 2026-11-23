@@ -19,6 +19,7 @@
 #include "wvm/wvm.h"
 #include "wyrm.h"
 #include "wyrm_types/wyrm_value/wyrm_value.h"
+#include "wyrm_wasm_internal.h"
 #include "wyrmc.h"
 
 #define WYRM_WEB_RET_BUF_SIZE 4096
@@ -296,6 +297,78 @@ static void capture_return_value(wyrm_value_t val) {
     size_t offset = 0;
     format_wyrm_value_inner(val, g_last_return, sizeof(g_last_return), &offset, 0);
     format_wyrm_type(val, g_last_return_type, sizeof(g_last_return_type));
+}
+
+const char *wyrm_web_type_name(wyrm_value_type_t type) {
+    return value_type_name(type);
+}
+
+void wyrm_web_format_type(wyrm_value_t val, char *buf, size_t cap) {
+    format_wyrm_type(val, buf, cap);
+}
+
+void wyrm_web_format_value(wyrm_value_t val, char *buf, size_t cap) {
+    if (cap == 0) {
+        return;
+    }
+    buf[0] = '\0';
+    size_t offset = 0;
+    format_wyrm_value_inner(val, buf, cap, &offset, 0);
+}
+
+void wyrm_web_set_last_return(wyrm_value_t val) {
+    capture_return_value(val);
+}
+
+void wyrm_web_clear_last_return(void) {
+    g_last_return[0] = '\0';
+    g_last_return_type[0] = '\0';
+}
+
+bool wyrm_web_is_printable_nat8_vec(const wyrm_vec_t *vec) {
+    return is_printable_nat8_string(vec);
+}
+
+void wyrm_web_format_nat8_ascii(const wyrm_vec_t *vec, char *buf, size_t cap) {
+    if (cap == 0) {
+        return;
+    }
+    buf[0] = '\0';
+    if (vec == NULL || vec->element_type != VAL_NAT8 || vec->items.size == 0) {
+        return;
+    }
+
+    size_t content_len = vec->items.size;
+    const wyrm_value_t *last = (const wyrm_value_t *)vector_get(&vec->items, content_len - 1);
+    if (last != NULL && last->type == VAL_NAT8 && last->value.nat8_val == 0) {
+        content_len--;
+    }
+
+    size_t shown = content_len > WYRM_WEB_MAX_STR_PREVIEW ? WYRM_WEB_MAX_STR_PREVIEW : content_len;
+    size_t offset = 0;
+    for (size_t i = 0; i < shown; i++) {
+        const wyrm_value_t *item = (const wyrm_value_t *)vector_get(&vec->items, i);
+        if (item == NULL) {
+            continue;
+        }
+        uint8_t byte = item->value.nat8_val;
+        if (byte == '\n') {
+            buf_append(buf, cap, &offset, "\\n");
+        } else if (byte == '\t') {
+            buf_append(buf, cap, &offset, "\\t");
+        } else if (byte == '\r') {
+            buf_append(buf, cap, &offset, "\\r");
+        } else if (byte == '"' || byte == '\\') {
+            buf_append(buf, cap, &offset, "\\%c", (char)byte);
+        } else if (byte >= 32 && byte <= 126) {
+            buf_append(buf, cap, &offset, "%c", (char)byte);
+        } else {
+            buf_append(buf, cap, &offset, "\\x%02X", byte);
+        }
+    }
+    if (content_len > shown) {
+        buf_append(buf, cap, &offset, "...");
+    }
 }
 
 static int write_source_to_file(const char *path, const char *source) {
