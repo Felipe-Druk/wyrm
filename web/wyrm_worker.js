@@ -131,7 +131,12 @@ function splitVerboseOutput(rawStdout) {
 self.onmessage = async (event) => {
   const payload = event.data || {};
   const id = payload.id;
-  const action = payload.action === "trace" ? "trace" : "run";
+  const action =
+    payload.action === "trace"
+      ? "trace"
+      : payload.action === "ast_trace"
+        ? "ast_trace"
+        : "run";
   const code = typeof payload.code === "string" ? payload.code : "";
   const mode = Number(payload.mode) || 0;
   const verbose = Boolean(payload.verbose);
@@ -149,6 +154,7 @@ self.onmessage = async (event) => {
       elapsed_ms: 0,
       is_error: true,
       trace_json: null,
+      ast_trace_json: null,
     });
     return;
   }
@@ -215,6 +221,7 @@ self.onmessage = async (event) => {
       elapsed_ms: 0,
       is_error: true,
       trace_json: null,
+      ast_trace_json: null,
     });
     return;
   }
@@ -224,6 +231,7 @@ self.onmessage = async (event) => {
   let returnValue = null;
   let returnType = "";
   let traceJson = null;
+  let astTraceJson = null;
   let caughtExceptionText = "";
 
   const startedAt = performance.now();
@@ -252,6 +260,52 @@ self.onmessage = async (event) => {
           );
           if (tracePtr) {
             traceJson = instance.UTF8ToString(tracePtr);
+          }
+          const retPtr = instance.ccall(
+            "wyrm_web_last_return",
+            "number",
+            [],
+            []
+          );
+          if (retPtr) {
+            const formatted = instance.UTF8ToString(retPtr);
+            returnValue = formatted.length > 0 ? formatted : null;
+          }
+          const retTypePtr = instance.ccall(
+            "wyrm_web_last_return_type",
+            "number",
+            [],
+            []
+          );
+          if (retTypePtr) {
+            returnType = instance.UTF8ToString(retTypePtr);
+          }
+        }
+      }
+    } else if (action === "ast_trace") {
+      if (typeof instance._wyrm_web_ast_trace !== "function") {
+        isError = true;
+        caughtExceptionText =
+          "El binario WASM cargado no incluye el motor paso a paso del AST (wyrm_web_ast_trace). Recompilá ejecutando ./web/build_wasm.sh.";
+      } else {
+        const astStatus = instance.ccall(
+          "wyrm_web_ast_trace",
+          "number",
+          ["string", "number"],
+          [code, maxSteps]
+        );
+        if (astStatus !== 0) {
+          isError = true;
+          exitStatusCode = astStatus;
+        } else {
+          const astPtr = instance.ccall(
+            "wyrm_web_ast_trace_json",
+            "number",
+            [],
+            []
+          );
+          if (astPtr) {
+            astTraceJson = instance.UTF8ToString(astPtr);
           }
           const retPtr = instance.ccall(
             "wyrm_web_last_return",
@@ -343,6 +397,7 @@ self.onmessage = async (event) => {
     returnValue = null;
     returnType = "";
     traceJson = null;
+    astTraceJson = null;
   }
 
   if (action === "trace") {
@@ -355,6 +410,20 @@ self.onmessage = async (event) => {
       elapsed_ms: elapsedMs,
       is_error: isError,
       trace_json: traceJson,
+    });
+    return;
+  }
+
+  if (action === "ast_trace") {
+    self.postMessage({
+      id,
+      action: "ast_trace",
+      stdout: finalStdout,
+      return_value: returnValue,
+      return_type: returnType,
+      elapsed_ms: elapsedMs,
+      is_error: isError,
+      ast_trace_json: astTraceJson,
     });
     return;
   }

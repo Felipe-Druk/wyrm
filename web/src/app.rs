@@ -1,6 +1,10 @@
 //! Componente principal y vistas de interfaz para WYRM Playground ("Códice de Obsidiana").
 
-use crate::engine::{self, ExecutionMode, ExecutionRequest, ExecutionResult, TraceRequest};
+use crate::ast_trace::AstTraceSession;
+use crate::ast_tutor::AstTutorPanel;
+use crate::engine::{
+    self, AstTraceRequest, ExecutionMode, ExecutionRequest, ExecutionResult, TraceRequest,
+};
 use crate::examples::{self, EXAMPLES};
 use crate::highlight;
 use crate::trace::TraceSession;
@@ -26,6 +30,13 @@ enum OutputTab {
     Console,
     Inspector,
     Tutor,
+}
+
+/// Sub-modo activo dentro de la pestaña `:: TUTOR` (AST del Intérprete vs Bytecode de la VM).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TutorMode {
+    Ast,
+    Vm,
 }
 
 /// Paleta visual conmutable del Playground.
@@ -176,13 +187,17 @@ pub fn App() -> impl IntoView {
     let run_count = RwSignal::new(0u32);
     let pulse_phase = RwSignal::new(0u8);
     let result = RwSignal::new(None::<ExecutionResult>);
+    let tutor_mode = RwSignal::new(TutorMode::Ast);
     let trace_session = RwSignal::new(None::<TraceSession>);
     let trace_error = RwSignal::new(None::<String>);
     let trace_step_idx = RwSignal::new(0usize);
+    let ast_trace_session = RwSignal::new(None::<AstTraceSession>);
+    let ast_trace_error = RwSignal::new(None::<String>);
+    let ast_step_idx = RwSignal::new(0usize);
     let show_codex_modal = RwSignal::new(false);
 
     let tutor_highlight_line = Memo::new(move |_| {
-        if active_tab.get() != OutputTab::Tutor {
+        if active_tab.get() != OutputTab::Tutor || tutor_mode.get() != TutorMode::Vm {
             return None;
         }
         let idx = trace_step_idx.get();
@@ -193,6 +208,7 @@ pub fn App() -> impl IntoView {
         })
     });
 
+    let last_code_snapshot = StoredValue::new(initial.code.to_string());
     let run_generation = StoredValue::new(0u64);
     let running_timer = StoredValue::new(None::<TimeoutHandle>);
     let pulse_generation = StoredValue::new(0u64);
@@ -202,6 +218,21 @@ pub fn App() -> impl IntoView {
         let current = theme.get();
         apply_document_theme(current);
         save_theme(current);
+    });
+
+    // Conserva ambas trazas (AST y VM) en memoria hasta que cambie el código fuente
+    Effect::new(move |_| {
+        let current_code = code.get();
+        let changed = last_code_snapshot.with_value(|prev| *prev != current_code);
+        if changed {
+            last_code_snapshot.set_value(current_code);
+            trace_session.set(None);
+            trace_error.set(None);
+            trace_step_idx.set(0);
+            ast_trace_session.set(None);
+            ast_trace_error.set(None);
+            ast_step_idx.set(0);
+        }
     });
 
     on_cleanup(move || {
@@ -306,7 +337,7 @@ pub fn App() -> impl IntoView {
         });
     });
 
-    let on_trace = Callback::new(move |()| {
+    let on_vm_trace = Callback::new(move |()| {
         if is_running.get_untracked() {
             return;
         }
@@ -386,9 +417,101 @@ pub fn App() -> impl IntoView {
                 }
             }
 
+            tutor_mode.set(TutorMode::Vm);
             active_tab.set(OutputTab::Tutor);
             trigger_run_pulse(next_run);
         });
+    });
+
+    let on_ast_trace = Callback::new(move |()| {
+        if is_running.get_untracked() {
+            return;
+        }
+        let request = AstTraceRequest {
+            source_code: code.get_untracked(),
+            stdin: stdin_text.get_untracked(),
+            max_steps: TUTOR_MAX_STEPS,
+        };
+
+        clear_running_timer();
+        let current_gen = run_generation.get_value().wrapping_add(1);
+        run_generation.set_value(current_gen);
+        is_running.set(true);
+
+        if let Ok(handle) = set_timeout_with_handle(
+            move || {
+                if run_generation.get_value() == current_gen && is_running.get_untracked() {
+                    show_running_indicator.set(true);
+                }
+            },
+            Duration::from_millis(RUNNING_INDICATOR_DELAY_MS),
+        ) {
+            running_timer.set_value(Some(handle));
+        }
+
+        engine::execute_ast_trace_async(request, move |ast_res| {
+            if run_generation.get_value() != current_gen {
+                return;
+            }
+            clear_running_timer();
+            is_running.set(false);
+
+            let next_run = run_count.get_untracked().wrapping_add(1);
+            run_count.set(next_run);
+            last_mode.set(ExecutionMode::Interpreter);
+
+            let exec_summary = ExecutionResult {
+                stdout: ast_res.stdout.clone(),
+                return_value: ast_res.return_value.clone(),
+                return_type: ast_res.return_type.clone(),
+                inspector_log: String::new(),
+                elapsed_ms: ast_res.elapsed_ms,
+                is_error: ast_res.is_error,
+            };
+            result.set(Some(exec_summary));
+
+            if ast_res.is_error {
+                let err_msg = if ast_res.stdout.trim().is_empty() {
+                    "Error al ejecutar la traza paso a paso del AST.".to_string()
+                } else {
+                    ast_res.stdout
+                };
+                ast_trace_session.set(None);
+                ast_trace_error.set(Some(err_msg));
+                ast_step_idx.set(0);
+            } else {
+                match ast_res.ast_trace_json.as_deref() {
+                    Some(raw_json) => match AstTraceSession::from_json(raw_json) {
+                        Ok(session) => {
+                            ast_trace_error.set(None);
+                            ast_step_idx.set(0);
+                            ast_trace_session.set(Some(session));
+                        }
+                        Err(err) => {
+                            ast_trace_session.set(None);
+                            ast_trace_error.set(Some(err));
+                            ast_step_idx.set(0);
+                        }
+                    },
+                    None => {
+                        ast_trace_session.set(None);
+                        ast_trace_error.set(Some(
+                            "El motor WASM no devolvió datos de traza AST JSON.".to_string(),
+                        ));
+                        ast_step_idx.set(0);
+                    }
+                }
+            }
+
+            tutor_mode.set(TutorMode::Ast);
+            active_tab.set(OutputTab::Tutor);
+            trigger_run_pulse(next_run);
+        });
+    });
+
+    let on_step_action = Callback::new(move |()| match mode.get_untracked() {
+        ExecutionMode::Interpreter => on_ast_trace.run(()),
+        ExecutionMode::CompilerVm => on_vm_trace.run(()),
     });
 
     let on_stop = Callback::new(move |()| {
@@ -408,6 +531,9 @@ pub fn App() -> impl IntoView {
         trace_session.set(None);
         trace_error.set(None);
         trace_step_idx.set(0);
+        ast_trace_session.set(None);
+        ast_trace_error.set(None);
+        ast_step_idx.set(0);
         run_count.set(0);
         selected_example_id.set(String::new());
     });
@@ -428,6 +554,9 @@ pub fn App() -> impl IntoView {
             trace_session.set(None);
             trace_error.set(None);
             trace_step_idx.set(0);
+            ast_trace_session.set(None);
+            ast_trace_error.set(None);
+            ast_step_idx.set(0);
             run_count.set(0);
         }
     });
@@ -454,7 +583,7 @@ pub fn App() -> impl IntoView {
                 on_toggle_theme=on_toggle_theme
                 on_select_example=on_select_example
                 on_run=on_run
-                on_trace=on_trace
+                on_trace=on_step_action
                 on_stop=on_stop
             />
 
@@ -464,7 +593,7 @@ pub fn App() -> impl IntoView {
                     selected_example_id=selected_example_id
                     tutor_highlight_line=tutor_highlight_line
                     on_run=on_run
-                    on_trace=on_trace
+                    on_trace=on_step_action
                 />
 
                 <OutputPanel
@@ -472,6 +601,7 @@ pub fn App() -> impl IntoView {
                     last_mode=last_mode
                     verbose=verbose
                     active_tab=active_tab
+                    tutor_mode=tutor_mode
                     is_running=is_running
                     show_running_indicator=show_running_indicator
                     run_count=run_count
@@ -480,10 +610,14 @@ pub fn App() -> impl IntoView {
                     trace_session=trace_session
                     trace_error=trace_error
                     trace_step_idx=trace_step_idx
+                    ast_trace_session=ast_trace_session
+                    ast_trace_error=ast_trace_error
+                    ast_step_idx=ast_step_idx
                     stdin_text=stdin_text
                     stdin_open=stdin_open
                     on_clear=on_clear
-                    on_trace=on_trace
+                    on_vm_trace=on_vm_trace
+                    on_ast_trace=on_ast_trace
                 />
             </main>
 
@@ -708,7 +842,14 @@ fn TopBar(
                     type="button"
                     class="topbar-segment step-trace-btn"
                     disabled=move || is_running.get()
-                    title="Trazar paso a paso en Wyrm Tutor (Ctrl + Shift + Enter)"
+                    title=move || match mode.get() {
+                        ExecutionMode::Interpreter => {
+                            "Trazar recorrido del AST paso a paso en el Intérprete (Ctrl + Shift + Enter)"
+                        }
+                        ExecutionMode::CompilerVm => {
+                            "Trazar bytecode paso a paso en la Wyrm VM (Ctrl + Shift + Enter)"
+                        }
+                    }
                     on:click=move |_| on_trace.run(())
                 >
                     <span class="step-trace-glyph" aria-hidden="true">"▷"</span>
@@ -993,6 +1134,7 @@ fn OutputPanel(
     last_mode: RwSignal<ExecutionMode>,
     verbose: RwSignal<bool>,
     active_tab: RwSignal<OutputTab>,
+    tutor_mode: RwSignal<TutorMode>,
     is_running: RwSignal<bool>,
     show_running_indicator: RwSignal<bool>,
     run_count: RwSignal<u32>,
@@ -1001,10 +1143,14 @@ fn OutputPanel(
     trace_session: RwSignal<Option<TraceSession>>,
     trace_error: RwSignal<Option<String>>,
     trace_step_idx: RwSignal<usize>,
+    ast_trace_session: RwSignal<Option<AstTraceSession>>,
+    ast_trace_error: RwSignal<Option<String>>,
+    ast_step_idx: RwSignal<usize>,
     stdin_text: RwSignal<String>,
     stdin_open: RwSignal<bool>,
     on_clear: Callback<()>,
-    on_trace: Callback<()>,
+    on_vm_trace: Callback<()>,
+    on_ast_trace: Callback<()>,
 ) -> impl IntoView {
     let has_inspector_output = Memo::new(move |_| {
         result
@@ -1012,7 +1158,9 @@ fn OutputPanel(
             .map(|res| !res.inspector_log.is_empty())
             .unwrap_or(false)
     });
-    let has_trace_session = Memo::new(move |_| trace_session.with(|opt| opt.is_some()));
+    let has_vm_session = Memo::new(move |_| trace_session.with(|opt| opt.is_some()));
+    let has_ast_session = Memo::new(move |_| ast_trace_session.with(|opt| opt.is_some()));
+    let has_trace_session = Memo::new(move |_| has_vm_session.get() || has_ast_session.get());
 
     let stdin_bytes = Memo::new(move |_| stdin_text.get().len());
     let is_pulsing_a = move || pulse_phase.get() == 1;
@@ -1156,13 +1304,96 @@ fn OutputPanel(
                 {move || {
                     if active_tab.get() == OutputTab::Tutor {
                         return view! {
-                            <TutorPanel
-                                trace_session=trace_session
-                                trace_error=trace_error
-                                step_idx=trace_step_idx
-                                is_running=is_running
-                                on_trace=on_trace
-                            />
+                            <div class="tutor-shell">
+                                <div
+                                    class="tutor-mode-bar"
+                                    role="tablist"
+                                    aria-label="Motor de visualización en Wyrm Tutor"
+                                >
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        class="tutor-mode-seg"
+                                        class:active=move || tutor_mode.get() == TutorMode::Ast
+                                        aria-selected=move || {
+                                            if tutor_mode.get() == TutorMode::Ast { "true" } else { "false" }
+                                        }
+                                        title="Inspeccionar el árbol sintáctico abstracto paso a paso (Intérprete)"
+                                        on:click=move |_| tutor_mode.set(TutorMode::Ast)
+                                    >
+                                        <span class="tutor-mode-glyph" aria-hidden="true">"▸"</span>
+                                        <span>"AST :: INTÉRPRETE"</span>
+                                        <Show when=move || has_ast_session.get()>
+                                            <span
+                                                class="tutor-mode-ready"
+                                                title="Traza AST cargada en memoria"
+                                                aria-hidden="true"
+                                            >
+                                                "◈"
+                                            </span>
+                                        </Show>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        class="tutor-mode-seg"
+                                        class:active=move || tutor_mode.get() == TutorMode::Vm
+                                        aria-selected=move || {
+                                            if tutor_mode.get() == TutorMode::Vm { "true" } else { "false" }
+                                        }
+                                        title="Inspeccionar Stack, Heap y Bytecode .wrc paso a paso (Compilador + VM)"
+                                        on:click=move |_| tutor_mode.set(TutorMode::Vm)
+                                    >
+                                        <span class="tutor-mode-glyph" aria-hidden="true">"▸"</span>
+                                        <span>"VM :: BYTECODE"</span>
+                                        <Show when=move || has_vm_session.get()>
+                                            <span
+                                                class="tutor-mode-ready"
+                                                title="Traza VM cargada en memoria"
+                                                aria-hidden="true"
+                                            >
+                                                "◈"
+                                            </span>
+                                        </Show>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="tutor-mode-retrace"
+                                        disabled=move || is_running.get()
+                                        title="Volver a ejecutar y trazar el motor seleccionado sobre el código actual"
+                                        on:click=move |_| match tutor_mode.get_untracked() {
+                                            TutorMode::Ast => on_ast_trace.run(()),
+                                            TutorMode::Vm => on_vm_trace.run(()),
+                                        }
+                                    >
+                                        <span aria-hidden="true">"↻"</span>
+                                        <span>"RETRAZAR"</span>
+                                    </button>
+                                </div>
+
+                                {move || match tutor_mode.get() {
+                                    TutorMode::Ast => view! {
+                                        <AstTutorPanel
+                                            ast_session=ast_trace_session
+                                            ast_error=ast_trace_error
+                                            step_idx=ast_step_idx
+                                            is_running=is_running
+                                            on_ast_trace=on_ast_trace
+                                        />
+                                    }
+                                    .into_any(),
+                                    TutorMode::Vm => view! {
+                                        <TutorPanel
+                                            trace_session=trace_session
+                                            trace_error=trace_error
+                                            step_idx=trace_step_idx
+                                            is_running=is_running
+                                            on_trace=on_vm_trace
+                                        />
+                                    }
+                                    .into_any(),
+                                }}
+                            </div>
                         }
                         .into_any();
                     }

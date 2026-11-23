@@ -74,6 +74,25 @@ pub struct TraceExecutionResult {
     pub trace_json: Option<String>,
 }
 
+/// Parámetros de entrada para trazar paso a paso el AST en el intérprete tree-walk.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AstTraceRequest {
+    pub source_code: String,
+    pub stdin: String,
+    pub max_steps: u32,
+}
+
+/// Resultado estructurado de una traza paso a paso del AST devuelto por el Web Worker.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AstTraceExecutionResult {
+    pub stdout: String,
+    pub return_value: Option<String>,
+    pub return_type: String,
+    pub elapsed_ms: f64,
+    pub is_error: bool,
+    pub ast_trace_json: Option<String>,
+}
+
 struct WorkerHandle {
     worker: Worker,
     _on_message: Closure<dyn FnMut(MessageEvent)>,
@@ -83,6 +102,7 @@ struct WorkerHandle {
 enum JobCallback {
     Run(Box<dyn FnOnce(ExecutionResult)>),
     Trace(Box<dyn FnOnce(TraceExecutionResult)>),
+    AstTrace(Box<dyn FnOnce(AstTraceExecutionResult)>),
 }
 
 struct ActiveJob {
@@ -123,6 +143,17 @@ where
 {
     let callback = JobCallback::Trace(Box::new(on_complete));
     launch_worker_job(callback, |job_id| build_trace_payload(job_id, &request));
+}
+
+/// Ejecuta y traza paso a paso el AST de un programa Wyrm en el intérprete dentro del Web Worker.
+///
+/// Comparte el mismo mecanismo de cancelación (`cancel()` / `■ DETENER`) que `execute_async`.
+pub fn execute_ast_trace_async<F>(request: AstTraceRequest, on_complete: F)
+where
+    F: FnOnce(AstTraceExecutionResult) + 'static,
+{
+    let callback = JobCallback::AstTrace(Box::new(on_complete));
+    launch_worker_job(callback, |job_id| build_ast_trace_payload(job_id, &request));
 }
 
 fn launch_worker_job<P>(callback: JobCallback, build_payload: P)
@@ -213,6 +244,7 @@ fn dispatch_error_callback(callback: JobCallback, message: String, elapsed_ms: f
     match callback {
         JobCallback::Run(cb) => cb(error_result(message, elapsed_ms)),
         JobCallback::Trace(cb) => cb(trace_error_result(message, elapsed_ms)),
+        JobCallback::AstTrace(cb) => cb(ast_trace_error_result(message, elapsed_ms)),
     }
 }
 
@@ -251,6 +283,7 @@ fn spawn_worker() -> Result<WorkerHandle, String> {
         match job.callback {
             JobCallback::Run(cb) => cb(parse_run_response(&data)),
             JobCallback::Trace(cb) => cb(parse_trace_response(&data)),
+            JobCallback::AstTrace(cb) => cb(parse_ast_trace_response(&data)),
         }
     });
 
@@ -353,6 +386,36 @@ fn build_trace_payload(job_id: u64, request: &TraceRequest) -> JsValue {
     payload.into()
 }
 
+fn build_ast_trace_payload(job_id: u64, request: &AstTraceRequest) -> JsValue {
+    let payload = Object::new();
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("action"),
+        &JsValue::from_str("ast_trace"),
+    );
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("id"),
+        &JsValue::from_f64(job_id as f64),
+    );
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("code"),
+        &JsValue::from_str(&request.source_code),
+    );
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("stdin"),
+        &JsValue::from_str(&request.stdin),
+    );
+    let _ = Reflect::set(
+        &payload,
+        &JsValue::from_str("max_steps"),
+        &JsValue::from_f64(request.max_steps as f64),
+    );
+    payload.into()
+}
+
 fn parse_run_response(data: &JsValue) -> ExecutionResult {
     let stdout = get_string_prop(data, "stdout").unwrap_or_default();
     let return_value = get_string_prop(data, "return_value").filter(|val| !val.is_empty());
@@ -386,6 +449,24 @@ fn parse_trace_response(data: &JsValue) -> TraceExecutionResult {
         elapsed_ms,
         is_error,
         trace_json,
+    }
+}
+
+fn parse_ast_trace_response(data: &JsValue) -> AstTraceExecutionResult {
+    let stdout = get_string_prop(data, "stdout").unwrap_or_default();
+    let return_value = get_string_prop(data, "return_value").filter(|val| !val.is_empty());
+    let return_type = get_string_prop(data, "return_type").unwrap_or_default();
+    let elapsed_ms = get_f64_prop(data, "elapsed_ms").unwrap_or(0.0);
+    let is_error = get_bool_prop(data, "is_error").unwrap_or(false);
+    let ast_trace_json = get_string_prop(data, "ast_trace_json").filter(|val| !val.is_empty());
+
+    AstTraceExecutionResult {
+        stdout,
+        return_value,
+        return_type,
+        elapsed_ms,
+        is_error,
+        ast_trace_json,
     }
 }
 
@@ -430,6 +511,17 @@ fn trace_error_result(message: String, elapsed_ms: f64) -> TraceExecutionResult 
         elapsed_ms,
         is_error: true,
         trace_json: None,
+    }
+}
+
+fn ast_trace_error_result(message: String, elapsed_ms: f64) -> AstTraceExecutionResult {
+    AstTraceExecutionResult {
+        stdout: message,
+        return_value: None,
+        return_type: String::new(),
+        elapsed_ms,
+        is_error: true,
+        ast_trace_json: None,
     }
 }
 

@@ -1,4 +1,7 @@
 mod app;
+mod ast_layout;
+mod ast_trace;
+mod ast_tutor;
 mod engine;
 mod examples;
 mod highlight;
