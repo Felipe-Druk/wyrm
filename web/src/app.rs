@@ -1,21 +1,113 @@
-//! Componente principal y vistas de interfaz para WYRM Playground.
+//! Componente principal y vistas de interfaz para WYRM Playground ("Códice de Obsidiana").
 
 use crate::engine::{self, ExecutionMode, ExecutionRequest, ExecutionResult};
 use crate::examples::{self, EXAMPLES};
 use crate::highlight;
+use crate::wyrm_art;
 use leptos::html::{Div, Pre, Textarea};
+use leptos::leptos_dom::helpers::{set_timeout_with_handle, TimeoutHandle};
 use leptos::prelude::*;
+use std::time::Duration;
 use web_sys::{KeyboardEvent, MouseEvent};
 
 const PLAYGROUND_VERSION: &str = "v0.2.0";
 const REPO_URL: &str = "https://github.com/Felipe-Druk/wyrm";
 const TAB_SPACES: &str = "    ";
+const THEME_STORAGE_KEY: &str = "wyrm-theme";
+const RUNNING_INDICATOR_DELAY_MS: u64 = 150;
+const RUN_PULSE_DURATION_MS: u64 = 300;
 
 /// Pestaña elegida en el panel de resultados.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum OutputTab {
     Console,
     Inspector,
+}
+
+/// Tema dracónico conmutable del Playground.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Theme {
+    Obsidian,
+    Silver,
+}
+
+impl Theme {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Obsidian => "obsidian",
+            Self::Silver => "silver",
+        }
+    }
+
+    fn from_storage(raw: &str) -> Self {
+        match raw {
+            "silver" => Self::Silver,
+            _ => Self::Obsidian,
+        }
+    }
+
+    fn toggle(self) -> Self {
+        match self {
+            Self::Obsidian => Self::Silver,
+            Self::Silver => Self::Obsidian,
+        }
+    }
+
+    fn glyph(self) -> &'static str {
+        match self {
+            Self::Obsidian => "◈",
+            Self::Silver => "◇",
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Obsidian => "OBSIDIANA",
+            Self::Silver => "PLATA",
+        }
+    }
+
+    fn toggle_title(self) -> &'static str {
+        match self {
+            Self::Obsidian => "Cambiar a tema Plata (Dragón Blanco)",
+            Self::Silver => "Cambiar a tema Obsidiana",
+        }
+    }
+}
+
+/// Etiqueta compacta del modo de motor para la cabecera de telemetría.
+fn mode_short_label(mode: ExecutionMode) -> &'static str {
+    match mode {
+        ExecutionMode::Interpreter => "INTÉRPRETE",
+        ExecutionMode::CompilerVm => "VM",
+    }
+}
+
+/// Recupera el tema persistido en `window.localStorage`.
+fn load_saved_theme() -> Theme {
+    web_sys::window()
+        .and_then(|window| window.local_storage().ok().flatten())
+        .and_then(|storage| storage.get_item(THEME_STORAGE_KEY).ok().flatten())
+        .map(|raw| Theme::from_storage(&raw))
+        .unwrap_or(Theme::Obsidian)
+}
+
+/// Persiste el tema activo en `window.localStorage`.
+fn save_theme(theme: Theme) {
+    if let Some(storage) = web_sys::window().and_then(|window| window.local_storage().ok().flatten())
+    {
+        let _ = storage.set_item(THEME_STORAGE_KEY, theme.as_str());
+    }
+}
+
+/// Sincroniza `data-theme` en `<html>` para cubrir fondo raíz y barras de desplazamiento.
+fn apply_document_theme(theme: Theme) {
+    if let Some(root) = web_sys::window()
+        .and_then(|window| window.document())
+        .and_then(|doc| doc.document_element())
+    {
+        let _ = root.set_attribute("data-theme", theme.as_str());
+    }
 }
 
 /// Cuenta la cantidad de líneas de un buffer de código.
@@ -45,82 +137,214 @@ fn cursor_line_col(text: &str, utf16_offset: usize) -> (usize, usize) {
     (line, col)
 }
 
+/// Renderiza el arte ASCII sombreado del wyrm envolviendo el ojo `◈` sin usar `inner_html`.
+#[component]
+fn WyrmAsciiArt(art: &'static str, class: &'static str) -> impl IntoView {
+    let (before_eye, after_eye) = art.split_once('◈').unwrap_or((art, ""));
+    let has_eye = art.contains('◈');
+
+    view! {
+        <pre class=class aria-hidden="true">
+            {before_eye}
+            {has_eye.then(|| view! { <span class="wyrm-ascii-eye">"◈"</span> })}
+            {after_eye}
+        </pre>
+    }
+}
+
 /// Componente raíz del Playground de Wyrm.
 #[component]
 pub fn App() -> impl IntoView {
     let initial = examples::default_example();
+    let initial_theme = load_saved_theme();
 
+    let theme = RwSignal::new(initial_theme);
     let selected_example_id = RwSignal::new(initial.id.to_string());
     let code = RwSignal::new(initial.code.to_string());
     let mode = RwSignal::new(ExecutionMode::Interpreter);
+    let last_mode = RwSignal::new(ExecutionMode::Interpreter);
     let verbose = RwSignal::new(false);
     let stdin_text = RwSignal::new(initial.default_stdin.to_string());
     let stdin_open = RwSignal::new(false);
     let active_tab = RwSignal::new(OutputTab::Console);
     let is_running = RwSignal::new(false);
+    let show_running_indicator = RwSignal::new(false);
+    let run_count = RwSignal::new(0u32);
+    let pulse_phase = RwSignal::new(0u8);
     let result = RwSignal::new(None::<ExecutionResult>);
-    let show_syntax_modal = RwSignal::new(false);
+    let show_codex_modal = RwSignal::new(false);
+
+    let run_generation = StoredValue::new(0u64);
+    let running_timer = StoredValue::new(None::<TimeoutHandle>);
+    let pulse_generation = StoredValue::new(0u64);
+    let pulse_timer = StoredValue::new(None::<TimeoutHandle>);
+
+    Effect::new(move |_| {
+        let current = theme.get();
+        apply_document_theme(current);
+        save_theme(current);
+    });
+
+    on_cleanup(move || {
+        running_timer.update_value(|slot| {
+            if let Some(handle) = slot.take() {
+                handle.clear();
+            }
+        });
+        pulse_timer.update_value(|slot| {
+            if let Some(handle) = slot.take() {
+                handle.clear();
+            }
+        });
+    });
+
+    let clear_running_timer = move || {
+        running_timer.update_value(|slot| {
+            if let Some(handle) = slot.take() {
+                handle.clear();
+            }
+        });
+        show_running_indicator.set(false);
+    };
+
+    let clear_pulse = move || {
+        pulse_timer.update_value(|slot| {
+            if let Some(handle) = slot.take() {
+                handle.clear();
+            }
+        });
+        pulse_phase.set(0);
+    };
+
+    let trigger_run_pulse = move |run_number: u32| {
+        pulse_timer.update_value(|slot| {
+            if let Some(handle) = slot.take() {
+                handle.clear();
+            }
+        });
+        let next_gen = pulse_generation.get_value().wrapping_add(1);
+        pulse_generation.set_value(next_gen);
+
+        let phase = if run_number % 2 == 1 { 1u8 } else { 2u8 };
+        pulse_phase.set(phase);
+
+        if let Ok(handle) = set_timeout_with_handle(
+            move || {
+                if pulse_generation.get_value() == next_gen {
+                    pulse_phase.set(0);
+                }
+            },
+            Duration::from_millis(RUN_PULSE_DURATION_MS),
+        ) {
+            pulse_timer.set_value(Some(handle));
+        }
+    };
+
+    let on_toggle_theme = Callback::new(move |()| {
+        theme.update(|current| *current = current.toggle());
+    });
 
     let on_run = Callback::new(move |()| {
         if is_running.get_untracked() {
             return;
         }
+        let exec_mode = mode.get_untracked();
         let request = ExecutionRequest {
             source_code: code.get_untracked(),
-            mode: mode.get_untracked(),
+            mode: exec_mode,
             verbose: verbose.get_untracked(),
             stdin: stdin_text.get_untracked(),
         };
+
+        clear_running_timer();
+        let current_gen = run_generation.get_value().wrapping_add(1);
+        run_generation.set_value(current_gen);
         is_running.set(true);
+
+        if let Ok(handle) = set_timeout_with_handle(
+            move || {
+                if run_generation.get_value() == current_gen && is_running.get_untracked() {
+                    show_running_indicator.set(true);
+                }
+            },
+            Duration::from_millis(RUNNING_INDICATOR_DELAY_MS),
+        ) {
+            running_timer.set_value(Some(handle));
+        }
+
         engine::execute_async(request, move |execution_result| {
-            result.set(Some(execution_result));
+            if run_generation.get_value() != current_gen {
+                return;
+            }
+            clear_running_timer();
             is_running.set(false);
+
+            let next_run = run_count.get_untracked().wrapping_add(1);
+            run_count.set(next_run);
+            last_mode.set(exec_mode);
+            result.set(Some(execution_result));
+            trigger_run_pulse(next_run);
         });
     });
 
     let on_stop = Callback::new(move |()| {
+        clear_running_timer();
         engine::cancel();
         is_running.set(false);
     });
 
     let on_clear = Callback::new(move |()| {
+        run_generation.set_value(run_generation.get_value().wrapping_add(1));
+        clear_running_timer();
+        clear_pulse();
         engine::cancel_silent();
         is_running.set(false);
         code.set(String::new());
         result.set(None);
+        run_count.set(0);
         selected_example_id.set(String::new());
     });
 
     let on_select_example = Callback::new(move |example_id: String| {
         if let Some(example) = examples::find_by_id(&example_id) {
             if is_running.get_untracked() {
+                run_generation.set_value(run_generation.get_value().wrapping_add(1));
+                clear_running_timer();
                 engine::cancel_silent();
                 is_running.set(false);
             }
+            clear_pulse();
             selected_example_id.set(example.id.to_string());
             code.set(example.code.to_string());
             stdin_text.set(example.default_stdin.to_string());
             result.set(None);
+            run_count.set(0);
         }
     });
 
     let on_global_keydown = move |ev: KeyboardEvent| {
-        if ev.key() == "Escape" && show_syntax_modal.get_untracked() {
-            show_syntax_modal.set(false);
+        if ev.key() == "Escape" && show_codex_modal.get_untracked() {
+            show_codex_modal.set(false);
         }
     };
 
     view! {
-        <div class="playground-shell" on:keydown=on_global_keydown>
+        <div
+            class="playground-shell"
+            data-theme=move || theme.get().as_str()
+            on:keydown=on_global_keydown
+        >
             <TopBar
+                theme=theme
                 selected_example_id=selected_example_id
                 mode=mode
                 verbose=verbose
                 is_running=is_running
+                show_running_indicator=show_running_indicator
+                on_toggle_theme=on_toggle_theme
                 on_select_example=on_select_example
                 on_run=on_run
                 on_stop=on_stop
-                on_clear=on_clear
             />
 
             <main class="workspace-split">
@@ -132,73 +356,148 @@ pub fn App() -> impl IntoView {
 
                 <OutputPanel
                     mode=mode
+                    last_mode=last_mode
                     verbose=verbose
                     active_tab=active_tab
-                    is_running=is_running
+                    show_running_indicator=show_running_indicator
+                    run_count=run_count
+                    pulse_phase=pulse_phase
                     result=result
                     stdin_text=stdin_text
                     stdin_open=stdin_open
+                    on_clear=on_clear
                 />
             </main>
 
             <FooterBar
-                is_running=is_running
-                show_syntax_modal=show_syntax_modal
+                show_running_indicator=show_running_indicator
+                show_codex_modal=show_codex_modal
             />
 
-            <Show when=move || show_syntax_modal.get()>
-                <SyntaxGuideModal show_syntax_modal=show_syntax_modal />
+            <Show when=move || show_codex_modal.get()>
+                <CodexModal show_codex_modal=show_codex_modal />
             </Show>
         </div>
     }
 }
 
-/// Barra superior con marca, selector de ejemplos, modo de motor, verbose y acciones.
+/// Isologo Pixel Art 24×24 de un wyrm serpentino sin alas en curva geométrica.
+#[component]
+fn WyrmPixelLogo() -> impl IntoView {
+    view! {
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            shape-rendering="crispEdges"
+            class="wyrm-pixel-logo"
+        >
+            <rect x="0" y="0" width="24" height="24" fill="var(--bg-surface)" />
+            <g fill="var(--wyrm-scale-dark)">
+                <rect x="6" y="19" width="12" height="3" />
+                <rect x="12" y="13" width="9" height="3" />
+                <rect x="8" y="4" width="2" height="11" />
+                <rect x="15" y="12" width="5" height="8" />
+                <rect x="14" y="5" width="4" height="4" />
+                <rect x="15" y="11" width="4" height="10" />
+                <rect x="6" y="6" width="14" height="2" />
+                <rect x="8" y="4" width="9" height="4" />
+                <rect x="7" y="5" width="12" height="3" />
+                <rect x="15" y="13" width="6" height="4" />
+                <rect x="6" y="18" width="4" height="4" />
+                <rect x="6" y="11" width="5" height="3" />
+            </g>
+            <g fill="var(--wyrm-scale-light)">
+                <rect x="8" y="4" width="8" height="4" />
+                <rect x="15" y="12" width="4" height="8" />
+                <rect x="5" y="7" width="4" height="6" />
+                <rect x="11" y="19" width="5" height="4" />
+                <rect x="5" y="18" width="4" height="3" />
+                <rect x="7" y="5" width="11" height="3" />
+                <rect x="15" y="11" width="3" height="10" />
+                <rect x="10" y="12" width="9" height="3" />
+                <rect x="15" y="13" width="5" height="4" />
+                <rect x="6" y="6" width="3" height="8" />
+            </g>
+            <g fill="var(--wyrm-scale-light)">
+                <rect x="4" y="9" width="5" height="3" />
+                <rect x="9" y="3" width="6" height="5" />
+                <rect x="14" y="11" width="4" height="5" />
+                <rect x="14" y="17" width="4" height="4" />
+                <rect x="4" y="19" width="6" height="1" />
+                <rect x="6" y="6" width="13" height="2" />
+                <rect x="10" y="20" width="6" height="3" />
+                <rect x="13" y="18" width="5" height="3" />
+                <rect x="6" y="11" width="4" height="3" />
+            </g>
+            <g fill="var(--wyrm-scale-mid)">
+                <rect x="13" y="12" width="4" height="3" />
+                <rect x="7" y="20" width="9" height="1" />
+                <rect x="12" y="5" width="3" height="3" />
+                <rect x="6" y="8" width="2" height="4" />
+                <rect x="8" y="13" width="10" height="1" />
+                <rect x="17" y="14" width="2" height="3" />
+                <rect x="11" y="7" width="8" height="1" />
+                <rect x="15" y="18" width="2" height="2" />
+                <rect x="7" y="12" width="3" height="1" />
+                <rect x="9" y="5" width="6" height="1" />
+            </g>
+            <g fill="var(--wyrm-scale-mid)">
+                <rect x="13" y="19" width="3" height="2" />
+                <rect x="8" y="6" width="2" height="1" />
+                <rect x="7" y="7" width="2" height="1" />
+                <rect x="16" y="17" width="2" height="1" />
+                <rect x="6" y="19" width="2" height="1" />
+                <rect x="12" y="13" width="6" height="2" />
+                <rect x="12" y="6" width="4" height="2" />
+                <rect x="16" y="13" width="2" height="3" />
+                <rect x="5" y="10" width="3" height="1" />
+            </g>
+            <g fill="var(--accent-gold)">
+                <rect x="10" y="22" width="6" height="1" />
+                <rect x="8" y="1" width="2" height="2" />
+                <rect x="13" y="2" width="2" height="2" />
+                <rect x="9" y="2" width="2" height="2" />
+                <rect x="14" y="10" width="3" height="1" />
+                <rect x="6" y="17" width="3" height="1" />
+                <rect x="7" y="1" width="3" height="1" />
+                <rect x="17" y="7" width="1" height="1" />
+                <rect x="13" y="11" width="1" height="1" />
+                <rect x="5" y="18" width="1" height="1" />
+            </g>
+            <rect x="11" y="5" width="2" height="1" fill="var(--accent-violet)" />
+        </svg>
+    }
+}
+
+/// Barra superior plana estilo grilla continua: segmentos divididos por líneas verticales de 1px.
 #[component]
 fn TopBar(
+    theme: RwSignal<Theme>,
     selected_example_id: RwSignal<String>,
     mode: RwSignal<ExecutionMode>,
     verbose: RwSignal<bool>,
     is_running: RwSignal<bool>,
+    show_running_indicator: RwSignal<bool>,
+    on_toggle_theme: Callback<()>,
     on_select_example: Callback<String>,
     on_run: Callback<()>,
     on_stop: Callback<()>,
-    on_clear: Callback<()>,
 ) -> impl IntoView {
     view! {
         <header class="topbar">
-            <div class="topbar-brand">
+            <div class="topbar-brand topbar-segment">
                 <div class="brand-emblem" aria-hidden="true">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 32 32"
-                        fill="none"
-                        class="brand-icon"
-                    >
-                        <path
-                            d="M5.5 9.5L10.5 23.5L16 13.5L21.5 23.5L26.5 9.5"
-                            stroke="currentColor"
-                            stroke-width="2.6"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                        <path
-                            d="M12.5 6.5L16 3.5L19.5 6.5"
-                            stroke="#d29922"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        />
-                    </svg>
+                    <WyrmPixelLogo />
                 </div>
                 <div class="brand-text">
                     <span class="brand-name">"WYRM"</span>
-                    <span class="brand-subtitle">"Playground"</span>
+                    <span class="brand-sep" aria-hidden="true">"::"</span>
+                    <span class="brand-subtitle">"PLAYGROUND"</span>
                 </div>
             </div>
 
             <div class="topbar-controls">
-                <div class="control-group">
+                <div class="topbar-segment control-group">
                     <label class="sr-only" for="example-select">"Ejemplo precargado"</label>
                     <select
                         id="example-select"
@@ -236,7 +535,7 @@ fn TopBar(
                     </select>
                 </div>
 
-                <div class="mode-switch" role="group" aria-label="Modo de ejecución">
+                <div class="topbar-segment mode-switch" role="group" aria-label="Modo de ejecución">
                     <button
                         type="button"
                         class="mode-btn"
@@ -257,61 +556,63 @@ fn TopBar(
                     </button>
                 </div>
 
-                <label class="verbose-toggle" title="Habilita la traza detallada en la pestaña Inspector">
+                <label
+                    class="topbar-segment verbose-toggle"
+                    class:active=move || verbose.get()
+                    title="Habilita la traza detallada en la pestaña Inspector"
+                >
                     <input
                         type="checkbox"
                         class="verbose-checkbox"
                         prop:checked=move || verbose.get()
                         on:change=move |ev| verbose.set(event_target_checked(&ev))
                     />
-                    <span class="toggle-track" aria-hidden="true">
-                        <span class="toggle-thumb"></span>
+                    <span class="verbose-flag" aria-hidden="true">
+                        {move || if verbose.get() { "[◈]" } else { "[ ]" }}
                     </span>
-                    <span class="toggle-label">"Verbose"</span>
+                    <span class="toggle-label">"VERBOSE"</span>
                 </label>
+
+                <button
+                    type="button"
+                    class="topbar-segment theme-toggle-btn"
+                    title=move || theme.get().toggle_title()
+                    on:click=move |_| on_toggle_theme.run(())
+                >
+                    <span class="theme-glyph" aria-hidden="true">{move || theme.get().glyph()}</span>
+                    <span>{move || theme.get().label()}</span>
+                </button>
             </div>
 
             <div class="topbar-actions">
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    class:running=move || is_running.get()
-                    disabled=move || is_running.get()
-                    title="Ejecutar código (Ctrl + Enter)"
-                    on:click=move |_| on_run.run(())
-                >
-                    <Show
-                        when=move || is_running.get()
-                        fallback=move || {
-                            view! {
+                <Show
+                    when=move || show_running_indicator.get()
+                    fallback=move || {
+                        view! {
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                disabled=move || is_running.get()
+                                title="Ejecutar código (Ctrl + Enter)"
+                                on:click=move |_| on_run.run(())
+                            >
                                 <span class="run-glyph" aria-hidden="true">"▶"</span>
-                                <span>"Ejecutar"</span>
+                                <span>"EJECUTAR"</span>
                                 <kbd class="shortcut-hint">"Ctrl+↵"</kbd>
-                            }
+                            </button>
                         }
+                    }
+                >
+                    <button
+                        type="button"
+                        class="btn btn-danger stop-active"
+                        title="Detener el Web Worker actual (corta bucles infinitos)"
+                        on:click=move |_| on_stop.run(())
                     >
-                        <span class="spinner-dot" aria-hidden="true"></span>
-                        <span>"Ejecutando..."</span>
-                    </Show>
-                </button>
-                <button
-                    type="button"
-                    class="btn btn-danger"
-                    disabled=move || !is_running.get()
-                    title="Detener el Web Worker actual (corta bucles infinitos)"
-                    on:click=move |_| on_stop.run(())
-                >
-                    <span class="stop-glyph" aria-hidden="true">"■"</span>
-                    <span>"Detener"</span>
-                </button>
-                <button
-                    type="button"
-                    class="btn btn-secondary"
-                    title="Limpiar el editor y la salida actual"
-                    on:click=move |_| on_clear.run(())
-                >
-                    "Limpiar"
-                </button>
+                        <span class="stop-glyph" aria-hidden="true">"■"</span>
+                        <span>"DETENER"</span>
+                    </button>
+                </Show>
             </div>
         </header>
     }
@@ -447,48 +748,39 @@ fn EditorPanel(
 
     view! {
         <section class="panel editor-panel" aria-label="Editor de código Wyrm">
-            <div class="panel-header">
-                <div class="file-tab">
-                    <span class="file-dot" aria-hidden="true"></span>
+            <div class="panel-header editor-header">
+                <div
+                    class="file-tab"
+                    title=move || example_description().unwrap_or("main.wyrm")
+                >
+                    <span class="file-glyph" aria-hidden="true">"◈"</span>
                     <span class="file-name">"main.wyrm"</span>
+                    <Show when=move || example_description().is_some()>
+                        <span class="file-meta-sep" aria-hidden="true">"::"</span>
+                        <span class="file-example-hint">
+                            {move || example_description().unwrap_or_default()}
+                        </span>
+                    </Show>
                 </div>
                 <div class="editor-stats" aria-live="polite">
                     <span class="cursor-pos">
                         {move || format!("Ln {}, Col {}", cursor_line.get(), cursor_col.get())}
                     </span>
-                    <span class="stats-sep" aria-hidden="true">"·"</span>
+                    <span class="stats-sep" aria-hidden="true">"::"</span>
                     <span>
                         {move || {
                             let lines = line_count.get();
                             if lines == 1 {
-                                "1 línea".to_string()
+                                "1 L".to_string()
                             } else {
-                                format!("{lines} líneas")
+                                format!("{lines} L")
                             }
                         }}
                     </span>
                     <span class="stats-sep" aria-hidden="true">"·"</span>
-                    <span>
-                        {move || {
-                            let chars = char_count.get();
-                            if chars == 1 {
-                                "1 carácter".to_string()
-                            } else {
-                                format!("{chars} caracteres")
-                            }
-                        }}
-                    </span>
+                    <span>{move || format!("{} ch", char_count.get())}</span>
                 </div>
             </div>
-
-            <Show when=move || example_description().is_some()>
-                <div class="editor-context-bar">
-                    <span class="context-badge">"Ejemplo"</span>
-                    <span class="context-text">
-                        {move || example_description().unwrap_or_default()}
-                    </span>
-                </div>
-            </Show>
 
             <div class="editor-body">
                 <div class="line-gutter" node_ref=gutter_ref aria-hidden="true">
@@ -554,16 +846,20 @@ fn EditorPanel(
     }
 }
 
-/// Panel derecho con pestañas `Consola` e `Inspector (Verbose)`, badges y bloque `stdin / fd 0`.
+/// Panel derecho con pestañas `Consola` e `Inspector`, telemetría fija, `Limpiar` y `stdin / fd 0`.
 #[component]
 fn OutputPanel(
     mode: RwSignal<ExecutionMode>,
+    last_mode: RwSignal<ExecutionMode>,
     verbose: RwSignal<bool>,
     active_tab: RwSignal<OutputTab>,
-    is_running: RwSignal<bool>,
+    show_running_indicator: RwSignal<bool>,
+    run_count: RwSignal<u32>,
+    pulse_phase: RwSignal<u8>,
     result: RwSignal<Option<ExecutionResult>>,
     stdin_text: RwSignal<String>,
     stdin_open: RwSignal<bool>,
+    on_clear: Callback<()>,
 ) -> impl IntoView {
     let has_inspector_output = Memo::new(move |_| {
         result
@@ -573,6 +869,8 @@ fn OutputPanel(
     });
 
     let stdin_bytes = Memo::new(move |_| stdin_text.get().len());
+    let is_pulsing_a = move || pulse_phase.get() == 1;
+    let is_pulsing_b = move || pulse_phase.get() == 2;
 
     view! {
         <section class="panel output-panel" aria-label="Salida e inspector">
@@ -588,7 +886,8 @@ fn OutputPanel(
                         }
                         on:click=move |_| active_tab.set(OutputTab::Console)
                     >
-                        "Consola"
+                        <span class="tab-glyph" aria-hidden="true">"▸"</span>
+                        <span>"CONSOLA"</span>
                     </button>
                     <button
                         type="button"
@@ -600,97 +899,102 @@ fn OutputPanel(
                         }
                         on:click=move |_| active_tab.set(OutputTab::Inspector)
                     >
-                        <span>"Inspector (Verbose)"</span>
+                        <span class="tab-glyph" aria-hidden="true">"::"</span>
+                        <span>"INSPECTOR"</span>
                         <Show when=move || has_inspector_output.get()>
-                            <span class="tab-indicator" title="Traza verbose lista"></span>
+                            <span
+                                class="tab-ready-glyph"
+                                title="Traza verbose lista"
+                                aria-hidden="true"
+                            >
+                                "◈"
+                            </span>
                         </Show>
                     </button>
                 </div>
 
-                <div class="result-badges">
-                    {move || {
-                        if is_running.get() {
-                            return view! {
-                                <span class="badge badge-running">
-                                    <span class="spinner-dot" aria-hidden="true"></span>
-                                    {format!("Ejecutando · {}", mode.get().label())}
-                                </span>
-                            }
-                            .into_any();
-                        }
-
-                        match result.get() {
-                            Some(res) => {
-                                let is_error = res.is_error;
-                                let return_label = res.return_value.unwrap_or_else(|| {
-                                    if is_error {
-                                        "error".to_string()
-                                    } else {
-                                        "∅".to_string()
-                                    }
-                                });
-                                let time_label = format!("{:.2} ms", res.elapsed_ms);
-                                view! {
-                                    <div class="badge-group">
-                                        <span
-                                            class="badge badge-return"
-                                            class:error=is_error
-                                            title="Valor de retorno implícito del programa"
-                                        >
-                                            <span class="badge-key">"Retorno:"</span>
-                                            <span class="badge-val">{return_label}</span>
-                                        </span>
-                                        <span class="badge badge-time" title="Tiempo total de ejecución">
-                                            {time_label}
-                                        </span>
-                                    </div>
+                <div class="output-header-right">
+                    <div class="result-telemetry">
+                        {move || {
+                            if show_running_indicator.get() {
+                                return view! {
+                                    <span class="telemetry-chip telemetry-chip--running">
+                                        <span class="pulse-glyph" aria-hidden="true">"◈"</span>
+                                        <span>{format!("EJECUTANDO · {}", mode_short_label(mode.get()))}</span>
+                                    </span>
                                 }
-                                .into_any()
+                                .into_any();
                             }
-                            None => view! {
-                                <span class="badge badge-idle">
-                                    {move || format!("Listo · {}", mode.get().label())}
-                                </span>
+
+                            match result.get() {
+                                Some(res) => {
+                                    let is_error = res.is_error;
+                                    let run_num = run_count.get().max(1);
+                                    let engine_tag = mode_short_label(last_mode.get());
+                                    let glyph = if is_error { "✕" } else { "◈" };
+                                    let label = format!(
+                                        "RUN #{run_num:02} · {:.2} ms · {engine_tag}",
+                                        res.elapsed_ms
+                                    );
+                                    view! {
+                                        <span
+                                            class="telemetry-chip telemetry-chip--result"
+                                            class:error=is_error
+                                            class:run-pulse-a=is_pulsing_a
+                                            class:run-pulse-b=is_pulsing_b
+                                            title="Contador de corrida, duración y motor utilizado"
+                                        >
+                                            <span class="telemetry-glyph" aria-hidden="true">{glyph}</span>
+                                            <span>{label}</span>
+                                        </span>
+                                    }
+                                    .into_any()
+                                }
+                                None => view! {
+                                    <span class="telemetry-chip telemetry-chip--idle">
+                                        <span class="telemetry-glyph" aria-hidden="true">"∅"</span>
+                                        <span>{move || format!("LISTO · {}", mode_short_label(mode.get()))}</span>
+                                    </span>
+                                }
+                                .into_any(),
                             }
-                            .into_any(),
-                        }
-                    }}
+                        }}
+                    </div>
+
+                    <button
+                        type="button"
+                        class="output-clear-btn"
+                        title="Limpiar el editor y la salida actual"
+                        on:click=move |_| on_clear.run(())
+                    >
+                        "LIMPIAR"
+                    </button>
                 </div>
             </div>
 
+            <Show when=move || show_running_indicator.get()>
+                <div class="running-banner" role="status" aria-live="polite">
+                    <span class="pulse-glyph" aria-hidden="true">"◈"</span>
+                    <span class="running-banner-text">
+                        {move || format!(
+                            "EJECUTANDO EN WEB WORKER ({}) :: PRESIONÁ ■ DETENER PARA INTERRUMPIR",
+                            mode_short_label(mode.get())
+                        )}
+                    </span>
+                </div>
+            </Show>
+
             <div class="output-viewport">
                 {move || {
-                    if is_running.get() {
-                        return view! {
-                            <div class="empty-state">
-                                <div class="running-pulse" aria-hidden="true"></div>
-                                <p class="empty-title">
-                                    {format!("Ejecutando en Web Worker ({})...", mode.get().label())}
-                                </p>
-                                <p class="empty-hint">
-                                    "Si tu programa entró en un bucle sin fin, presioná "
-                                    <kbd>"■ Detener"</kbd>
-                                    " en la barra superior."
-                                </p>
-                            </div>
-                        }
-                        .into_any();
-                    }
-
                     match (active_tab.get(), result.get()) {
                         (OutputTab::Console, None) => view! {
-                            <div class="empty-state">
-                                <p class="empty-title">"Sin ejecución todavía"</p>
-                                <p class="empty-hint">
-                                    "Presioná "
-                                    <kbd>"▶ Ejecutar"</kbd>
-                                    " o "
-                                    <kbd>"Ctrl + Enter"</kbd>
-                                    " dentro del editor para evaluar "
-                                    <code>"main.wyrm"</code>
-                                    " con "
-                                    <strong>{move || mode.get().label()}</strong>
-                                    "."
+                            <div class="empty-state empty-state--console">
+                                <WyrmAsciiArt
+                                    art=wyrm_art::WYRM_CONSOLE_ART
+                                    class="wyrm-ascii"
+                                />
+                                <p class="empty-status-line">
+                                    "WYRM RUNTIME READY :: CTRL+ENTER PARA EJECUTAR"
                                 </p>
                             </div>
                         }
@@ -702,12 +1006,13 @@ fn OutputPanel(
                             let stdout_content = if has_stdout {
                                 res.stdout
                             } else {
-                                "(sin salida en stdout)".to_string()
+                                "∅ (sin salida en stdout)".to_string()
                             };
+                            let status_glyph = if is_error { "✕" } else { "▸" };
                             let status_label = if is_error {
-                                "Error de ejecución"
+                                "ERROR DE EJECUCIÓN"
                             } else {
-                                "stdout (fd 1)"
+                                "STDOUT :: FD 1"
                             };
                             let return_display =
                                 res.return_value.unwrap_or_else(|| "∅".to_string());
@@ -721,9 +1026,20 @@ fn OutputPanel(
 
                             view! {
                                 <div class="console-stack">
-                                    <div class="console-block" class:error=is_error>
+                                    <div
+                                        class="console-block corner-frame"
+                                        class:error=is_error
+                                        class:run-pulse-a=is_pulsing_a
+                                        class:run-pulse-b=is_pulsing_b
+                                    >
                                         <div class="stream-header">
-                                            <span class="stream-dot" class:error=is_error></span>
+                                            <span
+                                                class="stream-glyph"
+                                                class:error=is_error
+                                                aria-hidden="true"
+                                            >
+                                                {status_glyph}
+                                            </span>
                                             <span class="stream-label">{status_label}</span>
                                         </div>
                                         <pre
@@ -736,12 +1052,18 @@ fn OutputPanel(
                                     </div>
 
                                     <Show when=move || show_return_block>
-                                        <div class="return-block">
+                                        <div
+                                            class="return-block corner-frame"
+                                            class:run-pulse-a=is_pulsing_a
+                                            class:run-pulse-b=is_pulsing_b
+                                        >
                                             <div class="return-header">
                                                 <div class="return-header-left">
-                                                    <span class="stream-dot"></span>
+                                                    <span class="stream-glyph return" aria-hidden="true">
+                                                        "◈"
+                                                    </span>
                                                     <span class="stream-label">
-                                                        "Retorno del programa"
+                                                        "RETORNO DEL PROGRAMA"
                                                     </span>
                                                 </div>
                                                 <span
@@ -768,11 +1090,11 @@ fn OutputPanel(
 
                         (OutputTab::Inspector, None) => view! {
                             <div class="empty-state">
-                                <p class="empty-title">"Inspector en espera"</p>
+                                <p class="empty-title">":: INSPECTOR EN ESPERA"</p>
                                 <p class="empty-hint">
-                                    "Habilitá el switch "
-                                    <strong>"Verbose"</strong>
-                                    " en la barra superior y ejecutá el programa para inspeccionar tokens, AST o bytecode "
+                                    "Activá "
+                                    <strong>"[◈] VERBOSE"</strong>
+                                    " en la barra superior y ejecutá para inspeccionar tokens, AST o bytecode "
                                     <code>".wrc"</code>
                                     "."
                                 </p>
@@ -783,23 +1105,29 @@ fn OutputPanel(
                         (OutputTab::Inspector, Some(res)) => {
                             if res.inspector_log.is_empty() {
                                 let hint = if verbose.get() {
-                                    "Volvé a ejecutar el código para capturar la traza en modo Verbose."
+                                    "Volvé a ejecutar el código para capturar la traza en modo VERBOSE."
                                 } else {
-                                    "El modo Verbose estaba deshabilitado en la última ejecución. Habilitá el switch Verbose y ejecutá nuevamente."
+                                    "El modo VERBOSE estaba deshabilitado en la última corrida. Activá [◈] VERBOSE y ejecutá nuevamente."
                                 };
                                 view! {
                                     <div class="empty-state">
-                                        <p class="empty-title">"Sin traza de inspección"</p>
+                                        <p class="empty-title">"∅ SIN TRAZA DE INSPECCIÓN"</p>
                                         <p class="empty-hint">{hint}</p>
                                     </div>
                                 }
                                 .into_any()
                             } else {
                                 view! {
-                                    <div class="inspector-block">
+                                    <div
+                                        class="inspector-block corner-frame"
+                                        class:run-pulse-a=is_pulsing_a
+                                        class:run-pulse-b=is_pulsing_b
+                                    >
                                         <div class="stream-header">
-                                            <span class="stream-dot inspector"></span>
-                                            <span class="stream-label">"Traza Verbose del motor"</span>
+                                            <span class="stream-glyph inspector" aria-hidden="true">
+                                                "::"
+                                            </span>
+                                            <span class="stream-label">"TRAZA VERBOSE DEL MOTOR"</span>
                                         </div>
                                         <pre class="terminal-pre inspector-pre">{res.inspector_log}</pre>
                                     </div>
@@ -822,7 +1150,7 @@ fn OutputPanel(
                         <span class="stdin-chevron" aria-hidden="true">
                             {move || if stdin_open.get() { "▾" } else { "▸" }}
                         </span>
-                        <span class="stdin-title">"Entrada estándar (stdin / fd 0)"</span>
+                        <span class="stdin-title">"STDIN :: FD 0"</span>
                         <Show when=move || stdin_bytes.get() != 0>
                             <span class="stdin-badge">
                                 {move || format!("{} B", stdin_bytes.get())}
@@ -837,7 +1165,7 @@ fn OutputPanel(
                             title="Vaciar entrada estándar"
                             on:click=move |_| stdin_text.set(String::new())
                         >
-                            "Vaciar"
+                            "VACIAR"
                         </button>
                     </Show>
                 </div>
@@ -860,28 +1188,30 @@ fn OutputPanel(
     }
 }
 
-/// Pie de página con versión, estado del motor, guía de sintaxis y enlace a GitHub.
+/// Pie de página con versión, estado del motor, Códice de Wyrm y enlace a GitHub.
 #[component]
 fn FooterBar(
-    is_running: RwSignal<bool>,
-    show_syntax_modal: RwSignal<bool>,
+    show_running_indicator: RwSignal<bool>,
+    show_codex_modal: RwSignal<bool>,
 ) -> impl IntoView {
     view! {
         <footer class="footer-bar">
             <div class="footer-left">
-                <span class="footer-version">{format!("WYRM Playground {PLAYGROUND_VERSION}")}</span>
-                <span class="footer-sep" aria-hidden="true">"·"</span>
+                <span class="footer-version">{format!("WYRM {PLAYGROUND_VERSION}")}</span>
+                <span class="footer-sep" aria-hidden="true">"::"</span>
                 <span class="footer-status">
                     <span
-                        class="status-dot-engine"
-                        class:running=move || is_running.get()
+                        class="status-glyph-engine"
+                        class:running=move || show_running_indicator.get()
                         aria-hidden="true"
-                    ></span>
+                    >
+                        "◈"
+                    </span>
                     {move || {
-                        if is_running.get() {
-                            "Motor WASM: ejecutando en Web Worker..."
+                        if show_running_indicator.get() {
+                            "WASM :: EJECUTANDO EN WORKER..."
                         } else {
-                            "Motor WASM: wyrm_core (Web Worker)"
+                            "WASM :: wyrm_core (Web Worker)"
                         }
                     }}
                 </span>
@@ -891,168 +1221,199 @@ fn FooterBar(
                 <button
                     type="button"
                     class="footer-link-btn"
-                    on:click=move |_| show_syntax_modal.set(true)
+                    on:click=move |_| show_codex_modal.set(true)
                 >
-                    "Guía rápida de sintaxis Wyrm"
+                    <span aria-hidden="true">"◈ "</span>
+                    <span>"Códice de Wyrm"</span>
                 </button>
-                <span class="footer-sep" aria-hidden="true">"·"</span>
+                <span class="footer-sep" aria-hidden="true">"::"</span>
                 <a
                     class="footer-link"
                     href=REPO_URL
                     target="_blank"
                     rel="noopener noreferrer"
                 >
-                    "GitHub · Felipe-Druk/wyrm"
+                    "GitHub / Felipe-Druk/wyrm"
                 </a>
             </div>
         </footer>
     }
 }
 
-/// Modal con referencia rápida y fiel a la gramática de Wyrm.
+/// Modal técnico "Códice de Wyrm" con referencia de tipos, operadores, funciones y E/S.
 #[component]
-fn SyntaxGuideModal(show_syntax_modal: RwSignal<bool>) -> impl IntoView {
+fn CodexModal(show_codex_modal: RwSignal<bool>) -> impl IntoView {
     view! {
         <div
             class="modal-backdrop"
             role="dialog"
             aria-modal="true"
-            aria-label="Guía rápida de sintaxis Wyrm"
-            on:click=move |_| show_syntax_modal.set(false)
+            aria-label="Códice de Wyrm"
+            on:click=move |_| show_codex_modal.set(false)
         >
             <div
-                class="modal-card"
+                class="modal-card corner-frame"
                 on:click=move |ev: MouseEvent| ev.stop_propagation()
             >
                 <div class="modal-header">
-                    <div>
-                        <h2 class="modal-title">"Guía rápida de sintaxis Wyrm"</h2>
-                        <p class="modal-subtitle">
-                            "Resumen de tipos, operadores, bloques y funciones según la gramática de Wyrm."
-                        </p>
+                    <div class="modal-header-main">
+                        <WyrmAsciiArt
+                            art=wyrm_art::WYRM_CODEX_ART
+                            class="wyrm-ascii wyrm-ascii--modal"
+                        />
+                        <div class="modal-heading-group">
+                            <span class="modal-kicker">":: MANUAL DE REFERENCIA TÉCNICA ::"</span>
+                            <h2 class="modal-title">"Códice de Wyrm"</h2>
+                            <p class="modal-subtitle">
+                                "Especificación concisa de tipos por ancho de bit, operadores, bloques, funciones y primitivas nativas de E/S."
+                            </p>
+                        </div>
                     </div>
                     <button
                         type="button"
                         class="modal-close-btn"
-                        aria-label="Cerrar guía"
-                        on:click=move |_| show_syntax_modal.set(false)
+                        aria-label="Cerrar Códice de Wyrm"
+                        title="Cerrar (Esc)"
+                        on:click=move |_| show_codex_modal.set(false)
                     >
-                        "×"
+                        "✕"
                     </button>
                 </div>
 
                 <div class="modal-body">
-                    <div class="guide-grid">
-                        <article class="guide-card">
-                            <h3 class="guide-card-title">"1. Tipos explícitos"</h3>
-                            <p class="guide-card-note">
-                                "Enteros con signo, naturales, flotantes y booleanos. Los caracteres ASCII son "
-                                <code>"nat8"</code>
-                                "."
-                            </p>
-                            <pre class="guide-code">
-{r#"int8 / int16 / int32 / int64
-nat8 / nat16 / nat32 / nat64
-float32 / float64 / bool
+                    <section class="codex-section">
+                        <h3 class="codex-section-title">"01 :: TIPOS POR ANCHO DE BIT Y COMPUESTOS"</h3>
+                        <div class="codex-table-wrap">
+                            <table class="codex-table">
+                                <thead>
+                                    <tr>
+                                        <th>"TIPO"</th>
+                                        <th>"ANCHO"</th>
+                                        <th>"SEMÁNTICA / NOTAS"</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>"nat8 / nat16 / nat32 / nat64"</code></td>
+                                        <td class="col-width">"8..64 b"</td>
+                                        <td>"Naturales sin signo. Caracteres ASCII literales (ej. 'W') son nat8."</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>"int8 / int16 / int32 / int64"</code></td>
+                                        <td class="col-width">"8..64 b"</td>
+                                        <td>"Enteros con signo en complemento a dos."</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>"float32 / float64"</code></td>
+                                        <td class="col-width">"32 / 64 b"</td>
+                                        <td>"Punto flotante IEEE 754 de precisión simple y doble."</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>"bool"</code></td>
+                                        <td class="col-width">"1 b"</td>
+                                        <td>"Booleano estricto: true | false."</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>"vec<T>"</code></td>
+                                        <td class="col-width">"dinámico"</td>
+                                        <td>"Vector mutable indexado desde 0. Cadenas = vec<nat8> cerradas con byte 0."</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
 
-int32 edad = 24
-nat8 letra = 'W'
-bool jugando = true"#}
-                            </pre>
-                        </article>
+                    <section class="codex-section">
+                        <h3 class="codex-section-title">"02 :: OPERADORES Y COMENTARIOS"</h3>
+                        <div class="codex-table-wrap">
+                            <table class="codex-table">
+                                <thead>
+                                    <tr>
+                                        <th>"SÍMBOLO"</th>
+                                        <th>"CLASE"</th>
+                                        <th>"COMPORTAMIENTO"</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>"// ..."</code></td>
+                                        <td class="col-width">"comentario"</td>
+                                        <td>"Comentario de línea única hasta salto de línea."</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>"+  -  *  /  %  ^"</code></td>
+                                        <td class="col-width">"aritmética"</td>
+                                        <td>"Operaciones numéricas y potencia con ^ (ej. 2 ^ 8 = 256)."</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>"==  ~=  <  <=  >  >="</code></td>
+                                        <td class="col-width">"relacional"</td>
+                                        <td>"Igualdad (==), desigualdad estricta (~=) y orden."</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>"and  or  not  xor"</code></td>
+                                        <td class="col-width">"lógica"</td>
+                                        <td>"Conectivos booleanos por palabra reservada."</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>"<-   ->"</code></td>
+                                        <td class="col-width">"flujo / fn"</td>
+                                        <td>"Iteración sobre vectores for (x <- vec) y firma/cuerpo (T) -> R."</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
 
-                        <article class="guide-card">
-                            <h3 class="guide-card-title">"2. Vectores y cadenas"</h3>
-                            <p class="guide-card-note">
-                                "Los vectores dinámicos usan "
-                                <code>"vec<T>"</code>
-                                " y las cadenas son "
-                                <code>"vec<nat8>"</code>
-                                " cerradas con "
-                                <code>"0"</code>
-                                "."
-                            </p>
-                            <pre class="guide-code">
-{r#"vec<int32> nums = [10, 20, 30]
-nums[0] = 99
+                    <div class="codex-dual-grid">
+                        <section class="codex-section">
+                            <h3 class="codex-section-title">"03 :: BLOQUES, CONTROL Y FUNCIONES (T) -> R"</h3>
+                            <pre class="codex-code">
+{r#"// Todo bloque { ... } retorna su última expresión
+int32 r = if (x ~= 0) { x * 2 } else { 0 }
 
-vec<nat8> msg = "Hola Wyrm!\n""#}
-                            </pre>
-                        </article>
+for (n <- nums) { total = total + n }
+while (i < 10)  { i = i + 1 }
 
-                        <article class="guide-card">
-                            <h3 class="guide-card-title">"3. Operadores y comentarios"</h3>
-                            <p class="guide-card-note">
-                                "Desigualdad con "
-                                <code>"~="</code>
-                                ", potencia con "
-                                <code>"^"</code>
-                                " y lógica con palabras reservadas."
-                            </p>
-                            <pre class="guide-code">
-{r#"// Comentario de línea
-int64 p = 2 ^ 8
-bool ok = (p ~= 0) and (p >= 100)
-bool inv = not ok or (true xor false)"#}
-                            </pre>
-                        </article>
-
-                        <article class="guide-card">
-                            <h3 class="guide-card-title">"4. Bloques y control de flujo"</h3>
-                            <p class="guide-card-note">
-                                "Todo bloque "
-                                <code>"{ ... }"</code>
-                                " retorna implícitamente su última expresión. "
-                                <code>"for (n <- vec)"</code>
-                                " itera vectores."
-                            </p>
-                            <pre class="guide-code">
-{r#"if (x > 0) { x } else { 0 }
-
-while (i < 10) {
-    i = i + 1
-}
-
-for (n <- nums) {
-    total = total + n
-}"#}
-                            </pre>
-                        </article>
-
-                        <article class="guide-card">
-                            <h3 class="guide-card-title">"5. Funciones y lambdas"</h3>
-                            <p class="guide-card-note">
-                                "Firma explícita "
-                                <code>"(Tipos) -> Retorno"</code>
-                                " antes del nombre y parámetros con "
-                                <code>"->"</code>
-                                "."
-                            </p>
-                            <pre class="guide-code">
-{r#"(int32, int32) -> int32 sumar = (a, b) -> {
+// Firma explícita (Tipos) -> Retorno
+(int32, int32) -> int32 sumar = (a, b) -> {
     a + b
 }
-
 () -> () noop = () -> { }"#}
                             </pre>
-                        </article>
+                        </section>
 
-                        <article class="guide-card">
-                            <h3 class="guide-card-title">"6. Primitivas nativas de E/S"</h3>
-                            <p class="guide-card-note">
-                                "Flujos estándar (fd): "
-                                <code>"0"</code>
-                                " (stdin) y "
-                                <code>"1"</code>
-                                " (stdout)."
-                            </p>
-                            <pre class="guide-code">
-{r#"write(1, "Salida por stdout\n")
-
+                        <section class="codex-section">
+                            <h3 class="codex-section-title">"04 :: PRIMITIVAS NATIVAS DE E/S"</h3>
+                            <div class="codex-table-wrap">
+                                <table class="codex-table">
+                                    <thead>
+                                        <tr>
+                                            <th>"LLAMADA"</th>
+                                            <th>"FD"</th>
+                                            <th>"DESCRIPCIÓN"</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>"write(1, v)"</code></td>
+                                            <td class="col-width">"fd 1"</td>
+                                            <td>"Escribe vec<nat8> o cadena literal en stdout."</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>"read(0, n)"</code></td>
+                                            <td class="col-width">"fd 0"</td>
+                                            <td>"Lee hasta n bytes desde stdin como vec<nat8>."</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <pre class="codex-code">
+{r#"write(1, "Códice activo\n")
 vec<nat8> buf = read(0, 32)
 write(1, buf)"#}
                             </pre>
-                        </article>
+                        </section>
                     </div>
                 </div>
             </div>

@@ -2,6 +2,7 @@ mod app;
 mod engine;
 mod examples;
 mod highlight;
+mod wyrm_art;
 
 use app::App;
 use leptos::prelude::*;

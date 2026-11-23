@@ -106,6 +106,8 @@ vectores = "vectores"
 conjuncion = "conjuncion"
 clases = "clases"
 clase = "clase"
+columnas = "columnas"
+tema = "tema"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"
