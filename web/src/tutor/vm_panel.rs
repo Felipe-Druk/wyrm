@@ -1,40 +1,16 @@
-//! Interfaz de visualización paso a paso de la Wyrm VM (Wyrm Tutor).
+//! Interfaz de visualización paso a paso de la Wyrm VM (Stack, CallFrames, Heap y Bytecode).
 
-use crate::trace::{StepDiff, TraceConstant, TraceHeapVec, TraceInstruction, TraceSession, TraceStep};
+use super::vm_trace::{
+    StepDiff, TraceConstant, TraceHeapVec, TraceInstruction, TraceSession, TraceStep,
+};
+use crate::components::{handle_tutor_keydown, TutorTransport};
 use leptos::html::Div;
-use leptos::leptos_dom::helpers::{set_timeout_with_handle, TimeoutHandle};
 use leptos::prelude::*;
-use std::time::Duration;
+use web_sys::KeyboardEvent;
 
 const BYTECODE_ROW_HEIGHT_PX: i32 = 24;
 
-/// Velocidad de reproducción automática del Tutor.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum PlaybackSpeed {
-    Half,
-    Normal,
-    Double,
-}
-
-impl PlaybackSpeed {
-    fn delay_ms(self) -> u64 {
-        match self {
-            Self::Half => 1100,
-            Self::Normal => 550,
-            Self::Double => 220,
-        }
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Self::Half => "0.5x",
-            Self::Normal => "1x",
-            Self::Double => "2x",
-        }
-    }
-}
-
-/// Panel interactivo de Wyrm Tutor: controles de reproducción, Stack & CallFrames, Heap y Bytecode.
+/// Panel interactivo de Wyrm Tutor para la máquina virtual (`.wrc`).
 #[component]
 pub fn TutorPanel(
     trace_session: RwSignal<Option<TraceSession>>,
@@ -44,24 +20,8 @@ pub fn TutorPanel(
     on_trace: Callback<()>,
 ) -> impl IntoView {
     let is_playing = RwSignal::new(false);
-    let playback_speed = RwSignal::new(PlaybackSpeed::Normal);
     let show_constants = RwSignal::new(false);
     let bytecode_list_ref = NodeRef::<Div>::new();
-
-    let play_timer = StoredValue::new(None::<TimeoutHandle>);
-    let play_generation = StoredValue::new(0u64);
-
-    let clear_play_timer = move || {
-        play_timer.update_value(|slot| {
-            if let Some(handle) = slot.take() {
-                handle.clear();
-            }
-        });
-    };
-
-    on_cleanup(move || {
-        clear_play_timer();
-    });
 
     let max_step = Memo::new(move |_| {
         trace_session.with(|opt| {
@@ -92,44 +52,6 @@ pub fn TutorPanel(
         let has_session = trace_session.with(|opt| opt.is_some());
         if running || !has_session {
             is_playing.set(false);
-            clear_play_timer();
-        }
-    });
-
-    // Bucle de auto-play gobernado por TimeoutHandle cancelable
-    Effect::new(move |_| {
-        clear_play_timer();
-        let playing = is_playing.get();
-        let speed = playback_speed.get();
-        let current = step_idx.get();
-        let limit = max_step.get();
-
-        if !playing {
-            return;
-        }
-        if limit == 0 || current >= limit {
-            is_playing.set(false);
-            return;
-        }
-
-        let next_gen = play_generation.get_value().wrapping_add(1);
-        play_generation.set_value(next_gen);
-
-        if let Ok(handle) = set_timeout_with_handle(
-            move || {
-                if play_generation.get_value() == next_gen && is_playing.get_untracked() {
-                    let cur = step_idx.get_untracked();
-                    let lim = max_step.get_untracked();
-                    if cur < lim {
-                        step_idx.set(cur + 1);
-                    } else {
-                        is_playing.set(false);
-                    }
-                }
-            },
-            Duration::from_millis(speed.delay_ms()),
-        ) {
-            play_timer.set_value(Some(handle));
         }
     });
 
@@ -154,48 +76,12 @@ pub fn TutorPanel(
         }
     });
 
-    let on_start = move |_: leptos::ev::MouseEvent| {
-        is_playing.set(false);
-        step_idx.set(0);
-    };
-
-    let on_prev = move |_: leptos::ev::MouseEvent| {
-        is_playing.set(false);
-        step_idx.update(|idx| *idx = idx.saturating_sub(1));
-    };
-
-    let on_toggle_play = move |_: leptos::ev::MouseEvent| {
-        let limit = max_step.get_untracked();
-        if limit == 0 {
-            return;
-        }
-        if is_playing.get_untracked() {
-            is_playing.set(false);
-        } else {
-            if step_idx.get_untracked() >= limit {
-                step_idx.set(0);
-            }
-            is_playing.set(true);
-        }
-    };
-
-    let on_next = move |_: leptos::ev::MouseEvent| {
-        is_playing.set(false);
-        let limit = max_step.get_untracked();
-        step_idx.update(|idx| {
-            if *idx < limit {
-                *idx += 1;
-            }
-        });
-    };
-
-    let on_end = move |_: leptos::ev::MouseEvent| {
-        is_playing.set(false);
-        step_idx.set(max_step.get_untracked());
+    let on_vm_keydown = move |ev: KeyboardEvent| {
+        handle_tutor_keydown(ev, step_idx, is_playing, max_step.get_untracked());
     };
 
     view! {
-        <div class="tutor-root">
+        <div class="tutor-root" tabindex="0" on:keydown=on_vm_keydown>
             {move || {
                 if let Some(err_msg) = trace_error.get() {
                     return view! {
@@ -251,7 +137,6 @@ pub fn TutorPanel(
                 };
 
                 let total_steps = session.steps.len().saturating_sub(1);
-                let at_end = move || step_idx.get() >= total_steps;
                 let truncated = session.truncated;
                 let max_limit = session.max_steps;
                 let instructions = session.instructions.clone();
@@ -277,110 +162,17 @@ pub fn TutorPanel(
 
                 view! {
                     <div class="tutor-workspace">
-                        <div class="tutor-controls-bar">
-                            <div class="tutor-transport" role="group" aria-label="Controles de paso a paso">
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn"
-                                    disabled=move || step_idx.get() == 0
-                                    title="Ir al inicio (paso 0)"
-                                    on:click=on_start
-                                >
-                                    "⏮"
-                                </button>
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn"
-                                    disabled=move || step_idx.get() == 0
-                                    title="Paso anterior"
-                                    on:click=on_prev
-                                >
-                                    "◀"
-                                </button>
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn tutor-ctrl-btn--play"
-                                    class:active=move || is_playing.get()
-                                    disabled=move || total_steps == 0
-                                    title="Reproducir / pausar avance automático"
-                                    on:click=on_toggle_play
-                                >
-                                    {move || if is_playing.get() { "⏸" } else { "▶" }}
-                                </button>
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn"
-                                    disabled=at_end
-                                    title="Siguiente paso"
-                                    on:click=on_next
-                                >
-                                    "▶|"
-                                </button>
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn"
-                                    disabled=at_end
-                                    title="Ir al paso final"
-                                    on:click=on_end
-                                >
-                                    "⏭"
-                                </button>
-                            </div>
-
-                            <div class="tutor-speed-group" role="group" aria-label="Velocidad de reproducción">
-                                {[PlaybackSpeed::Half, PlaybackSpeed::Normal, PlaybackSpeed::Double]
-                                    .into_iter()
-                                    .map(|spd| {
-                                        view! {
-                                            <button
-                                                type="button"
-                                                class="tutor-speed-btn"
-                                                class:active=move || playback_speed.get() == spd
-                                                on:click=move |_| playback_speed.set(spd)
-                                            >
-                                                {spd.label()}
-                                            </button>
-                                        }
-                                    })
-                                    .collect_view()}
-                            </div>
-
-                            <div class="tutor-counter">
-                                {move || {
-                                    format!(
-                                        "PASO {:03} / {:03}",
-                                        step_idx.get().min(total_steps),
-                                        total_steps
-                                    )
-                                }}
-                            </div>
-
-                            <Show when=move || truncated>
-                                <span
-                                    class="tutor-truncated-badge"
-                                    title="La ejecución superó el tope de pasos del trazador"
-                                >
-                                    {format!("TRUNCADO ({max_limit})")}
-                                </span>
-                            </Show>
-                        </div>
-
-                        <div class="tutor-scrubber-row">
-                            <input
-                                type="range"
-                                class="tutor-scrubber"
-                                aria-label="Línea de tiempo de pasos de la VM"
-                                min="0"
-                                max=total_steps.to_string()
-                                prop:value=move || step_idx.get().min(total_steps).to_string()
-                                on:input=move |ev| {
-                                    is_playing.set(false);
-                                    if let Ok(parsed) = event_target_value(&ev).parse::<usize>() {
-                                        step_idx.set(parsed.min(total_steps));
-                                    }
-                                }
-                            />
-                        </div>
+                        <TutorTransport
+                            step_idx=step_idx
+                            is_playing=is_playing
+                            is_running=is_running
+                            total_steps=total_steps
+                            truncated=truncated
+                            max_limit=max_limit
+                            transport_aria_label="Controles de paso a paso"
+                            scrubber_aria_label="Línea de tiempo de pasos de la VM"
+                            truncated_title="La ejecución superó el tope de pasos del trazador"
+                        />
 
                         <div class="tutor-step-content">
                             {dynamic_state_view}
@@ -481,7 +273,8 @@ fn render_stack_and_frames(step: &TraceStep, diff: &StepDiff) -> impl IntoView {
                 .collect();
 
             let slots_body = if slots.is_empty() {
-                view! { <div class="tutor-frame-empty">"∅ frame sin slots activos"</div> }.into_any()
+                view! { <div class="tutor-frame-empty">"∅ frame sin slots activos"</div> }
+                    .into_any()
             } else {
                 view! {
                     <div class="tutor-slot-grid">

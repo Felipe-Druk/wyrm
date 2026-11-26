@@ -1,5 +1,4 @@
 #include <inttypes.h>
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -7,12 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-#else
-#define EMSCRIPTEN_KEEPALIVE
-#endif
 
 #include "interpreter/evaluator/evaluator_binary.h"
 #include "interpreter/evaluator/evaluator_bool.h"
@@ -28,20 +21,13 @@
 #include "wyrm_types/ast/ast_node.h"
 #include "wyrm_types/environment/environment.h"
 #include "wyrm_types/wyrm_value/wyrm_value.h"
-#include "wyrm_wasm_internal.h"
+#include "wyrm_wasm_common.h"
 
 #define AST_STEPPER_DEFAULT_MAX_STEPS 1500
 #define AST_STEPPER_HARD_MAX_STEPS 20000
 #define AST_STEPPER_INIT_JSON_CAP 32768
 #define AST_STEPPER_MAX_DEPTH 256
 #define AST_STEPPER_MAX_SCOPES 256
-
-typedef struct {
-    char *data;
-    size_t len;
-    size_t cap;
-    bool oom;
-} ast_jbuf_t;
 
 typedef struct {
     const ast_node_t *ptr;
@@ -66,7 +52,7 @@ typedef struct {
     size_t node_count;
     size_t node_cap;
 
-    ast_jbuf_t jb;
+    json_buf_t jb;
     int step_count;
     int max_steps;
     bool truncated;
@@ -80,137 +66,6 @@ typedef struct {
 } ast_trace_ctx_t;
 
 static char *g_ast_trace_json = NULL;
-
-static void jbuf_init(ast_jbuf_t *jb, size_t initial_cap) {
-    jb->data = (char *)malloc(initial_cap);
-    if (jb->data == NULL) {
-        jb->len = 0;
-        jb->cap = 0;
-        jb->oom = true;
-        return;
-    }
-    jb->data[0] = '\0';
-    jb->len = 0;
-    jb->cap = initial_cap;
-    jb->oom = false;
-}
-
-static void jbuf_free(ast_jbuf_t *jb) {
-    free(jb->data);
-    jb->data = NULL;
-    jb->len = 0;
-    jb->cap = 0;
-}
-
-static bool jbuf_reserve(ast_jbuf_t *jb, size_t extra) {
-    if (jb->oom) {
-        return false;
-    }
-    size_t needed = jb->len + extra + 1;
-    if (needed <= jb->cap) {
-        return true;
-    }
-    size_t next_cap = jb->cap > 0 ? jb->cap : AST_STEPPER_INIT_JSON_CAP;
-    while (next_cap < needed) {
-        if (next_cap > (SIZE_MAX / 2)) {
-            jb->oom = true;
-            return false;
-        }
-        next_cap *= 2;
-    }
-    char *resized = (char *)realloc(jb->data, next_cap);
-    if (resized == NULL) {
-        jb->oom = true;
-        return false;
-    }
-    jb->data = resized;
-    jb->cap = next_cap;
-    return true;
-}
-
-static void jbuf_append_raw(ast_jbuf_t *jb, const char *bytes, size_t n) {
-    if (n == 0 || !jbuf_reserve(jb, n)) {
-        return;
-    }
-    memcpy(jb->data + jb->len, bytes, n);
-    jb->len += n;
-    jb->data[jb->len] = '\0';
-}
-
-static void jbuf_append_str(ast_jbuf_t *jb, const char *s) {
-    if (s == NULL) {
-        return;
-    }
-    jbuf_append_raw(jb, s, strlen(s));
-}
-
-static void jbuf_append_char(ast_jbuf_t *jb, char c) {
-    jbuf_append_raw(jb, &c, 1);
-}
-
-static void jbuf_append_fmt(ast_jbuf_t *jb, const char *fmt, ...) {
-    if (jb->oom) {
-        return;
-    }
-    va_list args;
-    va_start(args, fmt);
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, fmt, args);
-    va_end(args);
-
-    if (needed <= 0) {
-        va_end(args_copy);
-        return;
-    }
-    if (!jbuf_reserve(jb, (size_t)needed)) {
-        va_end(args_copy);
-        return;
-    }
-    vsnprintf(jb->data + jb->len, jb->cap - jb->len, fmt, args_copy);
-    va_end(args_copy);
-    jb->len += (size_t)needed;
-}
-
-static void jbuf_append_json_string(ast_jbuf_t *jb, const char *s) {
-    jbuf_append_char(jb, '"');
-    if (s != NULL) {
-        for (const unsigned char *p = (const unsigned char *)s; *p != '\0'; p++) {
-            unsigned char ch = *p;
-            switch (ch) {
-            case '"':
-                jbuf_append_raw(jb, "\\\"", 2);
-                break;
-            case '\\':
-                jbuf_append_raw(jb, "\\\\", 2);
-                break;
-            case '\b':
-                jbuf_append_raw(jb, "\\b", 2);
-                break;
-            case '\f':
-                jbuf_append_raw(jb, "\\f", 2);
-                break;
-            case '\n':
-                jbuf_append_raw(jb, "\\n", 2);
-                break;
-            case '\r':
-                jbuf_append_raw(jb, "\\r", 2);
-                break;
-            case '\t':
-                jbuf_append_raw(jb, "\\t", 2);
-                break;
-            default:
-                if (ch < 0x20) {
-                    jbuf_append_fmt(jb, "\\u%04x", (unsigned int)ch);
-                } else {
-                    jbuf_append_char(jb, (char)ch);
-                }
-                break;
-            }
-        }
-    }
-    jbuf_append_char(jb, '"');
-}
 
 static const char *token_op_symbol(token_type_t op) {
     switch (op) {
@@ -633,36 +488,36 @@ static int index_ast_tree(ast_trace_ctx_t *ctx, const ast_node_t *node, int pare
 }
 
 static void emit_static_nodes_json(ast_trace_ctx_t *ctx) {
-    jbuf_append_str(&ctx->jb, "\"root_id\":0,\"nodes\":[");
+    jbuf_append(&ctx->jb, "\"root_id\":0,\"nodes\":[");
     for (size_t i = 0; i < ctx->node_count; i++) {
         const ast_node_rec_t *rec = &ctx->nodes[i];
         if (i > 0) {
             jbuf_append_char(&ctx->jb, ',');
         }
-        jbuf_append_fmt(&ctx->jb, "{\"id\":%d,\"parent_id\":", rec->id);
+        jbuf_appendf(&ctx->jb, "{\"id\":%d,\"parent_id\":", rec->id);
         if (rec->parent_id >= 0) {
-            jbuf_append_fmt(&ctx->jb, "%d", rec->parent_id);
+            jbuf_appendf(&ctx->jb, "%d", rec->parent_id);
         } else {
-            jbuf_append_str(&ctx->jb, "null");
+            jbuf_append(&ctx->jb, "null");
         }
-        jbuf_append_str(&ctx->jb, ",\"edge\":");
-        jbuf_append_json_string(&ctx->jb, rec->edge);
-        jbuf_append_str(&ctx->jb, ",\"kind\":");
-        jbuf_append_json_string(&ctx->jb, rec->kind);
-        jbuf_append_str(&ctx->jb, ",\"label\":");
-        jbuf_append_json_string(&ctx->jb, rec->label);
-        jbuf_append_str(&ctx->jb, ",\"detail\":");
-        jbuf_append_json_string(&ctx->jb, rec->detail);
-        jbuf_append_str(&ctx->jb, ",\"children\":[");
+        jbuf_append(&ctx->jb, ",\"edge\":");
+        jbuf_append_escaped_str(&ctx->jb, rec->edge);
+        jbuf_append(&ctx->jb, ",\"kind\":");
+        jbuf_append_escaped_str(&ctx->jb, rec->kind);
+        jbuf_append(&ctx->jb, ",\"label\":");
+        jbuf_append_escaped_str(&ctx->jb, rec->label);
+        jbuf_append(&ctx->jb, ",\"detail\":");
+        jbuf_append_escaped_str(&ctx->jb, rec->detail);
+        jbuf_append(&ctx->jb, ",\"children\":[");
         for (size_t c = 0; c < rec->child_count; c++) {
             if (c > 0) {
                 jbuf_append_char(&ctx->jb, ',');
             }
-            jbuf_append_fmt(&ctx->jb, "%d", rec->children[c]);
+            jbuf_appendf(&ctx->jb, "%d", rec->children[c]);
         }
-        jbuf_append_str(&ctx->jb, "]}");
+        jbuf_append(&ctx->jb, "]}");
     }
-    jbuf_append_str(&ctx->jb, "],");
+    jbuf_append(&ctx->jb, "],");
 }
 
 static void push_scope(ast_trace_ctx_t *ctx, environment_t *env, const char *label) {
@@ -688,9 +543,9 @@ static void emit_scopes_json(ast_trace_ctx_t *ctx) {
             jbuf_append_char(&ctx->jb, ',');
         }
         const ast_scope_frame_t *sf = &ctx->scopes[s];
-        jbuf_append_fmt(&ctx->jb, "{\"depth\":%zu,\"label\":", s);
-        jbuf_append_json_string(&ctx->jb, sf->label);
-        jbuf_append_str(&ctx->jb, ",\"vars\":[");
+        jbuf_appendf(&ctx->jb, "{\"depth\":%zu,\"label\":", s);
+        jbuf_append_escaped_str(&ctx->jb, sf->label);
+        jbuf_append(&ctx->jb, ",\"vars\":[");
         if (sf->env != NULL) {
             for (size_t e = 0; e < sf->env->count; e++) {
                 if (e > 0) {
@@ -699,16 +554,16 @@ static void emit_scopes_json(ast_trace_ctx_t *ctx) {
                 const env_entry_t *ent = &sf->env->entries[e];
                 wyrm_web_format_type(ent->value, type_buf, sizeof(type_buf));
                 wyrm_web_format_value(ent->value, val_buf, sizeof(val_buf));
-                jbuf_append_str(&ctx->jb, "{\"name\":");
-                jbuf_append_json_string(&ctx->jb, ent->name != NULL ? ent->name : "");
-                jbuf_append_str(&ctx->jb, ",\"type\":");
-                jbuf_append_json_string(&ctx->jb, type_buf);
-                jbuf_append_str(&ctx->jb, ",\"value\":");
-                jbuf_append_json_string(&ctx->jb, val_buf);
+                jbuf_append(&ctx->jb, "{\"name\":");
+                jbuf_append_escaped_str(&ctx->jb, ent->name != NULL ? ent->name : "");
+                jbuf_append(&ctx->jb, ",\"type\":");
+                jbuf_append_escaped_str(&ctx->jb, type_buf);
+                jbuf_append(&ctx->jb, ",\"value\":");
+                jbuf_append_escaped_str(&ctx->jb, val_buf);
                 jbuf_append_char(&ctx->jb, '}');
             }
         }
-        jbuf_append_str(&ctx->jb, "]}");
+        jbuf_append(&ctx->jb, "]}");
     }
     jbuf_append_char(&ctx->jb, ']');
 }
@@ -735,30 +590,30 @@ static bool emit_ast_step(
     int step_num = ctx->step_count++;
     size_t depth = ctx->active_depth > 0 ? ctx->active_depth - 1 : 0;
 
-    jbuf_append_fmt(&ctx->jb, "{\"step\":%d,\"node_id\":%d,\"phase\":", step_num, node_id);
-    jbuf_append_json_string(&ctx->jb, phase);
-    jbuf_append_fmt(&ctx->jb, ",\"depth\":%zu,\"active_path\":[", depth);
+    jbuf_appendf(&ctx->jb, "{\"step\":%d,\"node_id\":%d,\"phase\":", step_num, node_id);
+    jbuf_append_escaped_str(&ctx->jb, phase);
+    jbuf_appendf(&ctx->jb, ",\"depth\":%zu,\"active_path\":[", depth);
     for (size_t i = 0; i < ctx->active_depth; i++) {
         if (i > 0) {
             jbuf_append_char(&ctx->jb, ',');
         }
-        jbuf_append_fmt(&ctx->jb, "%d", ctx->active_path[i]);
+        jbuf_appendf(&ctx->jb, "%d", ctx->active_path[i]);
     }
-    jbuf_append_str(&ctx->jb, "],\"result_type\":");
+    jbuf_append(&ctx->jb, "],\"result_type\":");
     if (result_val != NULL) {
         char type_buf[128];
         char val_buf[512];
         wyrm_web_format_type(*result_val, type_buf, sizeof(type_buf));
         wyrm_web_format_value(*result_val, val_buf, sizeof(val_buf));
-        jbuf_append_json_string(&ctx->jb, type_buf);
-        jbuf_append_str(&ctx->jb, ",\"result_value\":");
-        jbuf_append_json_string(&ctx->jb, val_buf);
+        jbuf_append_escaped_str(&ctx->jb, type_buf);
+        jbuf_append(&ctx->jb, ",\"result_value\":");
+        jbuf_append_escaped_str(&ctx->jb, val_buf);
     } else {
-        jbuf_append_str(&ctx->jb, "null,\"result_value\":null");
+        jbuf_append(&ctx->jb, "null,\"result_value\":null");
     }
-    jbuf_append_str(&ctx->jb, ",\"note\":");
-    jbuf_append_json_string(&ctx->jb, note != NULL ? note : "");
-    jbuf_append_str(&ctx->jb, ",\"scopes\":");
+    jbuf_append(&ctx->jb, ",\"note\":");
+    jbuf_append_escaped_str(&ctx->jb, note != NULL ? note : "");
+    jbuf_append(&ctx->jb, ",\"scopes\":");
     emit_scopes_json(ctx);
     jbuf_append_char(&ctx->jb, '}');
     return true;
@@ -1434,7 +1289,7 @@ int wyrm_web_ast_trace(const char *source, int max_steps) {
 
     jbuf_append_char(&ctx.jb, '{');
     emit_static_nodes_json(&ctx);
-    jbuf_append_str(&ctx.jb, "\"steps\":[");
+    jbuf_append(&ctx.jb, "\"steps\":[");
 
     environment_t *global_env = create_environment(NULL);
     push_scope(&ctx, global_env, "GLOBAL");
@@ -1443,7 +1298,7 @@ int wyrm_web_ast_trace(const char *source, int max_steps) {
 
     pop_scope(&ctx);
 
-    jbuf_append_fmt(
+    jbuf_appendf(
         &ctx.jb,
         "],\"truncated\":%s,\"max_steps\":%d,\"total_steps\":%d}",
         ctx.truncated ? "true" : "false",

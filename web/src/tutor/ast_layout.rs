@@ -1,6 +1,6 @@
 //! Motor puro en Rust de layout jerárquico top-down (sin colisiones) para grafos AST en SVG.
 
-use crate::ast_trace::AstNodeInfo;
+use super::ast_trace::AstNodeInfo;
 use std::collections::{HashMap, HashSet};
 
 /// Ancho fijo de cada caja de nodo AST en unidades SVG.
@@ -296,7 +296,12 @@ fn place_subtree(
 mod tests {
     use super::*;
 
-    fn mk_node(id: usize, parent_id: Option<usize>, edge: &str, children: Vec<usize>) -> AstNodeInfo {
+    fn mk_node(
+        id: usize,
+        parent_id: Option<usize>,
+        edge: &str,
+        children: Vec<usize>,
+    ) -> AstNodeInfo {
         AstNodeInfo {
             id,
             parent_id,

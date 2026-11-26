@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WYRM_CORE_DIR="${REPO_ROOT}/wyrm_core"
 WASM_CORE_DIR="${SCRIPT_DIR}/wasm_core"
+WASM_COMMON="${WASM_CORE_DIR}/wyrm_wasm_common.c"
 WASM_BRIDGE="${WASM_CORE_DIR}/wyrm_wasm.c"
 WASM_STEPPER="${WASM_CORE_DIR}/wyrm_stepper.c"
 WASM_AST_STEPPER="${WASM_CORE_DIR}/wyrm_ast_stepper.c"
@@ -18,6 +19,11 @@ fi
 
 if [[ ! -d "${WYRM_CORE_DIR}" ]]; then
     echo "Error: no se encontró el directorio '${WYRM_CORE_DIR}'." >&2
+    exit 1
+fi
+
+if [[ ! -f "${WASM_COMMON}" ]]; then
+    echo "Error: no se encontró el módulo común C '${WASM_COMMON}'." >&2
     exit 1
 fi
 
@@ -45,7 +51,7 @@ C_SOURCES=()
 while IFS= read -r src; do
     C_SOURCES+=("${src}")
 done < <(find "${WYRM_CORE_DIR}" -type f -name "*.c" | sort)
-C_SOURCES+=("${WASM_BRIDGE}" "${WASM_STEPPER}" "${WASM_AST_STEPPER}")
+C_SOURCES+=("${WASM_COMMON}" "${WASM_BRIDGE}" "${WASM_STEPPER}" "${WASM_AST_STEPPER}")
 
 # Detección de flags de compatibilidad para Clang/Emscripten (C23 en wvm.c y _Float32/_Float64 en wyrm_value.h)
 COMPAT_FLAGS=()

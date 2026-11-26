@@ -128,38 +128,26 @@ function splitVerboseOutput(rawStdout) {
   };
 }
 
-self.onmessage = async (event) => {
-  const payload = event.data || {};
-  const id = payload.id;
-  const action =
-    payload.action === "trace"
-      ? "trace"
-      : payload.action === "ast_trace"
-        ? "ast_trace"
-        : "run";
-  const code = typeof payload.code === "string" ? payload.code : "";
-  const mode = Number(payload.mode) || 0;
-  const verbose = Boolean(payload.verbose);
-  const stdin = typeof payload.stdin === "string" ? payload.stdin : "";
-  const maxSteps = Number(payload.max_steps) || 1500;
+function readCStringExport(instance, exportName) {
+  const ptr = instance.ccall(exportName, "number", [], []);
+  return ptr ? instance.UTF8ToString(ptr) : "";
+}
 
-  if (wasmLoadError !== null) {
-    self.postMessage({
-      id,
-      action,
-      stdout: wasmLoadError,
-      return_value: null,
-      return_type: "",
-      inspector_log: "",
-      elapsed_ms: 0,
-      is_error: true,
-      trace_json: null,
-      ast_trace_json: null,
-    });
-    return;
-  }
+function readLastReturn(instance) {
+  const formatted = readCStringExport(instance, "wyrm_web_last_return");
+  const returnType = readCStringExport(instance, "wyrm_web_last_return_type");
+  return {
+    returnValue: formatted.length > 0 ? formatted : null,
+    returnType,
+  };
+}
 
-  const stdinBytes = utf8Encoder.encode(stdin);
+/**
+ * Instancia `wyrm_core`, configura `FS.init` para `stdin`/`stdout`/`stderr`,
+ * mide `performance.now()` y captura `ExitStatus` ante `panic()`.
+ */
+async function runWasmInvocation({ stdinText, invoke }) {
+  const stdinBytes = utf8Encoder.encode(stdinText);
   let stdinOffset = 0;
   const stdoutBytes = [];
   const stderrBytes = [];
@@ -173,17 +161,15 @@ self.onmessage = async (event) => {
   };
 
   const stdoutHook = (charCode) => {
-    if (charCode === null || charCode === undefined) {
-      return;
+    if (charCode !== null && charCode !== undefined) {
+      stdoutBytes.push(charCode & 0xff);
     }
-    stdoutBytes.push(charCode & 0xff);
   };
 
   const stderrHook = (charCode) => {
-    if (charCode === null || charCode === undefined) {
-      return;
+    if (charCode !== null && charCode !== undefined) {
+      stderrBytes.push(charCode & 0xff);
     }
-    stderrBytes.push(charCode & 0xff);
   };
 
   let instance;
@@ -207,152 +193,37 @@ self.onmessage = async (event) => {
     });
   } catch (err) {
     const detail = err && err.message ? err.message : String(err);
-    self.postMessage({
-      id,
-      action,
-      stdout:
+    return {
+      initError:
         "No se pudo inicializar el módulo WebAssembly de wyrm_core.\n" +
         "Verificá que exista web/wasm_dist/wyrm_core.wasm (ejecutá ./web/build_wasm.sh).\n\n" +
         "Detalle: " +
         detail,
-      return_value: null,
-      return_type: "",
-      inspector_log: "",
-      elapsed_ms: 0,
-      is_error: true,
-      trace_json: null,
-      ast_trace_json: null,
-    });
-    return;
+    };
   }
 
   let isError = false;
   let exitStatusCode = 0;
+  let caughtExceptionText = "";
   let returnValue = null;
   let returnType = "";
-  let traceJson = null;
-  let astTraceJson = null;
-  let caughtExceptionText = "";
+  let extra = {};
 
   const startedAt = performance.now();
   try {
-    if (action === "trace") {
-      if (typeof instance._wyrm_web_trace !== "function") {
-        isError = true;
-        caughtExceptionText =
-          "El binario WASM cargado no incluye el motor paso a paso (wyrm_web_trace). Recompilá ejecutando ./web/build_wasm.sh.";
-      } else {
-        const traceStatus = instance.ccall(
-          "wyrm_web_trace",
-          "number",
-          ["string", "number"],
-          [code, maxSteps]
-        );
-        if (traceStatus !== 0) {
-          isError = true;
-          exitStatusCode = traceStatus;
-        } else {
-          const tracePtr = instance.ccall(
-            "wyrm_web_trace_json",
-            "number",
-            [],
-            []
-          );
-          if (tracePtr) {
-            traceJson = instance.UTF8ToString(tracePtr);
-          }
-          const retPtr = instance.ccall(
-            "wyrm_web_last_return",
-            "number",
-            [],
-            []
-          );
-          if (retPtr) {
-            const formatted = instance.UTF8ToString(retPtr);
-            returnValue = formatted.length > 0 ? formatted : null;
-          }
-          const retTypePtr = instance.ccall(
-            "wyrm_web_last_return_type",
-            "number",
-            [],
-            []
-          );
-          if (retTypePtr) {
-            returnType = instance.UTF8ToString(retTypePtr);
-          }
-        }
-      }
-    } else if (action === "ast_trace") {
-      if (typeof instance._wyrm_web_ast_trace !== "function") {
-        isError = true;
-        caughtExceptionText =
-          "El binario WASM cargado no incluye el motor paso a paso del AST (wyrm_web_ast_trace). Recompilá ejecutando ./web/build_wasm.sh.";
-      } else {
-        const astStatus = instance.ccall(
-          "wyrm_web_ast_trace",
-          "number",
-          ["string", "number"],
-          [code, maxSteps]
-        );
-        if (astStatus !== 0) {
-          isError = true;
-          exitStatusCode = astStatus;
-        } else {
-          const astPtr = instance.ccall(
-            "wyrm_web_ast_trace_json",
-            "number",
-            [],
-            []
-          );
-          if (astPtr) {
-            astTraceJson = instance.UTF8ToString(astPtr);
-          }
-          const retPtr = instance.ccall(
-            "wyrm_web_last_return",
-            "number",
-            [],
-            []
-          );
-          if (retPtr) {
-            const formatted = instance.UTF8ToString(retPtr);
-            returnValue = formatted.length > 0 ? formatted : null;
-          }
-          const retTypePtr = instance.ccall(
-            "wyrm_web_last_return_type",
-            "number",
-            [],
-            []
-          );
-          if (retTypePtr) {
-            returnType = instance.UTF8ToString(retTypePtr);
-          }
-        }
-      }
+    const outcome = invoke(instance) || {};
+    if (outcome.missingSymbolMessage) {
+      isError = true;
+      caughtExceptionText = outcome.missingSymbolMessage;
+    } else if (outcome.status !== 0) {
+      isError = true;
+      exitStatusCode = outcome.status;
     } else {
-      const execStatus = instance.ccall(
-        "wyrm_web_exec",
-        "number",
-        ["string", "number", "number"],
-        [code, mode, verbose ? 1 : 0]
-      );
-      if (execStatus !== 0) {
-        isError = true;
-        exitStatusCode = execStatus;
-      } else {
-        const retPtr = instance.ccall("wyrm_web_last_return", "number", [], []);
-        if (retPtr) {
-          const formatted = instance.UTF8ToString(retPtr);
-          returnValue = formatted.length > 0 ? formatted : null;
-        }
-        const retTypePtr = instance.ccall(
-          "wyrm_web_last_return_type",
-          "number",
-          [],
-          []
-        );
-        if (retTypePtr) {
-          returnType = instance.UTF8ToString(retTypePtr);
-        }
+      const lastRet = readLastReturn(instance);
+      returnValue = lastRet.returnValue;
+      returnType = lastRet.returnType;
+      if (outcome.extra) {
+        extra = outcome.extra;
       }
     }
   } catch (err) {
@@ -365,77 +236,175 @@ self.onmessage = async (event) => {
   }
   const elapsedMs = Math.max(0, performance.now() - startedAt);
 
-  const rawStdout = utf8Decoder.decode(new Uint8Array(stdoutBytes));
-  const rawStderr = utf8Decoder.decode(new Uint8Array(stderrBytes)).trim();
+  return {
+    initError: null,
+    isError,
+    exitStatusCode,
+    caughtExceptionText,
+    runtimeErrors,
+    rawStdout: utf8Decoder.decode(new Uint8Array(stdoutBytes)),
+    rawStderr: utf8Decoder.decode(new Uint8Array(stderrBytes)).trim(),
+    returnValue,
+    returnType,
+    elapsedMs,
+    extra,
+  };
+}
 
-  let finalStdout = rawStdout;
+function buildErrorStdout(finalStdout, invocation) {
+  const errorParts = [];
+  if (finalStdout.trim().length > 0) {
+    errorParts.push(finalStdout.trimEnd());
+  }
+  if (invocation.rawStderr.length > 0) {
+    errorParts.push(invocation.rawStderr);
+  } else if (invocation.runtimeErrors.length > 0) {
+    errorParts.push(invocation.runtimeErrors.join("\n"));
+  } else if (invocation.caughtExceptionText.length > 0) {
+    errorParts.push("Error de ejecución: " + invocation.caughtExceptionText);
+  } else {
+    errorParts.push(
+      "El motor finalizó con código de salida " +
+        String(invocation.exitStatusCode) +
+        "."
+    );
+  }
+  return errorParts.join("\n\n");
+}
+
+function postFailure(id, action, message) {
+  self.postMessage({
+    id,
+    action,
+    stdout: message,
+    return_value: null,
+    return_type: "",
+    inspector_log: "",
+    elapsed_ms: 0,
+    is_error: true,
+    trace_json: null,
+    ast_trace_json: null,
+  });
+}
+
+self.onmessage = async (event) => {
+  const payload = event.data || {};
+  const id = payload.id;
+  const action =
+    payload.action === "trace"
+      ? "trace"
+      : payload.action === "ast_trace"
+        ? "ast_trace"
+        : "run";
+  const code = typeof payload.code === "string" ? payload.code : "";
+  const mode = Number(payload.mode) || 0;
+  const verbose = Boolean(payload.verbose);
+  const stdin = typeof payload.stdin === "string" ? payload.stdin : "";
+  const maxSteps = Number(payload.max_steps) || 1500;
+
+  if (wasmLoadError !== null) {
+    postFailure(id, action, wasmLoadError);
+    return;
+  }
+
+  const invocation = await runWasmInvocation({
+    stdinText: stdin,
+    invoke: (instance) => {
+      if (action === "trace") {
+        if (typeof instance._wyrm_web_trace !== "function") {
+          return {
+            missingSymbolMessage:
+              "El binario WASM cargado no incluye el motor paso a paso (wyrm_web_trace). Recompilá ejecutando ./web/build_wasm.sh.",
+          };
+        }
+        const status = instance.ccall(
+          "wyrm_web_trace",
+          "number",
+          ["string", "number"],
+          [code, maxSteps]
+        );
+        return {
+          status,
+          extra:
+            status === 0
+              ? { traceJson: readCStringExport(instance, "wyrm_web_trace_json") || null }
+              : {},
+        };
+      }
+
+      if (action === "ast_trace") {
+        if (typeof instance._wyrm_web_ast_trace !== "function") {
+          return {
+            missingSymbolMessage:
+              "El binario WASM cargado no incluye el motor paso a paso del AST (wyrm_web_ast_trace). Recompilá ejecutando ./web/build_wasm.sh.",
+          };
+        }
+        const status = instance.ccall(
+          "wyrm_web_ast_trace",
+          "number",
+          ["string", "number"],
+          [code, maxSteps]
+        );
+        return {
+          status,
+          extra:
+            status === 0
+              ? { astTraceJson: readCStringExport(instance, "wyrm_web_ast_trace_json") || null }
+              : {},
+        };
+      }
+
+      const status = instance.ccall(
+        "wyrm_web_exec",
+        "number",
+        ["string", "number", "number"],
+        [code, mode, verbose ? 1 : 0]
+      );
+      return { status };
+    },
+  });
+
+  if (invocation.initError !== null) {
+    postFailure(id, action, invocation.initError);
+    return;
+  }
+
+  let finalStdout = invocation.rawStdout;
   let inspectorLog = "";
+  let returnValue = invocation.returnValue;
+  let returnType = invocation.returnType;
+  let traceJson = invocation.extra.traceJson || null;
+  let astTraceJson = invocation.extra.astTraceJson || null;
 
   if (action === "run" && verbose) {
-    const separated = splitVerboseOutput(rawStdout);
+    const separated = splitVerboseOutput(invocation.rawStdout);
     finalStdout = separated.stdout;
     inspectorLog = separated.inspectorLog;
   }
 
-  if (isError) {
-    const errorParts = [];
-    if (finalStdout.trim().length > 0) {
-      errorParts.push(finalStdout.trimEnd());
-    }
-    if (rawStderr.length > 0) {
-      errorParts.push(rawStderr);
-    } else if (runtimeErrors.length > 0) {
-      errorParts.push(runtimeErrors.join("\n"));
-    } else if (caughtExceptionText.length > 0) {
-      errorParts.push("Error de ejecución: " + caughtExceptionText);
-    } else {
-      errorParts.push(
-        "El motor finalizó con código de salida " + String(exitStatusCode) + "."
-      );
-    }
-    finalStdout = errorParts.join("\n\n");
+  if (invocation.isError) {
+    finalStdout = buildErrorStdout(finalStdout, invocation);
     returnValue = null;
     returnType = "";
     traceJson = null;
     astTraceJson = null;
   }
 
-  if (action === "trace") {
-    self.postMessage({
-      id,
-      action: "trace",
-      stdout: finalStdout,
-      return_value: returnValue,
-      return_type: returnType,
-      elapsed_ms: elapsedMs,
-      is_error: isError,
-      trace_json: traceJson,
-    });
-    return;
-  }
-
-  if (action === "ast_trace") {
-    self.postMessage({
-      id,
-      action: "ast_trace",
-      stdout: finalStdout,
-      return_value: returnValue,
-      return_type: returnType,
-      elapsed_ms: elapsedMs,
-      is_error: isError,
-      ast_trace_json: astTraceJson,
-    });
-    return;
-  }
-
-  self.postMessage({
+  const baseResponse = {
     id,
-    action: "run",
+    action,
     stdout: finalStdout,
     return_value: returnValue,
     return_type: returnType,
-    inspector_log: inspectorLog,
-    elapsed_ms: elapsedMs,
-    is_error: isError,
-  });
+    elapsed_ms: invocation.elapsedMs,
+    is_error: invocation.isError,
+  };
+
+  if (action === "trace") {
+    self.postMessage({ ...baseResponse, trace_json: traceJson });
+  } else if (action === "ast_trace") {
+    self.postMessage({ ...baseResponse, ast_trace_json: astTraceJson });
+  } else {
+    self.postMessage({ ...baseResponse, inspector_log: inspectorLog });
+  }
 };

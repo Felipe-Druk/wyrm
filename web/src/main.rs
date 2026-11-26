@@ -1,11 +1,9 @@
 mod app;
-mod ast_layout;
-mod ast_trace;
-mod ast_tutor;
+mod components;
 mod engine;
 mod examples;
 mod highlight;
-mod trace;
+mod storage;
 mod tutor;
 mod wyrm_art;
 

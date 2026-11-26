@@ -1,0 +1,408 @@
+/* ==========================================================================
+   Wyrm Tutor VM — Stack, CallFrames, Celdas Hex, Heap y Cinta de Bytecode
+   ========================================================================== */
+
+/* 01 :: Stack & CallFrames */
+.tutor-frames-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.tutor-frame {
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-base);
+}
+
+.tutor-frame--active {
+  border-color: var(--border-active);
+  border-left: 2px solid var(--accent-gold);
+}
+
+.tutor-frame-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 5px 8px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-struct);
+}
+
+.tutor-frame-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+
+.tutor-frame-meta {
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.tutor-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 6px;
+  padding: 8px;
+}
+
+.tutor-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-panel);
+  min-width: 0;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.tutor-slot--ptr {
+  border-left: 2px solid var(--accent-gold);
+}
+
+.tutor-slot--changed {
+  border-color: var(--accent-violet);
+  box-shadow: inset 2px 0 0 var(--accent-violet), 0 0 12px var(--accent-glow);
+}
+
+.tutor-slot-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10.5px;
+}
+
+.tutor-slot-idx {
+  color: var(--accent-gold);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-slot-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tutor-slot-bits {
+  padding: 0 3px;
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-base);
+  color: var(--ink-muted);
+  font-size: 9.5px;
+}
+
+.tutor-slot-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-slot-hex {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  border-top: 1px solid var(--border-struct);
+  padding-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-slot--changed .tutor-slot-hex {
+  color: var(--accent-violet);
+}
+
+/* 02 :: Heap (Vectores & Punteros) */
+.tutor-heap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.tutor-heap-block {
+  border: 1px solid var(--border-struct);
+  border-left: 2px solid var(--accent-gold);
+  background-color: var(--bg-base);
+  min-width: 0;
+}
+
+.tutor-heap-block--changed {
+  border-color: var(--accent-violet-border);
+  border-left-color: var(--accent-violet);
+  box-shadow: -3px 0 12px -6px var(--return-glow);
+}
+
+.tutor-heap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-struct);
+}
+
+.tutor-heap-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutor-heap-ptr {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-gold);
+}
+
+.tutor-heap-type {
+  font-size: 11px;
+  color: var(--ink-primary);
+}
+
+.tutor-heap-refs {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tutor-ref-badge {
+  padding: 1px 6px;
+  border: 1px solid var(--accent-violet-border);
+  background-color: var(--accent-violet-dim);
+  color: var(--accent-violet);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tutor-heap-ascii {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-struct);
+  font-size: 11px;
+  background-color: var(--bg-panel);
+  overflow-x: auto;
+}
+
+.tutor-heap-ascii-key {
+  color: var(--ink-muted);
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.tutor-heap-ascii-val {
+  color: var(--accent-gold);
+  white-space: pre;
+}
+
+.tutor-heap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 4px;
+  padding: 8px;
+}
+
+.tutor-heap-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-panel);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+.tutor-heap-cell--changed {
+  border-color: var(--accent-violet);
+  background-color: var(--accent-violet-dim);
+  box-shadow: inset 2px 0 0 var(--accent-violet);
+}
+
+.tutor-heap-idx {
+  font-size: 9.5px;
+  color: var(--ink-muted);
+}
+
+.tutor-heap-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-heap-hex {
+  font-size: 9.5px;
+  color: var(--ink-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-heap-cell--changed .tutor-heap-hex {
+  color: var(--accent-violet);
+}
+
+.tutor-heap-more {
+  padding: 0 8px 8px 8px;
+  font-size: 10.5px;
+  color: var(--ink-muted);
+}
+
+/* 03 :: Bytecode (.wrc) + Constant Pool */
+.tutor-bc-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tutor-const-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-base);
+  color: var(--ink-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.tutor-const-toggle:hover {
+  border-color: var(--accent-violet);
+  color: var(--accent-violet);
+}
+
+.tutor-const-pool {
+  border-bottom: 1px solid var(--border-struct);
+  background-color: var(--bg-base);
+  padding: 6px 8px;
+}
+
+.tutor-const-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px;
+}
+
+.tutor-const-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-panel);
+  font-size: 10.5px;
+  min-width: 0;
+}
+
+.tutor-const-idx {
+  color: var(--accent-gold);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.tutor-const-type {
+  color: var(--accent-violet);
+  flex-shrink: 0;
+}
+
+.tutor-const-val {
+  color: var(--ink-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-bc-list {
+  max-height: 220px;
+  overflow-y: auto;
+  background-color: var(--bg-base);
+  font-variant-numeric: tabular-nums;
+}
+
+.tutor-bc-row {
+  display: grid;
+  grid-template-columns: 16px 56px minmax(112px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border-struct);
+  font-size: 11px;
+  color: var(--ink-secondary);
+}
+
+.tutor-bc-row:last-child {
+  border-bottom: 0;
+}
+
+.tutor-bc-row--active {
+  background-color: var(--accent-gold-dim);
+  color: var(--ink-primary);
+  box-shadow: inset 2px 0 0 0 var(--accent-gold);
+}
+
+.tutor-bc-row--next {
+  background-color: var(--accent-violet-hover);
+  box-shadow: inset 2px 0 0 0 var(--accent-violet-border);
+}
+
+.tutor-bc-marker {
+  color: var(--accent-gold);
+  font-weight: 700;
+  text-align: center;
+}
+
+.tutor-bc-row--next .tutor-bc-marker {
+  color: var(--accent-violet);
+}
+
+.tutor-bc-ip {
+  color: var(--ink-muted);
+  font-size: 10.5px;
+}
+
+.tutor-bc-row--active .tutor-bc-ip {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.tutor-bc-op {
+  color: var(--ink-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tutor-bc-arg {
+  color: var(--accent-violet);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

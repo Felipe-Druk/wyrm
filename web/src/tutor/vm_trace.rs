@@ -171,9 +171,7 @@ pub fn compute_step_diff(prev: Option<&TraceStep>, curr: &TraceStep) -> StepDiff
                 for elem in &vec.elements {
                     let elem_changed = match old_vec.elements.get(elem.index) {
                         None => true,
-                        Some(old_elem) => {
-                            old_elem.hex != elem.hex || old_elem.value != elem.value
-                        }
+                        Some(old_elem) => old_elem.hex != elem.hex || old_elem.value != elem.value,
                     };
                     if elem_changed {
                         vec_changed = true;

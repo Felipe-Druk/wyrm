@@ -1,0 +1,305 @@
+/* ==========================================================================
+   WYRM Playground — Editor, Gutter, Overlay Sincronizado y Sintaxis (.tok-*)
+   ========================================================================== */
+
+:root {
+  --editor-line-height: 22px;
+  --editor-font-size: 13.5px;
+}
+
+/* ==========================================================================
+   Editor Panel (Izquierda — limpio, máxima altura vertical, sin 3ra barra)
+   ========================================================================== */
+
+.editor-header {
+  min-width: 0;
+}
+
+.file-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.file-glyph {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--accent-gold);
+  flex-shrink: 0;
+}
+
+.file-name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink-primary);
+  flex-shrink: 0;
+}
+
+.file-meta-sep {
+  font-size: 10.5px;
+  color: var(--border-active);
+  flex-shrink: 0;
+}
+
+.file-example-hint {
+  font-size: 11px;
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.editor-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cursor-pos {
+  color: var(--ink-secondary);
+  font-weight: 500;
+}
+
+.stats-sep {
+  color: var(--border-active);
+}
+
+.editor-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  background-color: var(--bg-panel);
+  overflow: hidden;
+}
+
+.line-gutter {
+  width: 50px;
+  padding: 14px 8px 28px 6px;
+  background-color: var(--gutter-bg);
+  border-right: 1px solid var(--border-struct);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--editor-font-size);
+  line-height: var(--editor-line-height);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  user-select: none;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.gutter-number {
+  display: block;
+  height: var(--editor-line-height);
+  padding: 0 4px;
+}
+
+/* Línea activa en el gutter: borde izquierdo violeta + texto dorado claro + tinte violeta */
+.gutter-number.line-number--active {
+  color: var(--gutter-active-ink);
+  font-weight: 600;
+  background-color: var(--gutter-active-bg);
+  box-shadow: inset 2px 0 0 0 var(--accent-violet);
+}
+
+/* Resaltado suave de línea fuente sincronizada con Wyrm Tutor */
+.gutter-number.line-number--tutor {
+  color: var(--accent-gold);
+  font-weight: 600;
+  background-color: var(--accent-gold-dim);
+  box-shadow: inset 2px 0 0 0 var(--accent-gold);
+}
+
+.editor-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--bg-panel);
+}
+
+/* Alineación milimétrica entre overlay resaltado y textarea */
+.code-highlight,
+.code-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 14px 16px 28px 16px;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: var(--editor-font-size);
+  font-weight: 400;
+  line-height: var(--editor-line-height);
+  letter-spacing: 0;
+  tab-size: 4;
+  -moz-tab-size: 4;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+  box-sizing: border-box;
+}
+
+.code-highlight {
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+  background: transparent;
+  color: var(--ink-primary);
+}
+
+.code-highlight code {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  line-height: inherit;
+  letter-spacing: inherit;
+  tab-size: inherit;
+  white-space: inherit;
+  overflow-wrap: inherit;
+  word-break: inherit;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+.code-input {
+  z-index: 2;
+  resize: none;
+  outline: none;
+  overflow: auto;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--accent-violet);
+}
+
+.code-input::placeholder {
+  color: var(--ink-muted);
+  -webkit-text-fill-color: var(--ink-muted);
+}
+
+.code-input::selection {
+  background: var(--selection-bg);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==========================================================================
+   Resaltado de Sintaxis — Consumido desde web/palette/wyrm-palette.css
+   Todos los .tok-* fijan font-weight: 400 para alineación exacta con textarea.
+   ========================================================================== */
+
+.tok-comment,
+.tok-type,
+.tok-keyword,
+.tok-logical,
+.tok-string,
+.tok-char,
+.tok-escape,
+.tok-number,
+.tok-boolean,
+.tok-builtin,
+.tok-fn,
+.tok-operator,
+.tok-punct,
+.tok-ident,
+.tok-plain {
+  font-weight: 400;
+}
+
+.tok-keyword {
+  color: var(--tok-keyword);
+}
+
+.tok-logical {
+  color: var(--tok-logical);
+}
+
+.tok-type {
+  color: var(--tok-type);
+}
+
+.tok-builtin {
+  color: var(--tok-builtin);
+}
+
+.tok-fn {
+  color: var(--tok-fn);
+}
+
+.tok-string {
+  color: var(--tok-string);
+}
+
+.tok-char {
+  color: var(--tok-char);
+}
+
+.tok-escape {
+  color: var(--tok-escape);
+}
+
+.tok-number {
+  color: var(--tok-number);
+}
+
+.tok-boolean {
+  color: var(--tok-boolean);
+}
+
+.tok-operator {
+  color: var(--tok-operator);
+}
+
+.tok-comment {
+  color: var(--tok-comment);
+  font-style: italic;
+}
+
+.tok-punct {
+  color: var(--tok-punct);
+}
+
+.tok-ident {
+  color: var(--tok-ident);
+}
+
+.tok-plain {
+  color: var(--tok-plain);
+}
+
+/* ==========================================================================
+   Responsive (Editor)
+   ========================================================================== */
+
+@media (max-width: 960px) {
+  .editor-panel {
+    border-bottom: 1px solid var(--border-struct);
+  }
+}
+
+@media (max-width: 640px) {
+  .file-meta-sep,
+  .file-example-hint {
+    display: none;
+  }
+}

@@ -189,12 +189,17 @@ impl AstTraceSession {
             for var in &curr_frame.vars {
                 match prev_frame.and_then(|pf| pf.vars.iter().find(|old| old.name == var.name)) {
                     None => {
-                        changes.insert((curr_frame.depth, var.name.clone()), ScopeVarChange::Created);
+                        changes.insert(
+                            (curr_frame.depth, var.name.clone()),
+                            ScopeVarChange::Created,
+                        );
                     }
                     Some(old) => {
                         if old.value != var.value || old.value_type != var.value_type {
-                            changes
-                                .insert((curr_frame.depth, var.name.clone()), ScopeVarChange::Updated);
+                            changes.insert(
+                                (curr_frame.depth, var.name.clone()),
+                                ScopeVarChange::Updated,
+                            );
                         }
                     }
                 }

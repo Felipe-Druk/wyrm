@@ -119,6 +119,9 @@ conector = "conector"
 intervalos = "intervalos"
 oficial = "oficial"
 alternar = "alternar"
+visuales = "visuales"
+coordinador = "coordinador"
+inmutable = "inmutable"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"

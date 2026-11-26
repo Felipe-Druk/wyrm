@@ -112,8 +112,8 @@ fn is_followed_by_call_paren(bytes: &[u8], mut index: usize) -> bool {
 
 fn classify_word(word: &str, is_call: bool) -> TokenKind {
     match word {
-        "nat8" | "nat16" | "nat32" | "nat64" | "int8" | "int16" | "int32" | "int64"
-        | "float32" | "float64" | "bool" | "vec" => TokenKind::Type,
+        "nat8" | "nat16" | "nat32" | "nat64" | "int8" | "int16" | "int32" | "int64" | "float32"
+        | "float64" | "bool" | "vec" => TokenKind::Type,
         "if" | "else" | "while" | "for" | "loop" | "break" | "match" => TokenKind::Keyword,
         "and" | "or" | "not" | "xor" => TokenKind::LogicalOp,
         "true" | "false" => TokenKind::Boolean,
@@ -199,10 +199,7 @@ pub fn tokenize(source: &str) -> Vec<(TokenKind, String)> {
         // Operadores de dos caracteres
         if i + 1 < len {
             let pair = &bytes[i..i + 2];
-            if matches!(
-                pair,
-                b"->" | b"<-" | b"~=" | b"==" | b"<=" | b">=" | b":="
-            ) {
+            if matches!(pair, b"->" | b"<-" | b"~=" | b"==" | b"<=" | b">=" | b":=") {
                 push_token(&mut tokens, TokenKind::Operator, &source[i..i + 2]);
                 i += 2;
                 continue;
@@ -220,10 +217,7 @@ pub fn tokenize(source: &str) -> Vec<(TokenKind, String)> {
         }
 
         // Puntuación
-        if matches!(
-            b,
-            b'{' | b'}' | b'(' | b')' | b'[' | b']' | b';' | b','
-        ) {
+        if matches!(b, b'{' | b'}' | b'(' | b')' | b'[' | b']' | b';' | b',') {
             push_token(&mut tokens, TokenKind::Punctuation, &source[i..i + 1]);
             i += 1;
             continue;

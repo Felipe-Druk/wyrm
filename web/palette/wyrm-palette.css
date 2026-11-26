@@ -3,10 +3,12 @@
    Paletas exportadas desde Wyrm Playground:
      - obsidian: "Códice de Obsidiana" (escamas negras, oro bruñido, luz violeta)
      - silver:   "Plata y Luz" (alabastro, plata cepillada, azul hielo)
-   Uso: importar directamente y alternar [data-palette="obsidian" | "silver"].
+   Uso: importar directamente y alternar [data-theme="obsidian" | "silver"]
+        o [data-palette="obsidian" | "silver"].
    ========================================================================== */
 
 :root,
+[data-theme="obsidian"],
 [data-palette="obsidian"] {
   /* Surface */
   --bg-base: #09080c;
@@ -47,6 +49,7 @@
   --accent-primary-hover: #eab958;
   --accent-violet: #a370ff;
   --accent-violet-bright: #be97ff;
+  --accent-violet-ink: var(--accent-violet-bright);
   --accent-violet-dim: rgba(163, 112, 255, 0.12);
   --accent-violet-hover: rgba(163, 112, 255, 0.08);
   --accent-arcane: #a370ff;
@@ -135,6 +138,7 @@
     0 0 20px rgba(163, 112, 255, 0.6);
 }
 
+[data-theme="silver"],
 [data-palette="silver"] {
   /* Surface */
   --bg-base: #f2f4f8;
@@ -175,6 +179,7 @@
   --accent-primary-hover: #155cc0;
   --accent-violet: #1e73e8;
   --accent-violet-bright: #3b88f5;
+  --accent-violet-ink: var(--accent-violet);
   --accent-violet-dim: rgba(30, 115, 232, 0.1);
   --accent-violet-hover: rgba(30, 115, 232, 0.07);
   --accent-arcane: #5c6b82;

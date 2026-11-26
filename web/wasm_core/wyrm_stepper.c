@@ -1,17 +1,10 @@
 #include <inttypes.h>
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-#else
-#define EMSCRIPTEN_KEEPALIVE
-#endif
 
 #include "compiler/compiler.h"
 #include "options.h"
@@ -26,7 +19,7 @@
 #include "wvm/wvm_ops/wvm_variables.h"
 #include "wyrm_types/wyrmc_types/wyrm_chunk.h"
 #include "wyrm_types/wyrmc_types/wyrm_opcode.h"
-#include "wyrm_wasm_internal.h"
+#include "wyrm_wasm_common.h"
 
 #define STEPPER_DEFAULT_MAX_STEPS 1500
 #define STEPPER_HARD_MAX_STEPS 20000
@@ -34,145 +27,7 @@
 #define STEPPER_MAX_HEAP_ELEMS 64
 #define STEPPER_INIT_JSON_CAP 16384
 
-typedef struct {
-    char *data;
-    size_t len;
-    size_t cap;
-    bool oom;
-} jbuf_t;
-
 static char *g_trace_json = NULL;
-
-static void jbuf_init(jbuf_t *jb, size_t initial_cap) {
-    jb->data = (char *)malloc(initial_cap);
-    if (jb->data == NULL) {
-        jb->len = 0;
-        jb->cap = 0;
-        jb->oom = true;
-        return;
-    }
-    jb->data[0] = '\0';
-    jb->len = 0;
-    jb->cap = initial_cap;
-    jb->oom = false;
-}
-
-static void jbuf_free(jbuf_t *jb) {
-    free(jb->data);
-    jb->data = NULL;
-    jb->len = 0;
-    jb->cap = 0;
-}
-
-static bool jbuf_reserve(jbuf_t *jb, size_t extra) {
-    if (jb->oom) {
-        return false;
-    }
-    size_t needed = jb->len + extra + 1;
-    if (needed <= jb->cap) {
-        return true;
-    }
-    size_t next_cap = jb->cap > 0 ? jb->cap : STEPPER_INIT_JSON_CAP;
-    while (next_cap < needed) {
-        if (next_cap > (SIZE_MAX / 2)) {
-            jb->oom = true;
-            return false;
-        }
-        next_cap *= 2;
-    }
-    char *resized = (char *)realloc(jb->data, next_cap);
-    if (resized == NULL) {
-        jb->oom = true;
-        return false;
-    }
-    jb->data = resized;
-    jb->cap = next_cap;
-    return true;
-}
-
-static void jbuf_append_raw(jbuf_t *jb, const char *bytes, size_t n) {
-    if (n == 0 || !jbuf_reserve(jb, n)) {
-        return;
-    }
-    memcpy(jb->data + jb->len, bytes, n);
-    jb->len += n;
-    jb->data[jb->len] = '\0';
-}
-
-static void jbuf_append_str(jbuf_t *jb, const char *s) {
-    if (s == NULL) {
-        return;
-    }
-    jbuf_append_raw(jb, s, strlen(s));
-}
-
-static void jbuf_append_char(jbuf_t *jb, char c) {
-    jbuf_append_raw(jb, &c, 1);
-}
-
-static void jbuf_append_fmt(jbuf_t *jb, const char *fmt, ...) {
-    if (jb->oom) {
-        return;
-    }
-    va_list args;
-    va_start(args, fmt);
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, fmt, args);
-    va_end(args);
-
-    if (needed <= 0) {
-        va_end(args_copy);
-        return;
-    }
-    if (!jbuf_reserve(jb, (size_t)needed)) {
-        va_end(args_copy);
-        return;
-    }
-    vsnprintf(jb->data + jb->len, jb->cap - jb->len, fmt, args_copy);
-    va_end(args_copy);
-    jb->len += (size_t)needed;
-}
-
-static void jbuf_append_json_string(jbuf_t *jb, const char *s) {
-    jbuf_append_char(jb, '"');
-    if (s != NULL) {
-        for (const unsigned char *p = (const unsigned char *)s; *p != '\0'; p++) {
-            unsigned char ch = *p;
-            switch (ch) {
-            case '"':
-                jbuf_append_raw(jb, "\\\"", 2);
-                break;
-            case '\\':
-                jbuf_append_raw(jb, "\\\\", 2);
-                break;
-            case '\b':
-                jbuf_append_raw(jb, "\\b", 2);
-                break;
-            case '\f':
-                jbuf_append_raw(jb, "\\f", 2);
-                break;
-            case '\n':
-                jbuf_append_raw(jb, "\\n", 2);
-                break;
-            case '\r':
-                jbuf_append_raw(jb, "\\r", 2);
-                break;
-            case '\t':
-                jbuf_append_raw(jb, "\\t", 2);
-                break;
-            default:
-                if (ch < 0x20) {
-                    jbuf_append_fmt(jb, "\\u%04x", (unsigned int)ch);
-                } else {
-                    jbuf_append_char(jb, (char)ch);
-                }
-                break;
-            }
-        }
-    }
-    jbuf_append_char(jb, '"');
-}
 
 static const char *lookup_func_name(const compiler_t *compiler, uint16_t func_id) {
     if (compiler == NULL || compiler->func_symbols.data == NULL) {
@@ -374,94 +229,6 @@ static size_t chunk_line_at(const wyrm_chunk_t *chunk, uint32_t ip) {
     return chunk->lines[ip];
 }
 
-static void format_bytes_hex(const uint8_t *bytes, size_t count, char *buf, size_t cap) {
-    if (cap == 0) {
-        return;
-    }
-    buf[0] = '\0';
-    size_t pos = 0;
-    for (size_t i = 0; i < count; i++) {
-        int written = snprintf(
-            buf + pos,
-            cap - pos,
-            i == 0 ? "%02X" : " %02X",
-            (unsigned int)bytes[i]
-        );
-        if (written <= 0 || (size_t)written >= cap - pos) {
-            break;
-        }
-        pos += (size_t)written;
-    }
-}
-
-static int value_bits_and_hex(wyrm_value_t val, char *hex_buf, size_t hex_cap) {
-    uint8_t raw[8];
-    memset(raw, 0, sizeof(raw));
-    hex_buf[0] = '\0';
-
-    switch (val.type) {
-    case VAL_VOID:
-        return 0;
-    case VAL_NAT8:
-        memcpy(raw, &val.value.nat8_val, 1);
-        format_bytes_hex(raw, 1, hex_buf, hex_cap);
-        return 8;
-    case VAL_INT8:
-        memcpy(raw, &val.value.int8_val, 1);
-        format_bytes_hex(raw, 1, hex_buf, hex_cap);
-        return 8;
-    case VAL_BOOL: {
-        uint8_t b = val.value.bool_val ? 1u : 0u;
-        format_bytes_hex(&b, 1, hex_buf, hex_cap);
-        return 8;
-    }
-    case VAL_NAT16:
-        memcpy(raw, &val.value.nat16_val, 2);
-        format_bytes_hex(raw, 2, hex_buf, hex_cap);
-        return 16;
-    case VAL_INT16:
-        memcpy(raw, &val.value.int16_val, 2);
-        format_bytes_hex(raw, 2, hex_buf, hex_cap);
-        return 16;
-    case VAL_NAT32:
-        memcpy(raw, &val.value.nat32_val, 4);
-        format_bytes_hex(raw, 4, hex_buf, hex_cap);
-        return 32;
-    case VAL_INT32:
-        memcpy(raw, &val.value.int32_val, 4);
-        format_bytes_hex(raw, 4, hex_buf, hex_cap);
-        return 32;
-    case VAL_FLOAT32: {
-        float f32 = (float)val.value.float32_val;
-        memcpy(raw, &f32, 4);
-        format_bytes_hex(raw, 4, hex_buf, hex_cap);
-        return 32;
-    }
-    case VAL_NAT64:
-        memcpy(raw, &val.value.nat64_val, 8);
-        format_bytes_hex(raw, 8, hex_buf, hex_cap);
-        return 64;
-    case VAL_INT64:
-        memcpy(raw, &val.value.int64_val, 8);
-        format_bytes_hex(raw, 8, hex_buf, hex_cap);
-        return 64;
-    case VAL_FLOAT64: {
-        double f64 = (double)val.value.float64_val;
-        memcpy(raw, &f64, 8);
-        format_bytes_hex(raw, 8, hex_buf, hex_cap);
-        return 64;
-    }
-    case VAL_VEC:
-        snprintf(hex_buf, hex_cap, "0x%" PRIxPTR, (uintptr_t)val.value.vec_val);
-        return (int)(sizeof(void *) * 8);
-    case VAL_FUNCTION:
-        snprintf(hex_buf, hex_cap, "fn(%zu)", val.value.wyrm_function_val.arg_count);
-        return (int)(sizeof(void *) * 8);
-    default:
-        return 0;
-    }
-}
-
 static size_t slot_frame_depth(const wyrm_vm_t *vm, size_t slot_index) {
     size_t depth = 0;
     for (size_t f = 0; f < vm->frame_count; f++) {
@@ -502,7 +269,7 @@ static void collect_vec_unique(
 }
 
 static void emit_step_json(
-    jbuf_t *jb,
+    json_buf_t *jb,
     const wyrm_vm_t *vm,
     const compiler_t *compiler,
     const uint16_t *frame_func_ids,
@@ -514,20 +281,20 @@ static void emit_step_json(
     size_t line,
     size_t stdout_len
 ) {
-    jbuf_append_fmt(
+    jbuf_appendf(
         jb,
         "{\"step\":%d,\"ip_before\":%" PRIu32 ",\"ip_after\":%" PRIu32 ",\"opcode\":",
         step_idx,
         ip_before,
         ip_after
     );
-    jbuf_append_json_string(jb, op_str);
-    jbuf_append_str(jb, ",\"operand\":");
-    jbuf_append_json_string(jb, operand_str);
-    jbuf_append_fmt(jb, ",\"line\":%zu,\"stdout_len\":%zu,\"frames\":[", line, stdout_len);
+    jbuf_append_escaped_str(jb, op_str);
+    jbuf_append(jb, ",\"operand\":");
+    jbuf_append_escaped_str(jb, operand_str);
+    jbuf_appendf(jb, ",\"line\":%zu,\"stdout_len\":%zu,\"frames\":[", line, stdout_len);
 
     // Frame raiz <script> en depth 0
-    jbuf_append_str(
+    jbuf_append(
         jb,
         "{\"depth\":0,\"name\":\"<script>\",\"base_slot\":0,\"return_ip\":null,\"return_type\":\"void\"}"
     );
@@ -540,20 +307,20 @@ static void emit_step_json(
         } else {
             snprintf(name_buf, sizeof(name_buf), "fn#%u", (unsigned int)frame_func_ids[f]);
         }
-        jbuf_append_fmt(jb, ",{\"depth\":%zu,\"name\":", f + 1);
-        jbuf_append_json_string(jb, name_buf);
-        jbuf_append_fmt(
+        jbuf_appendf(jb, ",{\"depth\":%zu,\"name\":", f + 1);
+        jbuf_append_escaped_str(jb, name_buf);
+        jbuf_appendf(
             jb,
             ",\"base_slot\":%zu,\"return_ip\":%" PRIu32 ",\"return_type\":",
             fr->base_slot,
             fr->return_ip
         );
-        jbuf_append_json_string(jb, wyrm_web_type_name(fr->return_type));
+        jbuf_append_escaped_str(jb, wyrm_web_type_name(fr->return_type));
         jbuf_append_char(jb, '}');
     }
 
     // Stack
-    jbuf_append_str(jb, "],\"stack\":[");
+    jbuf_append(jb, "],\"stack\":[");
     const wyrm_vec_t *heap_vecs[STEPPER_MAX_HEAP_VECS];
     size_t heap_count = 0;
 
@@ -572,34 +339,35 @@ static void emit_step_json(
 
         wyrm_web_format_type(slot_val, type_buf, sizeof(type_buf));
         wyrm_web_format_value(slot_val, val_buf, sizeof(val_buf));
-        int bits = value_bits_and_hex(slot_val, hex_buf, sizeof(hex_buf));
+        int bits = wyrm_web_value_bits(slot_val);
+        wyrm_web_format_hex(slot_val, hex_buf, sizeof(hex_buf));
 
-        jbuf_append_fmt(jb, "{\"index\":%zu,\"frame_depth\":%zu,\"name\":", i, fdepth);
+        jbuf_appendf(jb, "{\"index\":%zu,\"frame_depth\":%zu,\"name\":", i, fdepth);
         if (slot_name != NULL) {
-            jbuf_append_json_string(jb, slot_name);
+            jbuf_append_escaped_str(jb, slot_name);
         } else {
-            jbuf_append_str(jb, "null");
+            jbuf_append(jb, "null");
         }
-        jbuf_append_str(jb, ",\"type\":");
-        jbuf_append_json_string(jb, type_buf);
-        jbuf_append_str(jb, ",\"value\":");
-        jbuf_append_json_string(jb, val_buf);
-        jbuf_append_fmt(jb, ",\"bits\":%d,\"hex\":", bits);
-        jbuf_append_json_string(jb, hex_buf);
-        jbuf_append_str(jb, ",\"vec_ptr\":");
+        jbuf_append(jb, ",\"type\":");
+        jbuf_append_escaped_str(jb, type_buf);
+        jbuf_append(jb, ",\"value\":");
+        jbuf_append_escaped_str(jb, val_buf);
+        jbuf_appendf(jb, ",\"bits\":%d,\"hex\":", bits);
+        jbuf_append_escaped_str(jb, hex_buf);
+        jbuf_append(jb, ",\"vec_ptr\":");
 
         if (slot_val.type == VAL_VEC && slot_val.value.vec_val != NULL) {
             snprintf(ptr_buf, sizeof(ptr_buf), "0x%" PRIxPTR, (uintptr_t)slot_val.value.vec_val);
-            jbuf_append_json_string(jb, ptr_buf);
+            jbuf_append_escaped_str(jb, ptr_buf);
             collect_vec_unique(slot_val.value.vec_val, heap_vecs, &heap_count);
         } else {
-            jbuf_append_str(jb, "null");
+            jbuf_append(jb, "null");
         }
         jbuf_append_char(jb, '}');
     }
 
     // Heap deduplicado
-    jbuf_append_str(jb, "],\"heap\":[");
+    jbuf_append(jb, "],\"heap\":[");
     char elem_val[256];
     char elem_hex[64];
     char ascii_buf[512];
@@ -611,20 +379,20 @@ static void emit_step_json(
         const wyrm_vec_t *vec = heap_vecs[h];
         snprintf(ptr_buf, sizeof(ptr_buf), "0x%" PRIxPTR, (uintptr_t)vec);
 
-        jbuf_append_str(jb, "{\"ptr\":");
-        jbuf_append_json_string(jb, ptr_buf);
-        jbuf_append_str(jb, ",\"elem_type\":");
-        jbuf_append_json_string(jb, wyrm_web_type_name(vec->element_type));
-        jbuf_append_fmt(jb, ",\"len\":%zu,\"ascii\":", vec->items.size);
+        jbuf_append(jb, "{\"ptr\":");
+        jbuf_append_escaped_str(jb, ptr_buf);
+        jbuf_append(jb, ",\"elem_type\":");
+        jbuf_append_escaped_str(jb, wyrm_web_type_name(vec->element_type));
+        jbuf_appendf(jb, ",\"len\":%zu,\"ascii\":", vec->items.size);
 
         if (vec->element_type == VAL_NAT8) {
             wyrm_web_format_nat8_ascii(vec, ascii_buf, sizeof(ascii_buf));
-            jbuf_append_json_string(jb, ascii_buf);
+            jbuf_append_escaped_str(jb, ascii_buf);
         } else {
-            jbuf_append_str(jb, "null");
+            jbuf_append(jb, "null");
         }
 
-        jbuf_append_str(jb, ",\"elements\":[");
+        jbuf_append(jb, ",\"elements\":[");
         size_t shown = vec->items.size > STEPPER_MAX_HEAP_ELEMS
             ? STEPPER_MAX_HEAP_ELEMS
             : vec->items.size;
@@ -635,29 +403,29 @@ static void emit_step_json(
             const wyrm_value_t *item = (const wyrm_value_t *)vector_get(&vec->items, e);
             if (item != NULL) {
                 wyrm_web_format_value(*item, elem_val, sizeof(elem_val));
-                value_bits_and_hex(*item, elem_hex, sizeof(elem_hex));
+                wyrm_web_format_hex(*item, elem_hex, sizeof(elem_hex));
             } else {
                 elem_val[0] = '\0';
                 elem_hex[0] = '\0';
             }
-            jbuf_append_fmt(jb, "{\"index\":%zu,\"value\":", e);
-            jbuf_append_json_string(jb, elem_val);
-            jbuf_append_str(jb, ",\"hex\":");
-            jbuf_append_json_string(jb, elem_hex);
+            jbuf_appendf(jb, "{\"index\":%zu,\"value\":", e);
+            jbuf_append_escaped_str(jb, elem_val);
+            jbuf_append(jb, ",\"hex\":");
+            jbuf_append_escaped_str(jb, elem_hex);
             jbuf_append_char(jb, '}');
         }
-        jbuf_append_str(jb, "]}");
+        jbuf_append(jb, "]}");
     }
 
-    jbuf_append_str(jb, "]}");
+    jbuf_append(jb, "]}");
 }
 
 static void emit_chunk_disassembly(
-    jbuf_t *jb,
+    json_buf_t *jb,
     const wyrm_chunk_t *chunk,
     const compiler_t *compiler
 ) {
-    jbuf_append_str(jb, "\"instructions\":[");
+    jbuf_append(jb, "\"instructions\":[");
     uint32_t ip = 0;
     bool first = true;
     const char *op_str = NULL;
@@ -671,16 +439,16 @@ static void emit_chunk_disassembly(
         uint32_t size = decode_instruction(chunk, compiler, ip, &op_str, operand_buf, sizeof(operand_buf));
         size_t line = chunk_line_at(chunk, ip);
 
-        jbuf_append_fmt(jb, "{\"ip\":%" PRIu32 ",\"opcode\":", ip);
-        jbuf_append_json_string(jb, op_str);
-        jbuf_append_str(jb, ",\"operand\":");
-        jbuf_append_json_string(jb, operand_buf);
-        jbuf_append_fmt(jb, ",\"line\":%zu}", line);
+        jbuf_appendf(jb, "{\"ip\":%" PRIu32 ",\"opcode\":", ip);
+        jbuf_append_escaped_str(jb, op_str);
+        jbuf_append(jb, ",\"operand\":");
+        jbuf_append_escaped_str(jb, operand_buf);
+        jbuf_appendf(jb, ",\"line\":%zu}", line);
 
         ip += (size > 0) ? size : 1;
     }
 
-    jbuf_append_str(jb, "],\"constants\":[");
+    jbuf_append(jb, "],\"constants\":[");
     char ctype_buf[128];
     char cval_buf[256];
     for (size_t i = 0; i < chunk->constants.size; i++) {
@@ -690,13 +458,13 @@ static void emit_chunk_disassembly(
         const wyrm_value_t *cval = (const wyrm_value_t *)vector_get(&chunk->constants, i);
         wyrm_web_format_type(*cval, ctype_buf, sizeof(ctype_buf));
         wyrm_web_format_value(*cval, cval_buf, sizeof(cval_buf));
-        jbuf_append_fmt(jb, "{\"index\":%zu,\"type\":", i);
-        jbuf_append_json_string(jb, ctype_buf);
-        jbuf_append_str(jb, ",\"value\":");
-        jbuf_append_json_string(jb, cval_buf);
+        jbuf_appendf(jb, "{\"index\":%zu,\"type\":", i);
+        jbuf_append_escaped_str(jb, ctype_buf);
+        jbuf_append(jb, ",\"value\":");
+        jbuf_append_escaped_str(jb, cval_buf);
         jbuf_append_char(jb, '}');
     }
-    jbuf_append_str(jb, "],");
+    jbuf_append(jb, "],");
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -769,11 +537,11 @@ int wyrm_web_trace(const char *source, int max_steps) {
     uint16_t frame_func_ids[FRAMES_MAX];
     memset(frame_func_ids, 0, sizeof(frame_func_ids));
 
-    jbuf_t jb;
+    json_buf_t jb;
     jbuf_init(&jb, STEPPER_INIT_JSON_CAP);
     jbuf_append_char(&jb, '{');
     emit_chunk_disassembly(&jb, chunk, compiler);
-    jbuf_append_str(&jb, "\"steps\":[");
+    jbuf_append(&jb, "\"steps\":[");
 
     // Paso 0: estado inicial previo a la primera instrucción
     emit_step_json(
@@ -929,7 +697,7 @@ int wyrm_web_trace(const char *source, int max_steps) {
         );
     }
 
-    jbuf_append_fmt(
+    jbuf_appendf(
         &jb,
         "],\"truncated\":%s,\"max_steps\":%d,\"total_steps\":%d}",
         truncated ? "true" : "false",

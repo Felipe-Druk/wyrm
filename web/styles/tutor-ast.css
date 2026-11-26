@@ -1,0 +1,751 @@
+/* ==========================================================================
+   Wyrm Tutor AST — Lienzo SVG, Pan/Zoom, Nodos, Aristas, Resizer y Scopes
+   ========================================================================== */
+
+.tutor-shell--ast-active {
+  flex: 1 1 100%;
+  min-height: 480px;
+}
+
+.tutor-shell--ast-active .ast-tutor-root,
+.tutor-shell--ast-active .ast-workspace {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+}
+
+.ast-workspace > .tutor-controls-bar,
+.ast-workspace > .tutor-scrubber-row,
+.ast-workspace > .ast-summary-strip {
+  flex-shrink: 0;
+}
+
+.ast-tutor-root {
+  outline: none;
+}
+
+.ast-tutor-root:focus-visible .ast-split-pane {
+  border-color: var(--accent-violet-border);
+}
+
+.ast-workspace--resizing,
+.ast-workspace--resizing * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: row-resize !important;
+}
+
+.ast-workspace--resizing .ast-graph-section,
+.ast-workspace--resizing .ast-scopes-section {
+  pointer-events: none;
+}
+
+/* División vertical arrastrable entre 01 :: AST y 02 :: SCOPES */
+.ast-split-pane {
+  flex: 1 1 0;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-panel);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ast-split-pane .ast-graph-section {
+  flex: 0 0 var(--ast-graph-pct, 62%);
+  min-height: 150px;
+  border: 0;
+  overflow: hidden;
+}
+
+.ast-split-pane--scopes-collapsed .ast-graph-section {
+  flex: 1 1 0;
+  min-height: 220px;
+}
+
+/* Divisor horizontal fino de 1px con zona interactiva invisible de 9px */
+.ast-v-resizer {
+  position: relative;
+  flex: 0 0 1px;
+  height: 1px;
+  width: 100%;
+  background-color: var(--border-struct);
+  cursor: row-resize;
+  z-index: 15;
+  touch-action: none;
+}
+
+.ast-v-resizer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  bottom: -4px;
+  cursor: row-resize;
+}
+
+.ast-v-resizer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: var(--resizer-h-gradient);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.ast-v-resizer:hover::after,
+.ast-v-resizer--dragging::after {
+  opacity: 1;
+}
+
+.ast-v-resizer--dragging::after {
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.ast-v-resizer-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--accent-violet-border);
+  color: var(--accent-gold);
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+  transition: opacity 0.12s ease;
+}
+
+.ast-v-resizer:hover .ast-v-resizer-grip,
+.ast-v-resizer--dragging .ast-v-resizer-grip {
+  opacity: 1;
+}
+
+.ast-v-resizer--dragging .ast-v-resizer-grip {
+  border-color: var(--accent-violet);
+  color: var(--accent-violet);
+}
+
+.ast-split-pane--scopes-collapsed .ast-v-resizer {
+  display: none;
+}
+
+.ast-split-pane .ast-scopes-section {
+  flex: 1 1 0;
+  min-height: 0;
+  border: 0;
+  overflow: hidden;
+}
+
+.ast-split-pane--scopes-collapsed .ast-scopes-section {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border-struct);
+}
+
+.ast-scopes-header-btn {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border-struct);
+  text-align: left;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.ast-scopes-header-btn:hover {
+  background-color: var(--accent-violet-hover);
+}
+
+.ast-scopes-header-btn:hover .ast-scopes-chevron {
+  color: var(--accent-violet);
+}
+
+.ast-scopes-section--collapsed .ast-scopes-header-btn {
+  border-bottom: 0;
+}
+
+.ast-scopes-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ast-scopes-chevron {
+  display: inline-block;
+  width: 11px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--accent-gold);
+  flex-shrink: 0;
+  transition: color 0.12s ease;
+}
+
+.ast-scopes-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Tira de resumen del paso AST (ENTER oro / EVAL violeta) */
+.ast-summary-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px 10px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-active);
+  border-left: 2px solid var(--accent-gold);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ast-summary-strip--exit {
+  border-left-color: var(--accent-violet);
+}
+
+.ast-summary-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.ast-phase-badge {
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  border: 1px solid var(--border-struct);
+  white-space: nowrap;
+}
+
+.ast-phase-badge--enter {
+  border-color: var(--accent-gold-border);
+  background-color: var(--accent-gold-dim);
+  color: var(--accent-gold);
+}
+
+.ast-phase-badge--exit {
+  border-color: var(--accent-violet-border);
+  background-color: var(--accent-violet-dim);
+  color: var(--accent-violet);
+}
+
+.ast-summary-kind {
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.ast-summary-label {
+  color: var(--ink-primary);
+  font-weight: 600;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ast-summary-result {
+  padding: 1px 7px;
+  border: 1px solid var(--accent-violet-border);
+  background-color: var(--accent-violet-dim);
+  color: var(--accent-violet-ink);
+  font-size: 11px;
+  font-weight: 600;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ast-summary-note {
+  padding-top: 4px;
+  border-top: 1px solid var(--border-struct);
+  font-size: 11px;
+  color: var(--ink-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* Sección 01 :: Lienzo interactivo SVG del AST */
+.ast-graph-header {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 0 0 0 10px;
+  min-height: 30px;
+}
+
+.ast-graph-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  min-width: 0;
+}
+
+.ast-view-controls {
+  display: inline-flex;
+  align-items: stretch;
+  margin-left: auto;
+  border-left: 1px solid var(--border-struct);
+  background-color: var(--bg-base);
+}
+
+.ast-cam-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 30px;
+  padding: 0 7px;
+  border: 0;
+  border-right: 1px solid var(--border-struct);
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.ast-cam-btn:last-child {
+  border-right: 0;
+}
+
+.ast-cam-btn:hover {
+  color: var(--accent-violet);
+  background-color: var(--accent-violet-hover);
+}
+
+.ast-cam-btn--pct {
+  min-width: 44px;
+  color: var(--ink-primary);
+}
+
+.ast-cam-btn--focus.active {
+  color: var(--accent-gold);
+  background-color: var(--accent-gold-dim);
+  box-shadow: inset 0 -2px 0 0 var(--accent-gold);
+}
+
+.ast-canvas-stage {
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  user-select: none;
+  cursor: grab;
+  background-color: var(--bg-inset);
+  background-image: var(--ast-dot-grid);
+  background-size: 20px 20px;
+}
+
+.ast-canvas-stage.dragging {
+  cursor: grabbing;
+}
+
+.ast-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ast-svg text {
+  font-family: var(--font-mono);
+  user-select: none;
+  pointer-events: none;
+}
+
+.ast-canvas-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 3px 10px;
+  border-top: 1px solid var(--border-struct);
+  background-color: var(--bg-panel);
+  color: var(--ink-muted);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+/* Aristas ortogonales y saltos de llamada */
+.ast-edge {
+  fill: none;
+  stroke: var(--border-struct);
+  stroke-width: 1.35;
+  shape-rendering: crispEdges;
+}
+
+.ast-edge--done {
+  stroke: var(--border-active);
+  stroke-width: 1.5;
+}
+
+.ast-edge--path {
+  stroke: var(--accent-gold);
+  stroke-width: 2.1;
+}
+
+.ast-edge-jump {
+  fill: none;
+  stroke: var(--accent-violet);
+  stroke-width: 1.65;
+  stroke-dasharray: 5 4;
+  opacity: 0.85;
+}
+
+.ast-edge-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: var(--ink-muted);
+  paint-order: stroke;
+  stroke: var(--bg-inset);
+  stroke-width: 3.5px;
+  stroke-linejoin: miter;
+}
+
+.ast-edge-label--path {
+  fill: var(--accent-gold);
+}
+
+/* Nodos del grafo AST (esquinas afiladas rx=0) */
+.ast-node {
+  cursor: pointer;
+}
+
+.ast-node-box {
+  fill: var(--bg-panel);
+  stroke: var(--border-struct);
+  stroke-width: 1.25;
+}
+
+.ast-node-accent {
+  fill: var(--border-struct);
+}
+
+.ast-node:hover .ast-node-box {
+  stroke: var(--accent-violet-border);
+  fill: var(--bg-surface);
+}
+
+.ast-node-kind {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  fill: var(--ink-muted);
+}
+
+.ast-node-label {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--ink-primary);
+}
+
+.ast-node-detail {
+  font-size: 9px;
+  fill: var(--ink-secondary);
+}
+
+.ast-node--unvisited {
+  opacity: 0.52;
+}
+
+.ast-node--resolved .ast-node-box {
+  stroke: var(--border-active);
+  fill: var(--bg-panel);
+}
+
+.ast-node--resolved .ast-node-accent {
+  fill: var(--accent-violet-border);
+}
+
+.ast-node--path .ast-node-box {
+  stroke: var(--accent-gold);
+  stroke-width: 1.75;
+  fill: var(--bg-surface);
+}
+
+.ast-node--path .ast-node-accent {
+  fill: var(--accent-gold);
+}
+
+.ast-node--path .ast-node-kind {
+  fill: var(--accent-gold);
+}
+
+.ast-node--current .ast-node-box {
+  stroke: var(--accent-violet);
+  stroke-width: 2.2;
+  fill: var(--bg-surface);
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.ast-node--current.ast-node--enter .ast-node-accent {
+  fill: var(--accent-gold);
+}
+
+.ast-node--current.ast-node--exit .ast-node-accent {
+  fill: var(--accent-violet);
+}
+
+.ast-node--current .ast-node-kind {
+  fill: var(--accent-violet);
+}
+
+.ast-node-phase {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-anchor: end;
+}
+
+.ast-node-phase--enter {
+  fill: var(--accent-gold);
+}
+
+.ast-node-phase--exit {
+  fill: var(--accent-violet);
+}
+
+/* Píldora inferior de valor resuelto / burbujeado */
+.ast-pill-box {
+  fill: var(--bg-base);
+  stroke: var(--accent-violet-border);
+  stroke-width: 1;
+}
+
+.ast-pill-box--active {
+  fill: var(--accent-violet-dim);
+  stroke: var(--accent-violet);
+  stroke-width: 1.35;
+}
+
+.ast-pill-text {
+  font-size: 9px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: var(--accent-violet-ink);
+}
+
+.ast-pill-text--active {
+  fill: var(--ink-primary);
+}
+
+/* Sección 02 :: Scopes (environment_t) en tabla plana con divisores de 1px */
+.ast-scopes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.ast-scope-frame {
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-base);
+}
+
+.ast-scope-frame--active {
+  border-color: var(--border-active);
+  border-left: 2px solid var(--accent-gold);
+}
+
+.ast-scope-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-struct);
+}
+
+.ast-scope-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ink-primary);
+}
+
+.ast-scope-count {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
+
+.ast-scope-table {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ast-scope-head,
+.ast-scope-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 1.1fr) minmax(90px, 0.9fr) minmax(120px, 1.5fr);
+  align-items: center;
+  border-bottom: 1px solid var(--border-struct);
+}
+
+.ast-scope-row:last-child {
+  border-bottom: 0;
+}
+
+.ast-scope-head {
+  background-color: var(--bg-panel);
+  color: var(--ink-muted);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+
+.ast-scope-head > span,
+.ast-scope-row > span {
+  padding: 4px 8px;
+  border-right: 1px solid var(--border-struct);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ast-scope-head > span:last-child,
+.ast-scope-row > span:last-child {
+  border-right: 0;
+}
+
+.ast-scope-row {
+  font-size: 11px;
+  background-color: var(--bg-base);
+  transition: background-color 0.14s ease;
+}
+
+.ast-scope-row--changed {
+  background-color: var(--accent-violet-dim);
+  box-shadow: inset 2px 0 0 var(--accent-violet);
+}
+
+.ast-scope-var-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+.ast-scope-change-tag {
+  padding: 0 4px;
+  border: 1px solid var(--accent-violet-border);
+  background-color: var(--bg-base);
+  color: var(--accent-violet);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.ast-scope-var-type {
+  color: var(--accent-violet);
+  font-size: 10.5px;
+}
+
+.ast-scope-var-val {
+  color: var(--ink-primary);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Responsive (Tutor AST)
+   ========================================================================== */
+
+@media (max-width: 960px) {
+  .tutor-shell--ast-active,
+  .tutor-shell--ast-active .ast-tutor-root,
+  .tutor-shell--ast-active .ast-workspace {
+    flex: none;
+    height: auto;
+    min-height: 0;
+  }
+
+  .ast-split-pane {
+    flex: none;
+    min-height: 0;
+  }
+
+  .ast-split-pane .ast-graph-section,
+  .ast-split-pane--scopes-collapsed .ast-graph-section {
+    flex: none;
+    min-height: 0;
+  }
+
+  .ast-v-resizer {
+    display: none;
+  }
+
+  .ast-split-pane .ast-scopes-section {
+    flex: none;
+    border-top: 1px solid var(--border-struct);
+  }
+
+  .ast-scopes-body {
+    flex: none;
+    overflow-y: visible;
+  }
+
+  .ast-canvas-stage {
+    flex: none;
+    height: 310px;
+  }
+
+  .ast-split-pane--scopes-collapsed .ast-canvas-stage {
+    flex: none;
+    height: 440px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ast-graph-header {
+    padding-left: 8px;
+  }
+
+  .ast-view-controls {
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid var(--border-struct);
+  }
+
+  .ast-cam-btn--focus {
+    margin-left: auto;
+    border-left: 1px solid var(--border-struct);
+  }
+
+  .ast-scope-head,
+  .ast-scope-row {
+    grid-template-columns: minmax(84px, 1fr) minmax(72px, 0.85fr) minmax(90px, 1.3fr);
+  }
+}

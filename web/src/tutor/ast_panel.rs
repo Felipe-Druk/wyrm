@@ -1,15 +1,19 @@
 //! Interfaz interactiva de visualización paso a paso del AST (Intérprete Tree-Walk).
 
-use crate::app::WindowDragListeners;
-use crate::ast_layout::{compute_ast_layout, AstLayout, LayoutNode};
-use crate::ast_trace::{AstNodeInfo, AstScopeDiff, AstTraceSession, AstTraceStep, ScopeVarChange};
+use super::ast_layout::{compute_ast_layout, AstLayout, LayoutNode};
+use super::ast_trace::{
+    AstNodeInfo, AstResolvedValue, AstScopeDiff, AstTraceSession, AstTraceStep, ScopeVarChange,
+};
+use crate::components::{handle_tutor_keydown, TutorTransport, WindowDragListeners};
+use crate::storage::{
+    clamp_pct, load_ast_split_pct, save_ast_split_pct, DEFAULT_AST_GRAPH_PCT, MAX_AST_GRAPH_PCT,
+    MIN_AST_GRAPH_PCT,
+};
 use leptos::html::Div;
-use leptos::leptos_dom::helpers::{set_timeout_with_handle, TimeoutHandle};
 use leptos::prelude::*;
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use std::time::Duration;
 use web_sys::{KeyboardEvent, MouseEvent, WheelEvent};
 
 const DEFAULT_ZOOM: f64 = 0.92;
@@ -19,10 +23,6 @@ const ZOOM_STEP_FACTOR: f64 = 1.22;
 const WHEEL_ZOOM_FACTOR: f64 = 1.12;
 const DEFAULT_STAGE_W: f64 = 640.0;
 const DEFAULT_STAGE_H: f64 = 360.0;
-const AST_SPLIT_STORAGE_KEY: &str = "wyrm-ast-split-pct";
-const DEFAULT_AST_GRAPH_PCT: f64 = 62.0;
-const MIN_AST_GRAPH_PCT: f64 = 35.0;
-const MAX_AST_GRAPH_PCT: f64 = 85.0;
 
 thread_local! {
     static AST_V_DRAG_LISTENERS: RefCell<Option<WindowDragListeners>> = const { RefCell::new(None) };
@@ -32,60 +32,6 @@ fn clear_ast_v_drag_listeners() {
     let existing = AST_V_DRAG_LISTENERS.with(|cell| cell.borrow_mut().take());
     if let Some(listeners) = existing {
         listeners.detach();
-    }
-}
-
-/// Acota el porcentaje de altura del lienzo AST dentro del rango permitido.
-fn clamp_ast_graph_pct(pct: f64) -> f64 {
-    if pct.is_finite() {
-        pct.clamp(MIN_AST_GRAPH_PCT, MAX_AST_GRAPH_PCT)
-    } else {
-        DEFAULT_AST_GRAPH_PCT
-    }
-}
-
-/// Recupera la altura porcentual del lienzo AST persistida en `window.localStorage`.
-fn load_saved_ast_graph_pct() -> f64 {
-    web_sys::window()
-        .and_then(|window| window.local_storage().ok().flatten())
-        .and_then(|storage| storage.get_item(AST_SPLIT_STORAGE_KEY).ok().flatten())
-        .and_then(|raw| raw.parse::<f64>().ok())
-        .map(clamp_ast_graph_pct)
-        .unwrap_or(DEFAULT_AST_GRAPH_PCT)
-}
-
-/// Persiste la altura porcentual del lienzo AST en `window.localStorage`.
-fn save_ast_graph_pct(pct: f64) {
-    let clamped = clamp_ast_graph_pct(pct);
-    if let Some(storage) = web_sys::window().and_then(|window| window.local_storage().ok().flatten())
-    {
-        let _ = storage.set_item(AST_SPLIT_STORAGE_KEY, &format!("{clamped:.2}"));
-    }
-}
-
-/// Velocidad de reproducción automática del Tutor AST.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AstPlaybackSpeed {
-    Half,
-    Normal,
-    Double,
-}
-
-impl AstPlaybackSpeed {
-    fn delay_ms(self) -> u64 {
-        match self {
-            Self::Half => 1050,
-            Self::Normal => 520,
-            Self::Double => 200,
-        }
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Self::Half => "0.5x",
-            Self::Normal => "1x",
-            Self::Double => "2x",
-        }
     }
 }
 
@@ -112,14 +58,13 @@ pub fn AstTutorPanel(
     on_ast_trace: Callback<()>,
 ) -> impl IntoView {
     let is_playing = RwSignal::new(false);
-    let playback_speed = RwSignal::new(AstPlaybackSpeed::Normal);
     let auto_focus = RwSignal::new(true);
     let cam_cx = RwSignal::new(200.0f64);
     let cam_cy = RwSignal::new(140.0f64);
     let zoom = RwSignal::new(DEFAULT_ZOOM);
     let is_dragging_ui = RwSignal::new(false);
     let hovered_node = RwSignal::new(None::<usize>);
-    let ast_graph_pct = RwSignal::new(load_saved_ast_graph_pct());
+    let ast_graph_pct = RwSignal::new(load_ast_split_pct());
     let is_resizing_ast = RwSignal::new(false);
     let scopes_collapsed = RwSignal::new(false);
     let stage_resize_tick = RwSignal::new(0u64);
@@ -128,19 +73,8 @@ pub fn AstTutorPanel(
     let ast_split_ref = NodeRef::<Div>::new();
     let drag_state = StoredValue::new(DragState::default());
     let suppress_next_click = StoredValue::new(false);
-    let play_timer = StoredValue::new(None::<TimeoutHandle>);
-    let play_generation = StoredValue::new(0u64);
-
-    let clear_play_timer = move || {
-        play_timer.update_value(|slot| {
-            if let Some(handle) = slot.take() {
-                handle.clear();
-            }
-        });
-    };
 
     on_cleanup(move || {
-        clear_play_timer();
         clear_ast_v_drag_listeners();
     });
 
@@ -174,7 +108,6 @@ pub fn AstTutorPanel(
         let has_session = ast_session.with(|opt| opt.is_some());
         if running || !has_session {
             is_playing.set(false);
-            clear_play_timer();
         }
     });
 
@@ -241,44 +174,7 @@ pub fn AstTutorPanel(
         }
     });
 
-    // Bucle de auto-play gobernado por TimeoutHandle cancelable
-    Effect::new(move |_| {
-        clear_play_timer();
-        let playing = is_playing.get();
-        let speed = playback_speed.get();
-        let current = step_idx.get();
-        let limit = max_step.get();
-
-        if !playing {
-            return;
-        }
-        if limit == 0 || current >= limit {
-            is_playing.set(false);
-            return;
-        }
-
-        let next_gen = play_generation.get_value().wrapping_add(1);
-        play_generation.set_value(next_gen);
-
-        if let Ok(handle) = set_timeout_with_handle(
-            move || {
-                if play_generation.get_value() == next_gen && is_playing.get_untracked() {
-                    let cur = step_idx.get_untracked();
-                    let lim = max_step.get_untracked();
-                    if cur < lim {
-                        step_idx.set(cur + 1);
-                    } else {
-                        is_playing.set(false);
-                    }
-                }
-            },
-            Duration::from_millis(speed.delay_ms()),
-        ) {
-            play_timer.set_value(Some(handle));
-        }
-    });
-
-    let center_on_active = move || {
+    let center_on_active = Callback::new(move |()| {
         let idx = step_idx.get_untracked();
         let Some(layout) = cached_layout.get_untracked() else {
             return;
@@ -292,62 +188,9 @@ pub fn AstTutorPanel(
             cam_cx.set(pos.cx);
             cam_cy.set(pos.cy);
         }
-    };
+    });
 
-    let on_start = move |_: MouseEvent| {
-        is_playing.set(false);
-        step_idx.set(0);
-    };
-
-    let on_prev = move |_: MouseEvent| {
-        is_playing.set(false);
-        step_idx.update(|idx| *idx = idx.saturating_sub(1));
-    };
-
-    let on_toggle_play = move |_: MouseEvent| {
-        let limit = max_step.get_untracked();
-        if limit == 0 {
-            return;
-        }
-        if is_playing.get_untracked() {
-            is_playing.set(false);
-        } else {
-            if step_idx.get_untracked() >= limit {
-                step_idx.set(0);
-            }
-            is_playing.set(true);
-        }
-    };
-
-    let on_next = move |_: MouseEvent| {
-        is_playing.set(false);
-        let limit = max_step.get_untracked();
-        step_idx.update(|idx| {
-            if *idx < limit {
-                *idx += 1;
-            }
-        });
-    };
-
-    let on_end = move |_: MouseEvent| {
-        is_playing.set(false);
-        step_idx.set(max_step.get_untracked());
-    };
-
-    let on_zoom_out = move |_: MouseEvent| {
-        zoom.update(|z| *z = (*z / ZOOM_STEP_FACTOR).clamp(MIN_ZOOM, MAX_ZOOM));
-    };
-
-    let on_zoom_in = move |_: MouseEvent| {
-        zoom.update(|z| *z = (*z * ZOOM_STEP_FACTOR).clamp(MIN_ZOOM, MAX_ZOOM));
-    };
-
-    let on_zoom_reset = move |_: MouseEvent| {
-        zoom.set(1.0);
-        center_on_active();
-    };
-
-    let on_fit_all = move |_: MouseEvent| {
+    let on_fit_all = Callback::new(move |()| {
         let Some(layout) = cached_layout.get_untracked() else {
             return;
         };
@@ -359,13 +202,271 @@ pub fn AstTutorPanel(
         zoom.set(fit_zoom);
         cam_cx.set(layout.view_width / 2.0);
         cam_cy.set(layout.view_height / 2.0);
+    });
+
+    let on_node_select = Callback::new(move |node_id: usize| {
+        if suppress_next_click.get_value() {
+            suppress_next_click.set_value(false);
+            return;
+        }
+        let cur = step_idx.get_untracked();
+        let target = ast_session.with_untracked(|opt| {
+            opt.as_ref()
+                .and_then(|session| session.next_step_for_node(node_id, cur))
+        });
+        if let Some(next_step) = target {
+            is_playing.set(false);
+            step_idx.set(next_step);
+        }
+    });
+
+    let on_ast_keydown = move |ev: KeyboardEvent| {
+        handle_tutor_keydown(ev, step_idx, is_playing, max_step.get_untracked());
+    };
+
+    let on_ast_v_mousedown = move |ev: MouseEvent| {
+        if ev.button() != 0 || scopes_collapsed.get_untracked() {
+            return;
+        }
+        ev.prevent_default();
+        clear_ast_v_drag_listeners();
+
+        let on_move = move |move_ev: MouseEvent| {
+            if let Some(split_el) = ast_split_ref.get_untracked() {
+                let rect = split_el.get_bounding_client_rect();
+                let height = rect.height();
+                if height > 1.0 {
+                    let pct = (((move_ev.client_y() as f64) - rect.top()) / height) * 100.0;
+                    ast_graph_pct.set(clamp_pct(
+                        pct,
+                        MIN_AST_GRAPH_PCT,
+                        MAX_AST_GRAPH_PCT,
+                        DEFAULT_AST_GRAPH_PCT,
+                    ));
+                }
+            }
+        };
+
+        let on_up = move || {
+            if !is_resizing_ast.get_untracked() {
+                return;
+            }
+            save_ast_split_pct(ast_graph_pct.get_untracked());
+            is_resizing_ast.set(false);
+        };
+
+        if let Some(listeners) = WindowDragListeners::attach(on_move, on_up) {
+            AST_V_DRAG_LISTENERS.with(|cell| {
+                *cell.borrow_mut() = Some(listeners);
+            });
+            is_resizing_ast.set(true);
+        }
+    };
+
+    let on_ast_v_dblclick = move |ev: MouseEvent| {
+        ev.prevent_default();
+        ast_graph_pct.set(DEFAULT_AST_GRAPH_PCT);
+        save_ast_split_pct(DEFAULT_AST_GRAPH_PCT);
+    };
+
+    view! {
+        <div class="tutor-root ast-tutor-root" tabindex="0" on:keydown=on_ast_keydown>
+            {move || {
+                if let Some(err_msg) = ast_error.get() {
+                    return view! {
+                        <div class="tutor-error-wrap">
+                            <div class="console-block error corner-frame">
+                                <div class="stream-header">
+                                    <span class="stream-glyph error" aria-hidden="true">"✕"</span>
+                                    <span class="stream-label">"ERROR AL TRAZAR EL AST (INTÉRPRETE)"</span>
+                                </div>
+                                <pre class="terminal-pre error">{err_msg}</pre>
+                            </div>
+                            <button
+                                type="button"
+                                class="tutor-cta-btn"
+                                disabled=move || is_running.get()
+                                on:click=move |_| on_ast_trace.run(())
+                            >
+                                <span aria-hidden="true">"▷"</span>
+                                <span>"REINTENTAR TRAZA AST"</span>
+                            </button>
+                        </div>
+                    }
+                    .into_any();
+                }
+
+                let Some(session) = ast_session.get() else {
+                    return view! {
+                        <div class="empty-state tutor-empty-state">
+                            <p class="empty-title">":: WYRM TUTOR — RECORRIDO PASO A PASO DEL AST"</p>
+                            <p class="empty-hint">
+                                "Explorá el árbol sintáctico abstracto mientras el intérprete evalúa cada nodo ("
+                                <code>"enter"</code>
+                                " / "
+                                <code>"exit"</code>
+                                "), burbujea resultados post-orden y actualiza la cadena de "
+                                <code>"environment_t"</code>
+                                "."
+                            </p>
+                            <button
+                                type="button"
+                                class="tutor-cta-btn"
+                                disabled=move || is_running.get()
+                                title="Trazar recorrido del AST (Ctrl + Shift + Enter en modo Intérprete)"
+                                on:click=move |_| on_ast_trace.run(())
+                            >
+                                <span aria-hidden="true">"▷"</span>
+                                <span>"TRAZAR AST DEL CÓDIGO ACTUAL"</span>
+                                <kbd class="tutor-shortcut">"Ctrl+⇧+↵"</kbd>
+                            </button>
+                        </div>
+                    }
+                    .into_any();
+                };
+
+                let total_steps = session.steps.len().saturating_sub(1);
+                let truncated = session.truncated;
+                let max_limit = session.max_steps;
+                let layout_arc = cached_layout
+                    .get_untracked()
+                    .unwrap_or_else(|| Arc::new(compute_ast_layout(&session.nodes, session.root_id)));
+                let exec_set_arc = executed_nodes
+                    .get_untracked()
+                    .unwrap_or_else(|| Arc::new(session.executed_nodes()));
+
+                let session_for_summary = session.clone();
+                let session_for_graph = session.clone();
+                let session_for_scopes = session;
+
+                let summary_view = move || {
+                    let clamped_idx = step_idx.get().min(total_steps);
+                    let Some(step) = session_for_summary.steps.get(clamped_idx) else {
+                        return view! { <div class="tutor-empty-msg">"∅ sin pasos registrados"</div> }
+                            .into_any();
+                    };
+                    let node_info = session_for_summary.node(step.node_id);
+                    render_ast_step_summary(step, node_info).into_any()
+                };
+
+                view! {
+                    <div
+                        class="tutor-workspace ast-workspace"
+                        class:ast-workspace--resizing=move || is_resizing_ast.get()
+                    >
+                        <TutorTransport
+                            step_idx=step_idx
+                            is_playing=is_playing
+                            is_running=is_running
+                            total_steps=total_steps
+                            truncated=truncated
+                            max_limit=max_limit
+                            transport_aria_label="Controles de paso a paso AST"
+                            scrubber_aria_label="Línea de tiempo de pasos del AST"
+                            truncated_title="La evaluación superó el límite de pasos del trazador AST"
+                        />
+
+                        {summary_view}
+
+                        <div
+                            class="ast-split-pane"
+                            class:ast-split-pane--scopes-collapsed=move || scopes_collapsed.get()
+                            node_ref=ast_split_ref
+                            style=move || format!("--ast-graph-pct: {:.2}%;", ast_graph_pct.get())
+                        >
+                            <AstGraphSection
+                                session=session_for_graph
+                                layout=layout_arc
+                                executed_nodes=exec_set_arc
+                                step_idx=step_idx
+                                total_steps=total_steps
+                                cam_cx=cam_cx
+                                cam_cy=cam_cy
+                                zoom=zoom
+                                auto_focus=auto_focus
+                                is_dragging_ui=is_dragging_ui
+                                hovered_node=hovered_node
+                                stage_resize_tick=stage_resize_tick
+                                canvas_ref=canvas_ref
+                                drag_state=drag_state
+                                suppress_next_click=suppress_next_click
+                                center_on_active=center_on_active
+                                on_fit_all=on_fit_all
+                                on_node_select=on_node_select
+                            />
+
+                            <div
+                                class="ast-v-resizer"
+                                class:ast-v-resizer--dragging=move || is_resizing_ast.get()
+                                role="separator"
+                                aria-orientation="horizontal"
+                                title="Arrastrar para ajustar altura del AST · Doble clic para restablecer"
+                                on:mousedown=on_ast_v_mousedown
+                                on:dblclick=on_ast_v_dblclick
+                            >
+                                <span class="ast-v-resizer-grip" aria-hidden="true">"⋯"</span>
+                            </div>
+
+                            <AstScopesPanel
+                                session=session_for_scopes
+                                step_idx=step_idx
+                                total_steps=total_steps
+                                scopes_collapsed=scopes_collapsed
+                            />
+                        </div>
+                    </div>
+                }
+                .into_any()
+            }}
+        </div>
+    }
+}
+
+/// Sección 01: lienzo SVG interactivo del AST con pan, zoom y auto-centrado.
+#[component]
+fn AstGraphSection(
+    session: AstTraceSession,
+    layout: Arc<AstLayout>,
+    executed_nodes: Arc<HashSet<usize>>,
+    step_idx: RwSignal<usize>,
+    total_steps: usize,
+    cam_cx: RwSignal<f64>,
+    cam_cy: RwSignal<f64>,
+    zoom: RwSignal<f64>,
+    auto_focus: RwSignal<bool>,
+    is_dragging_ui: RwSignal<bool>,
+    hovered_node: RwSignal<Option<usize>>,
+    stage_resize_tick: RwSignal<u64>,
+    canvas_ref: NodeRef<Div>,
+    drag_state: StoredValue<DragState>,
+    suppress_next_click: StoredValue<bool>,
+    center_on_active: Callback<()>,
+    on_fit_all: Callback<()>,
+    on_node_select: Callback<usize>,
+) -> impl IntoView {
+    let node_count = session.nodes.len();
+    let step_total_count = session.total_steps;
+    let session_for_svg = session.clone();
+    let session_for_hint = session;
+
+    let on_zoom_out = move |_: MouseEvent| {
+        zoom.update(|z| *z = (*z / ZOOM_STEP_FACTOR).clamp(MIN_ZOOM, MAX_ZOOM));
+    };
+
+    let on_zoom_in = move |_: MouseEvent| {
+        zoom.update(|z| *z = (*z * ZOOM_STEP_FACTOR).clamp(MIN_ZOOM, MAX_ZOOM));
+    };
+
+    let on_zoom_reset = move |_: MouseEvent| {
+        zoom.set(1.0);
+        center_on_active.run(());
     };
 
     let on_toggle_auto_focus = move |_: MouseEvent| {
         let next = !auto_focus.get_untracked();
         auto_focus.set(next);
         if next {
-            center_on_active();
+            center_on_active.run(());
         }
     };
 
@@ -433,94 +534,6 @@ pub fn AstTutorPanel(
         zoom.update(|z| *z = (*z * factor).clamp(MIN_ZOOM, MAX_ZOOM));
     };
 
-    let on_ast_keydown = move |ev: KeyboardEvent| {
-        let key = ev.key();
-        match key.as_str() {
-            "ArrowLeft" => {
-                ev.prevent_default();
-                is_playing.set(false);
-                step_idx.update(|idx| *idx = idx.saturating_sub(1));
-            }
-            "ArrowRight" => {
-                ev.prevent_default();
-                is_playing.set(false);
-                let limit = max_step.get_untracked();
-                step_idx.update(|idx| {
-                    if *idx < limit {
-                        *idx += 1;
-                    }
-                });
-            }
-            "Home" => {
-                ev.prevent_default();
-                is_playing.set(false);
-                step_idx.set(0);
-            }
-            "End" => {
-                ev.prevent_default();
-                is_playing.set(false);
-                step_idx.set(max_step.get_untracked());
-            }
-            _ => {}
-        }
-    };
-
-    let on_node_select = Callback::new(move |node_id: usize| {
-        if suppress_next_click.get_value() {
-            suppress_next_click.set_value(false);
-            return;
-        }
-        let cur = step_idx.get_untracked();
-        let target = ast_session.with_untracked(|opt| {
-            opt.as_ref()
-                .and_then(|session| session.next_step_for_node(node_id, cur))
-        });
-        if let Some(next_step) = target {
-            is_playing.set(false);
-            step_idx.set(next_step);
-        }
-    });
-
-    let on_ast_v_mousedown = move |ev: MouseEvent| {
-        if ev.button() != 0 || scopes_collapsed.get_untracked() {
-            return;
-        }
-        ev.prevent_default();
-        clear_ast_v_drag_listeners();
-
-        let on_move = move |move_ev: MouseEvent| {
-            if let Some(split_el) = ast_split_ref.get_untracked() {
-                let rect = split_el.get_bounding_client_rect();
-                let height = rect.height();
-                if height > 1.0 {
-                    let pct = (((move_ev.client_y() as f64) - rect.top()) / height) * 100.0;
-                    ast_graph_pct.set(clamp_ast_graph_pct(pct));
-                }
-            }
-        };
-
-        let on_up = move || {
-            if !is_resizing_ast.get_untracked() {
-                return;
-            }
-            save_ast_graph_pct(ast_graph_pct.get_untracked());
-            is_resizing_ast.set(false);
-        };
-
-        if let Some(listeners) = WindowDragListeners::attach(on_move, on_up) {
-            AST_V_DRAG_LISTENERS.with(|cell| {
-                *cell.borrow_mut() = Some(listeners);
-            });
-            is_resizing_ast.set(true);
-        }
-    };
-
-    let on_ast_v_dblclick = move |ev: MouseEvent| {
-        ev.prevent_default();
-        ast_graph_pct.set(DEFAULT_AST_GRAPH_PCT);
-        save_ast_graph_pct(DEFAULT_AST_GRAPH_PCT);
-    };
-
     let view_box = move || {
         let _ = stage_resize_tick.get();
         let (stage_w, stage_h) = read_stage_size(&canvas_ref);
@@ -532,405 +545,192 @@ pub fn AstTutorPanel(
         format!("{vb_x:.1} {vb_y:.1} {vb_w:.1} {vb_h:.1}")
     };
 
+    let svg_contents_view = move || {
+        let clamped_idx = step_idx.get().min(total_steps);
+        let Some(step) = session_for_svg.steps.get(clamped_idx) else {
+            return view! { <g></g> }.into_any();
+        };
+        let resolved = session_for_svg.resolved_values_at(clamped_idx);
+        render_ast_svg_scene(
+            &session_for_svg,
+            &layout,
+            &executed_nodes,
+            step,
+            &resolved,
+            on_node_select,
+            hovered_node,
+        )
+        .into_any()
+    };
+
+    let canvas_hint_view = move || {
+        if let Some(nid) = hovered_node.get() {
+            if let Some(info) = session_for_hint.node(nid) {
+                let detail_part = if info.detail.is_empty() {
+                    String::new()
+                } else {
+                    format!(" [{}]", info.detail)
+                };
+                return format!(
+                    "#{} {} :: {}{} · clic para saltar a su paso",
+                    info.id, info.kind, info.label, detail_part
+                );
+            }
+        }
+        "Arrastrar: pan · Rueda: zoom · Clic en nodo: saltar a su paso · ←/→: pasos".to_string()
+    };
+
     view! {
-        <div class="tutor-root ast-tutor-root" tabindex="0" on:keydown=on_ast_keydown>
-            {move || {
-                if let Some(err_msg) = ast_error.get() {
-                    return view! {
-                        <div class="tutor-error-wrap">
-                            <div class="console-block error corner-frame">
-                                <div class="stream-header">
-                                    <span class="stream-glyph error" aria-hidden="true">"✕"</span>
-                                    <span class="stream-label">"ERROR AL TRAZAR EL AST (INTÉRPRETE)"</span>
-                                </div>
-                                <pre class="terminal-pre error">{err_msg}</pre>
-                            </div>
-                            <button
-                                type="button"
-                                class="tutor-cta-btn"
-                                disabled=move || is_running.get()
-                                on:click=move |_| on_ast_trace.run(())
-                            >
-                                <span aria-hidden="true">"▷"</span>
-                                <span>"REINTENTAR TRAZA AST"</span>
-                            </button>
-                        </div>
-                    }
-                    .into_any();
-                }
+        <section class="tutor-section ast-graph-section">
+            <div class="tutor-section-header ast-graph-header">
+                <div class="ast-graph-title-wrap">
+                    <span class="tutor-section-title">"01 :: ÁRBOL SINTÁCTICO ABSTRACTO (AST)"</span>
+                    <span class="tutor-section-count">
+                        {format!("{node_count} nodos · {step_total_count} eventos")}
+                    </span>
+                </div>
 
-                let Some(session) = ast_session.get() else {
-                    return view! {
-                        <div class="empty-state tutor-empty-state">
-                            <p class="empty-title">":: WYRM TUTOR — RECORRIDO PASO A PASO DEL AST"</p>
-                            <p class="empty-hint">
-                                "Explorá el árbol sintáctico abstracto mientras el intérprete evalúa cada nodo ("
-                                <code>"enter"</code>
-                                " / "
-                                <code>"exit"</code>
-                                "), burbujea resultados post-orden y actualiza la cadena de "
-                                <code>"environment_t"</code>
-                                "."
-                            </p>
-                            <button
-                                type="button"
-                                class="tutor-cta-btn"
-                                disabled=move || is_running.get()
-                                title="Trazar recorrido del AST (Ctrl + Shift + Enter en modo Intérprete)"
-                                on:click=move |_| on_ast_trace.run(())
-                            >
-                                <span aria-hidden="true">"▷"</span>
-                                <span>"TRAZAR AST DEL CÓDIGO ACTUAL"</span>
-                                <kbd class="tutor-shortcut">"Ctrl+⇧+↵"</kbd>
-                            </button>
-                        </div>
-                    }
-                    .into_any();
-                };
-
-                let total_steps = session.steps.len().saturating_sub(1);
-                let at_start = move || step_idx.get() == 0;
-                let at_end = move || step_idx.get() >= total_steps;
-                let truncated = session.truncated;
-                let max_limit = session.max_steps;
-                let node_count = session.nodes.len();
-                let step_total_count = session.total_steps;
-                let layout_arc = cached_layout
-                    .get_untracked()
-                    .unwrap_or_else(|| Arc::new(compute_ast_layout(&session.nodes, session.root_id)));
-                let exec_set_arc = executed_nodes
-                    .get_untracked()
-                    .unwrap_or_else(|| Arc::new(session.executed_nodes()));
-
-                let session_for_summary = session.clone();
-                let session_for_svg = session.clone();
-                let session_for_hint = session.clone();
-                let session_for_scopes_count = session.clone();
-                let session_for_scopes = session;
-                let layout_for_svg = Arc::clone(&layout_arc);
-                let exec_for_svg = Arc::clone(&exec_set_arc);
-
-                let summary_view = move || {
-                    let clamped_idx = step_idx.get().min(total_steps);
-                    let Some(step) = session_for_summary.steps.get(clamped_idx) else {
-                        return view! { <div class="tutor-empty-msg">"∅ sin pasos registrados"</div> }
-                            .into_any();
-                    };
-                    let node_info = session_for_summary.node(step.node_id);
-                    render_ast_step_summary(step, node_info).into_any()
-                };
-
-                let svg_contents_view = move || {
-                    let clamped_idx = step_idx.get().min(total_steps);
-                    let Some(step) = session_for_svg.steps.get(clamped_idx) else {
-                        return view! { <g></g> }.into_any();
-                    };
-                    let resolved = session_for_svg.resolved_values_at(clamped_idx);
-                    render_ast_svg_scene(
-                        &session_for_svg,
-                        &layout_for_svg,
-                        &exec_for_svg,
-                        step,
-                        &resolved,
-                        on_node_select,
-                        hovered_node,
-                    )
-                    .into_any()
-                };
-
-                let canvas_hint_view = move || {
-                    if let Some(nid) = hovered_node.get() {
-                        if let Some(info) = session_for_hint.node(nid) {
-                            let detail_part = if info.detail.is_empty() {
-                                String::new()
-                            } else {
-                                format!(" [{}]", info.detail)
-                            };
-                            return format!(
-                                "#{} {} :: {}{} · clic para saltar a su paso",
-                                info.id, info.kind, info.label, detail_part
-                            );
-                        }
-                    }
-                    "Arrastrar: pan · Rueda: zoom · Clic en nodo: saltar a su paso · ←/→: pasos"
-                        .to_string()
-                };
-
-                let scopes_count_view = move || {
-                    let clamped_idx = step_idx.get().min(total_steps);
-                    match session_for_scopes_count.steps.get(clamped_idx) {
-                        Some(step) => {
-                            let scope_count = step.scopes.len();
-                            let total_vars: usize =
-                                step.scopes.iter().map(|frame| frame.vars.len()).sum();
-                            format!("{scope_count} ámbito(s) · {total_vars} var(s)")
-                        }
-                        None => "0 ámbito(s) · 0 var(s)".to_string(),
-                    }
-                };
-
-                let scopes_body_view = move || {
-                    if scopes_collapsed.get() {
-                        return None;
-                    }
-                    let clamped_idx = step_idx.get().min(total_steps);
-                    let body = match session_for_scopes.steps.get(clamped_idx) {
-                        Some(step) => {
-                            let diff = session_for_scopes.scope_diff_at(clamped_idx);
-                            render_scopes_body(step, &diff).into_any()
-                        }
-                        None => view! { <div class="tutor-empty-msg">"∅ sin entornos activos"</div> }
-                            .into_any(),
-                    };
-                    Some(view! { <div class="ast-scopes-body">{body}</div> })
-                };
-
-                view! {
-                    <div
-                        class="tutor-workspace ast-workspace"
-                        class:ast-workspace--resizing=move || is_resizing_ast.get()
+                <div class="ast-view-controls" role="group" aria-label="Controles de cámara del grafo AST">
+                    <button
+                        type="button"
+                        class="ast-cam-btn"
+                        title="Alejar zoom"
+                        on:click=on_zoom_out
                     >
-                        <div class="tutor-controls-bar">
-                            <div class="tutor-transport" role="group" aria-label="Controles de paso a paso AST">
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn"
-                                    disabled=at_start
-                                    title="Ir al inicio (Home)"
-                                    on:click=on_start
-                                >
-                                    "⏮"
-                                </button>
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn"
-                                    disabled=at_start
-                                    title="Paso anterior (←)"
-                                    on:click=on_prev
-                                >
-                                    "◀"
-                                </button>
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn tutor-ctrl-btn--play"
-                                    class:active=move || is_playing.get()
-                                    disabled=move || total_steps == 0
-                                    title="Reproducir / pausar avance automático"
-                                    on:click=on_toggle_play
-                                >
-                                    {move || if is_playing.get() { "⏸" } else { "▶" }}
-                                </button>
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn"
-                                    disabled=at_end
-                                    title="Siguiente paso (→)"
-                                    on:click=on_next
-                                >
-                                    "▶|"
-                                </button>
-                                <button
-                                    type="button"
-                                    class="tutor-ctrl-btn"
-                                    disabled=at_end
-                                    title="Ir al paso final (End)"
-                                    on:click=on_end
-                                >
-                                    "⏭"
-                                </button>
-                            </div>
+                        "−"
+                    </button>
+                    <button
+                        type="button"
+                        class="ast-cam-btn ast-cam-btn--pct"
+                        title="Restablecer zoom a 100%"
+                        on:click=on_zoom_reset
+                    >
+                        {move || format!("{}%", (zoom.get() * 100.0).round() as i32)}
+                    </button>
+                    <button
+                        type="button"
+                        class="ast-cam-btn"
+                        title="Acercar zoom"
+                        on:click=on_zoom_in
+                    >
+                        "+"
+                    </button>
+                    <button
+                        type="button"
+                        class="ast-cam-btn"
+                        title="Encuadrar todo el AST"
+                        on:click=move |_| on_fit_all.run(())
+                    >
+                        "⊞"
+                    </button>
+                    <button
+                        type="button"
+                        class="ast-cam-btn ast-cam-btn--focus"
+                        class:active=move || auto_focus.get()
+                        title="Centrar automáticamente el nodo en evaluación"
+                        on:click=on_toggle_auto_focus
+                    >
+                        "◎ CENTRAR"
+                    </button>
+                </div>
+            </div>
 
-                            <div class="tutor-speed-group" role="group" aria-label="Velocidad de reproducción">
-                                {[AstPlaybackSpeed::Half, AstPlaybackSpeed::Normal, AstPlaybackSpeed::Double]
-                                    .into_iter()
-                                    .map(|spd| {
-                                        view! {
-                                            <button
-                                                type="button"
-                                                class="tutor-speed-btn"
-                                                class:active=move || playback_speed.get() == spd
-                                                on:click=move |_| playback_speed.set(spd)
-                                            >
-                                                {spd.label()}
-                                            </button>
-                                        }
-                                    })
-                                    .collect_view()}
-                            </div>
+            <div
+                class="ast-canvas-stage"
+                class:dragging=move || is_dragging_ui.get()
+                node_ref=canvas_ref
+                on:mousedown=on_canvas_mousedown
+                on:mousemove=on_canvas_mousemove
+                on:mouseup=on_canvas_mouseup
+                on:mouseleave=on_canvas_mouseleave
+                on:wheel=on_canvas_wheel
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox=view_box
+                    class="ast-svg"
+                >
+                    {svg_contents_view}
+                </svg>
+                <div class="ast-canvas-hint">
+                    {canvas_hint_view}
+                </div>
+            </div>
+        </section>
+    }
+}
 
-                            <div class="tutor-counter">
-                                {move || {
-                                    format!(
-                                        "PASO {:03} / {:03}",
-                                        step_idx.get().min(total_steps),
-                                        total_steps
-                                    )
-                                }}
-                            </div>
+/// Sección 02: panel plegable de ámbitos léxicos (`environment_t`) con diff en violeta.
+#[component]
+fn AstScopesPanel(
+    session: AstTraceSession,
+    step_idx: RwSignal<usize>,
+    total_steps: usize,
+    scopes_collapsed: RwSignal<bool>,
+) -> impl IntoView {
+    let session_for_count = session.clone();
 
-                            <Show when=move || truncated>
-                                <span
-                                    class="tutor-truncated-badge"
-                                    title="La evaluación superó el límite de pasos del trazador AST"
-                                >
-                                    {format!("TRUNCADO ({max_limit})")}
-                                </span>
-                            </Show>
-                        </div>
+    let scopes_count_view = move || {
+        let clamped_idx = step_idx.get().min(total_steps);
+        match session_for_count.steps.get(clamped_idx) {
+            Some(step) => {
+                let scope_count = step.scopes.len();
+                let total_vars: usize = step.scopes.iter().map(|frame| frame.vars.len()).sum();
+                format!("{scope_count} ámbito(s) · {total_vars} var(s)")
+            }
+            None => "0 ámbito(s) · 0 var(s)".to_string(),
+        }
+    };
 
-                        <div class="tutor-scrubber-row">
-                            <input
-                                type="range"
-                                class="tutor-scrubber"
-                                aria-label="Línea de tiempo de pasos del AST"
-                                min="0"
-                                max=total_steps.to_string()
-                                prop:value=move || step_idx.get().min(total_steps).to_string()
-                                on:input=move |ev| {
-                                    is_playing.set(false);
-                                    if let Ok(parsed) = event_target_value(&ev).parse::<usize>() {
-                                        step_idx.set(parsed.min(total_steps));
-                                    }
-                                }
-                            />
-                        </div>
+    let scopes_body_view = move || {
+        if scopes_collapsed.get() {
+            return None;
+        }
+        let clamped_idx = step_idx.get().min(total_steps);
+        let body = match session.steps.get(clamped_idx) {
+            Some(step) => {
+                let diff = session.scope_diff_at(clamped_idx);
+                render_scopes_body(step, &diff).into_any()
+            }
+            None => {
+                view! { <div class="tutor-empty-msg">"∅ sin entornos activos"</div> }.into_any()
+            }
+        };
+        Some(view! { <div class="ast-scopes-body">{body}</div> })
+    };
 
-                        {summary_view}
-
-                        <div
-                            class="ast-split-pane"
-                            class:ast-split-pane--scopes-collapsed=move || scopes_collapsed.get()
-                            node_ref=ast_split_ref
-                            style=move || format!("--ast-graph-pct: {:.2}%;", ast_graph_pct.get())
-                        >
-                            <section class="tutor-section ast-graph-section">
-                                <div class="tutor-section-header ast-graph-header">
-                                    <div class="ast-graph-title-wrap">
-                                        <span class="tutor-section-title">"01 :: ÁRBOL SINTÁCTICO ABSTRACTO (AST)"</span>
-                                        <span class="tutor-section-count">
-                                            {format!("{node_count} nodos · {step_total_count} eventos")}
-                                        </span>
-                                    </div>
-
-                                    <div class="ast-view-controls" role="group" aria-label="Controles de cámara del grafo AST">
-                                        <button
-                                            type="button"
-                                            class="ast-cam-btn"
-                                            title="Alejar zoom"
-                                            on:click=on_zoom_out
-                                        >
-                                            "−"
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="ast-cam-btn ast-cam-btn--pct"
-                                            title="Restablecer zoom a 100%"
-                                            on:click=on_zoom_reset
-                                        >
-                                            {move || format!("{}%", (zoom.get() * 100.0).round() as i32)}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="ast-cam-btn"
-                                            title="Acercar zoom"
-                                            on:click=on_zoom_in
-                                        >
-                                            "+"
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="ast-cam-btn"
-                                            title="Encuadrar todo el AST"
-                                            on:click=on_fit_all
-                                        >
-                                            "⊞"
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="ast-cam-btn ast-cam-btn--focus"
-                                            class:active=move || auto_focus.get()
-                                            title="Centrar automáticamente el nodo en evaluación"
-                                            on:click=on_toggle_auto_focus
-                                        >
-                                            "◎ CENTRAR"
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div
-                                    class="ast-canvas-stage"
-                                    class:dragging=move || is_dragging_ui.get()
-                                    node_ref=canvas_ref
-                                    on:mousedown=on_canvas_mousedown
-                                    on:mousemove=on_canvas_mousemove
-                                    on:mouseup=on_canvas_mouseup
-                                    on:mouseleave=on_canvas_mouseleave
-                                    on:wheel=on_canvas_wheel
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox=view_box
-                                        class="ast-svg"
-                                    >
-                                        {svg_contents_view}
-                                    </svg>
-                                    <div class="ast-canvas-hint">
-                                        {canvas_hint_view}
-                                    </div>
-                                </div>
-                            </section>
-
-                            <div
-                                class="ast-v-resizer"
-                                class:ast-v-resizer--dragging=move || is_resizing_ast.get()
-                                role="separator"
-                                aria-orientation="horizontal"
-                                title="Arrastrar para ajustar altura del AST · Doble clic para restablecer"
-                                on:mousedown=on_ast_v_mousedown
-                                on:dblclick=on_ast_v_dblclick
-                            >
-                                <span class="ast-v-resizer-grip" aria-hidden="true">"⋯"</span>
-                            </div>
-
-                            <section
-                                class="tutor-section ast-scopes-section"
-                                class:ast-scopes-section--collapsed=move || scopes_collapsed.get()
-                            >
-                                <button
-                                    type="button"
-                                    class="tutor-section-header ast-scopes-header-btn"
-                                    aria-expanded=move || {
-                                        if scopes_collapsed.get() { "false" } else { "true" }
-                                    }
-                                    title=move || {
-                                        if scopes_collapsed.get() {
-                                            "Expandir bloque de scopes"
-                                        } else {
-                                            "Colapsar scopes para ampliar el grafo AST"
-                                        }
-                                    }
-                                    on:click=move |_| {
-                                        scopes_collapsed.update(|collapsed| *collapsed = !*collapsed)
-                                    }
-                                >
-                                    <span class="ast-scopes-title-wrap">
-                                        <span class="ast-scopes-chevron" aria-hidden="true">
-                                            {move || if scopes_collapsed.get() { "▸" } else { "▾" }}
-                                        </span>
-                                        <span class="tutor-section-title">
-                                            "02 :: SCOPES (environment_t)"
-                                        </span>
-                                    </span>
-                                    <span class="tutor-section-count">{scopes_count_view}</span>
-                                </button>
-                                {scopes_body_view}
-                            </section>
-                        </div>
-                    </div>
+    view! {
+        <section
+            class="tutor-section ast-scopes-section"
+            class:ast-scopes-section--collapsed=move || scopes_collapsed.get()
+        >
+            <button
+                type="button"
+                class="tutor-section-header ast-scopes-header-btn"
+                aria-expanded=move || {
+                    if scopes_collapsed.get() { "false" } else { "true" }
                 }
-                .into_any()
-            }}
-        </div>
+                title=move || {
+                    if scopes_collapsed.get() {
+                        "Expandir bloque de scopes"
+                    } else {
+                        "Colapsar scopes para ampliar el grafo AST"
+                    }
+                }
+                on:click=move |_| {
+                    scopes_collapsed.update(|collapsed| *collapsed = !*collapsed)
+                }
+            >
+                <span class="ast-scopes-title-wrap">
+                    <span class="ast-scopes-chevron" aria-hidden="true">
+                        {move || if scopes_collapsed.get() { "▸" } else { "▾" }}
+                    </span>
+                    <span class="tutor-section-title">"02 :: SCOPES (environment_t)"</span>
+                </span>
+                <span class="tutor-section-count">{scopes_count_view}</span>
+            </button>
+            {scopes_body_view}
+        </section>
     }
 }
 
@@ -1040,13 +840,22 @@ fn render_ast_step_summary(step: &AstTraceStep, node: Option<&AstNodeInfo>) -> i
     }
 }
 
+/// Contexto inmutable de escena para renderizar cada nodo SVG del AST.
+struct NodeRenderCtx<'a> {
+    step: &'a AstTraceStep,
+    active_set: &'a HashSet<usize>,
+    executed_nodes: &'a HashSet<usize>,
+    on_node_select: Callback<usize>,
+    hovered_node: RwSignal<Option<usize>>,
+}
+
 /// Escena SVG completa: aristas ortogonales, saltos dinámicos de llamada y nodos AST clicables.
 fn render_ast_svg_scene(
     session: &AstTraceSession,
     layout: &AstLayout,
     executed_nodes: &HashSet<usize>,
     step: &AstTraceStep,
-    resolved: &std::collections::HashMap<usize, crate::ast_trace::AstResolvedValue>,
+    resolved: &HashMap<usize, AstResolvedValue>,
     on_node_select: Callback<usize>,
     hovered_node: RwSignal<Option<usize>>,
 ) -> impl IntoView {
@@ -1118,6 +927,13 @@ fn render_ast_svg_scene(
         .collect_view();
 
     // 3. Nodos del AST con borde activo en oro/violeta, etiqueta y píldora de valor burbujeado
+    let node_ctx = NodeRenderCtx {
+        step,
+        active_set: &active_set,
+        executed_nodes,
+        on_node_select,
+        hovered_node,
+    };
     let nodes_view = layout
         .nodes
         .iter()
@@ -1126,12 +942,8 @@ fn render_ast_svg_scene(
             Some(render_ast_node_svg(
                 pos,
                 info,
-                step,
-                &active_set,
-                executed_nodes,
                 resolved.get(&pos.id),
-                on_node_select,
-                hovered_node,
+                &node_ctx,
             ))
         })
         .collect_view();
@@ -1148,18 +960,16 @@ fn render_ast_svg_scene(
 fn render_ast_node_svg(
     pos: &LayoutNode,
     info: &AstNodeInfo,
-    step: &AstTraceStep,
-    active_set: &HashSet<usize>,
-    executed_nodes: &HashSet<usize>,
-    resolved: Option<&crate::ast_trace::AstResolvedValue>,
-    on_node_select: Callback<usize>,
-    hovered_node: RwSignal<Option<usize>>,
+    resolved: Option<&AstResolvedValue>,
+    ctx: &NodeRenderCtx<'_>,
 ) -> impl IntoView {
     let node_id = pos.id;
-    let is_current = step.node_id == node_id;
-    let is_enter = step.is_enter();
-    let on_path = !is_current && active_set.contains(&node_id);
-    let was_executed = executed_nodes.contains(&node_id);
+    let is_current = ctx.step.node_id == node_id;
+    let is_enter = ctx.step.is_enter();
+    let on_path = !is_current && ctx.active_set.contains(&node_id);
+    let was_executed = ctx.executed_nodes.contains(&node_id);
+    let on_node_select = ctx.on_node_select;
+    let hovered_node = ctx.hovered_node;
 
     let group_class = if is_current && is_enter {
         "ast-node ast-node--current ast-node--enter"
@@ -1226,7 +1036,6 @@ fn render_ast_node_svg(
         None
     };
 
-    // Píldora inferior con el valor burbujeado (`=> val : type`)
     let pill_view = resolved.map(|res| {
         let raw_pill = format!("=> {} : {}", res.value, res.value_type);
         let pill_txt = truncate_chars(&raw_pill, 21);
