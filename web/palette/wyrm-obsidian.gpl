@@ -1,0 +1,37 @@
+GIMP Palette
+Name: Wyrm Obsidian
+Columns: 4
+# Wyrm Playground — Paleta Obsidiana (neutros oscuros a claros, acentos y Monokai Classic)
+  9   8  12	Surface Base / Ink On Primary
+ 11  10  16	Surface Inset
+ 13  11  18	Surface Gutter
+ 17  15  23	Surface Panel
+ 21  18  32	Wyrm Scale Dark
+ 24  21  34	Surface Elevated
+ 39  34  53	Border Structural
+ 44  38  64	Surface Scrollbar Thumb
+ 46  39  66	Wyrm Scale Mid
+ 69  59  94	Border Active / Scrollbar Hover
+ 91  79 125	Wyrm Scale Light
+ 98  91 115	Ink Muted / Status Idle
+154 147 168	Ink Secondary / Syntax Punct
+237 234 226	Ink Primary
+148 108  43	Accent Gold Bronze (ASCII 66%)
+216 168  72	Accent Gold / Primary
+224 196 130	Ink Inspector
+234 185  88	Accent Gold Hover
+235 208 139	Ink Gutter Active
+243 210 122	Accent Gold Highlight (ASCII 0%)
+141  92 246	Accent Violet Tail (ASCII 100%)
+163 112 255	Accent Violet / Arcane
+190 151 255	Accent Violet Bright / Pulse Start
+224  82  99	Status Crimson / Error
+244 149 161	Ink Error
+117 113  94	Syntax Comment
+249  38 114	Syntax Keyword / Logical
+253 151  31	Syntax Operator
+230 219 116	Syntax String / Char
+166 226  46	Syntax Builtin / Fn
+102 217 239	Syntax Type
+174 129 255	Syntax Escape / Number / Boolean
+248 248 242	Syntax Ident / Plain

@@ -1,0 +1,262 @@
+/* ==========================================================================
+   WYRM Design System — Standalone Color Palette
+   Paletas exportadas desde Wyrm Playground:
+     - obsidian: "Códice de Obsidiana" (escamas negras, oro bruñido, luz violeta)
+     - silver:   "Plata y Luz" (alabastro, plata cepillada, azul hielo)
+   Uso: importar directamente y alternar [data-palette="obsidian" | "silver"].
+   ========================================================================== */
+
+:root,
+[data-palette="obsidian"] {
+  /* Surface */
+  --bg-base: #09080c;
+  --bg-inset: #0b0a10;
+  --gutter-bg: #0d0b12;
+  --bg-panel: #110f17;
+  --wyrm-scale-dark: #151220;
+  --bg-surface: #181522;
+  --scrollbar-thumb: #2c2640;
+  --wyrm-scale-mid: #2e2742;
+  --wyrm-scale-light: #5b4f7d;
+  --backdrop-bg: rgba(5, 4, 8, 0.82);
+  --shortcut-bg: rgba(0, 0, 0, 0.14);
+
+  /* Border */
+  --border-struct: #272235;
+  --border-active: #453b5e;
+  --scrollbar-thumb-hover: #453b5e;
+  --accent-gold-border: rgba(216, 168, 72, 0.45);
+  --accent-violet-border: rgba(163, 112, 255, 0.45);
+  --accent-crimson-border: rgba(224, 82, 99, 0.48);
+  --shortcut-border: rgba(0, 0, 0, 0.25);
+
+  /* Ink */
+  --ink-primary: #edeae2;
+  --ink-secondary: #9a93a8;
+  --ink-muted: #625b73;
+  --accent-primary-ink: #09080c;
+  --gutter-active-ink: #ebd08b;
+  --inspector-ink: #e0c482;
+  --error-ink: #f495a1;
+
+  /* Accent */
+  --accent-gold: #d8a848;
+  --accent-gold-hover: #eab958;
+  --accent-gold-dim: rgba(216, 168, 72, 0.12);
+  --accent-primary: #d8a848;
+  --accent-primary-hover: #eab958;
+  --accent-violet: #a370ff;
+  --accent-violet-bright: #be97ff;
+  --accent-violet-dim: rgba(163, 112, 255, 0.12);
+  --accent-violet-hover: rgba(163, 112, 255, 0.08);
+  --accent-arcane: #a370ff;
+  --accent-glow: rgba(163, 112, 255, 0.22);
+  --return-glow: rgba(163, 112, 255, 0.35);
+  --selection-bg: rgba(163, 112, 255, 0.25);
+  --gutter-active-bg: rgba(163, 112, 255, 0.09);
+  --pulse-start: #be97ff;
+  --pulse-end: #d8a848;
+  --mode-underline: var(--accent-gold);
+
+  /* Status */
+  --accent-crimson: #e05263;
+  --accent-crimson-dim: rgba(224, 82, 99, 0.14);
+  --status-ok: var(--accent-gold);
+  --status-diff: var(--accent-violet);
+  --status-error: var(--accent-crimson);
+  --status-idle: var(--ink-muted);
+
+  /* Syntax (Monokai Classic) */
+  --tok-keyword: #f92672;
+  --tok-logical: #f92672;
+  --tok-type: #66d9ef;
+  --tok-builtin: #a6e22e;
+  --tok-fn: #a6e22e;
+  --tok-string: #e6db74;
+  --tok-char: #e6db74;
+  --tok-escape: #ae81ff;
+  --tok-number: #ae81ff;
+  --tok-boolean: #ae81ff;
+  --tok-operator: #fd971f;
+  --tok-comment: #75715e;
+  --tok-punct: #9a93a8;
+  --tok-ident: #f8f8f2;
+  --tok-plain: #f8f8f2;
+
+  /* Gradients & Shadows */
+  --topbar-top-gradient: linear-gradient(
+    90deg,
+    var(--accent-violet) 0%,
+    var(--accent-gold) 38%,
+    transparent 85%
+  );
+  --tab-active-gradient: linear-gradient(
+    90deg,
+    var(--accent-violet),
+    var(--accent-gold)
+  );
+  --resizer-v-gradient: linear-gradient(
+    180deg,
+    var(--accent-violet),
+    var(--accent-gold)
+  );
+  --resizer-h-gradient: linear-gradient(
+    90deg,
+    var(--accent-violet),
+    var(--accent-gold)
+  );
+  --running-scanline-gradient: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-violet),
+    var(--accent-gold),
+    transparent
+  );
+  --ascii-gradient: linear-gradient(
+    150deg,
+    #f3d27a 0%,
+    #d8a848 36%,
+    #946c2b 66%,
+    #8d5cf6 100%
+  );
+  --empty-radial-glow: radial-gradient(
+    circle at 50% 45%,
+    rgba(163, 112, 255, 0.08) 0%,
+    rgba(216, 168, 72, 0.03) 35%,
+    transparent 68%
+  );
+  --ast-dot-grid: radial-gradient(
+    circle,
+    var(--border-struct) 1px,
+    transparent 1px
+  );
+  --ascii-drop-shadow: drop-shadow(0 0 18px rgba(163, 112, 255, 0.16));
+  --ascii-eye-shadow: 0 0 10px var(--accent-violet),
+    0 0 20px rgba(163, 112, 255, 0.6);
+}
+
+[data-palette="silver"] {
+  /* Surface */
+  --bg-base: #f2f4f8;
+  --bg-inset: #edf0f6;
+  --bg-panel: #e8ecf4;
+  --gutter-bg: #e1e6f0;
+  --bg-surface: #dde3ee;
+  --wyrm-scale-mid: #c5cfe0;
+  --scrollbar-thumb: #b2bdd2;
+  --wyrm-scale-dark: #4f5d75;
+  --wyrm-scale-light: #f8fafd;
+  --backdrop-bg: rgba(20, 24, 36, 0.56);
+  --shortcut-bg: rgba(255, 255, 255, 0.16);
+
+  /* Border */
+  --border-struct: #bcc5d8;
+  --border-active: #8f9db8;
+  --scrollbar-thumb-hover: #8f9db8;
+  --accent-gold-border: rgba(92, 107, 130, 0.48);
+  --accent-violet-border: rgba(30, 115, 232, 0.45);
+  --accent-crimson-border: rgba(198, 40, 57, 0.44);
+  --shortcut-border: rgba(255, 255, 255, 0.35);
+
+  /* Ink */
+  --ink-primary: #141824;
+  --ink-secondary: #4a556e;
+  --ink-muted: #748099;
+  --accent-primary-ink: #f8fafd;
+  --gutter-active-ink: #141824;
+  --inspector-ink: #34435c;
+  --error-ink: #a81c2c;
+
+  /* Accent */
+  --accent-gold: #5c6b82;
+  --accent-gold-hover: #465469;
+  --accent-gold-dim: rgba(92, 107, 130, 0.12);
+  --accent-primary: #1e73e8;
+  --accent-primary-hover: #155cc0;
+  --accent-violet: #1e73e8;
+  --accent-violet-bright: #3b88f5;
+  --accent-violet-dim: rgba(30, 115, 232, 0.1);
+  --accent-violet-hover: rgba(30, 115, 232, 0.07);
+  --accent-arcane: #5c6b82;
+  --accent-glow: rgba(30, 115, 232, 0.16);
+  --return-glow: rgba(30, 115, 232, 0.28);
+  --selection-bg: rgba(30, 115, 232, 0.2);
+  --gutter-active-bg: rgba(30, 115, 232, 0.1);
+  --pulse-start: #3b88f5;
+  --pulse-end: #5c6b82;
+  --mode-underline: var(--accent-primary);
+
+  /* Status */
+  --accent-crimson: #c62839;
+  --accent-crimson-dim: rgba(198, 40, 57, 0.1);
+  --status-ok: var(--accent-gold);
+  --status-diff: var(--accent-violet);
+  --status-error: var(--accent-crimson);
+  --status-idle: var(--ink-muted);
+
+  /* Syntax (Alto Contraste sobre plata) */
+  --tok-keyword: #c41456;
+  --tok-logical: #c41456;
+  --tok-type: #0b6b8a;
+  --tok-builtin: #2c7a1f;
+  --tok-fn: #2c7a1f;
+  --tok-string: #8a6100;
+  --tok-char: #8a6100;
+  --tok-escape: #6b32d6;
+  --tok-number: #6b32d6;
+  --tok-boolean: #6b32d6;
+  --tok-operator: #b84b00;
+  --tok-comment: #68738a;
+  --tok-punct: #4a556e;
+  --tok-ident: #141824;
+  --tok-plain: #141824;
+
+  /* Gradients & Shadows */
+  --topbar-top-gradient: linear-gradient(
+    90deg,
+    var(--accent-violet) 0%,
+    var(--accent-gold) 38%,
+    transparent 85%
+  );
+  --tab-active-gradient: linear-gradient(
+    90deg,
+    var(--accent-violet),
+    var(--accent-gold)
+  );
+  --resizer-v-gradient: linear-gradient(
+    180deg,
+    var(--accent-violet),
+    var(--accent-gold)
+  );
+  --resizer-h-gradient: linear-gradient(
+    90deg,
+    var(--accent-violet),
+    var(--accent-gold)
+  );
+  --running-scanline-gradient: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-violet),
+    var(--accent-gold),
+    transparent
+  );
+  --ascii-gradient: linear-gradient(
+    150deg,
+    #273248 0%,
+    #4b5d7a 48%,
+    #1e73e8 100%
+  );
+  --empty-radial-glow: radial-gradient(
+    circle at 50% 45%,
+    rgba(30, 115, 232, 0.08) 0%,
+    rgba(92, 107, 130, 0.03) 35%,
+    transparent 68%
+  );
+  --ast-dot-grid: radial-gradient(
+    circle,
+    var(--border-struct) 1px,
+    transparent 1px
+  );
+  --ascii-drop-shadow: drop-shadow(0 0 14px rgba(30, 115, 232, 0.14));
+  --ascii-eye-shadow: 0 0 10px #1e73e8, 0 0 20px rgba(30, 115, 232, 0.55);
+}

@@ -1,0 +1,35 @@
+GIMP Palette
+Name: Wyrm Silver
+Columns: 4
+# Wyrm Playground — Paleta Plata y Luz (neutros oscuros a claros, acero/azul hielo y sintaxis)
+ 20  24  36	Ink Primary / Gutter Active / Syntax Ident
+ 52  67  92	Ink Inspector
+ 74  85 110	Ink Secondary / Syntax Punct
+ 79  93 117	Wyrm Scale Dark
+116 128 153	Ink Muted / Status Idle
+143 157 184	Border Active / Scrollbar Hover
+178 189 210	Surface Scrollbar Thumb
+188 197 216	Border Structural
+197 207 224	Wyrm Scale Mid
+221 227 238	Surface Elevated
+225 230 240	Surface Gutter
+232 236 244	Surface Panel
+237 240 246	Surface Inset
+242 244 248	Surface Base
+248 250 253	Wyrm Scale Light / Ink On Primary
+ 39  50  72	Accent Steel Deep (ASCII 0%)
+ 70  84 105	Accent Steel Hover
+ 75  93 122	Accent Steel Mid (ASCII 48%)
+ 92 107 130	Accent Steel / Arcane
+ 21  92 192	Accent Primary Hover
+ 30 115 232	Accent Ice Blue / Primary
+ 59 136 245	Accent Ice Blue Bright / Pulse Start
+168  28  44	Ink Error
+198  40  57	Status Crimson / Error
+104 115 138	Syntax Comment
+196  20  86	Syntax Keyword / Logical
+184  75   0	Syntax Operator
+138  97   0	Syntax String / Char
+ 44 122  31	Syntax Builtin / Fn
+ 11 107 138	Syntax Type
+107  50 214	Syntax Escape / Number / Boolean

@@ -1,0 +1,18 @@
+scheme: "Wyrm Obsidian"
+author: "Felipe Druk"
+base00: "09080c" # Fondo base obsidiana (--bg-base)
+base01: "110f17" # Paneles, barras y superficies secundarias (--bg-panel)
+base02: "272235" # Selección visual y borde estructural (--border-struct)
+base03: "75715e" # Comentarios e invisibles (.tok-comment)
+base04: "9a93a8" # Tinta secundaria y puntuación (--ink-secondary / .tok-punct)
+base05: "edeae2" # Tinta principal pergamino (--ink-primary)
+base06: "f8f8f2" # Primer plano claro e identificadores (.tok-ident)
+base07: "f3d27a" # Oro metálico brillante (--ascii-gradient 0%)
+base08: "e05263" # Carmesí de error y diagnósticos (--accent-crimson)
+base09: "fd971f" # Operadores y constantes (.tok-operator)
+base0A: "d8a848" # Oro bruñido primario (--accent-gold / --accent-primary)
+base0B: "a6e22e" # Funciones y primitivas nativas (.tok-builtin / .tok-fn)
+base0C: "66d9ef" # Tipos primitivos y compuestos (.tok-type)
+base0D: "a370ff" # Violeta arcano de energía y foco (--accent-violet)
+base0E: "f92672" # Palabras clave y lógica (.tok-keyword / .tok-logical)
+base0F: "e6db74" # Cadenas y literales de carácter (.tok-string / .tok-char)

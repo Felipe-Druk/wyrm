@@ -1,0 +1,2183 @@
+{
+  "$description": "Tokens oficiales de color de Wyrm Playground en formato W3C DTCG, auditados directamente desde web/styles.css y web/src/app.rs.",
+  "obsidian": {
+    "$description": "Wyrm Obsidian — Escamas negras, oro bruñido, luz violeta y sintaxis Monokai Classic.",
+    "surface": {
+      "$type": "color",
+      "base": {
+        "$value": "#09080c",
+        "$type": "color",
+        "$description": "Fondo raíz obsidiana profunda del viewport y la consola.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(9, 8, 12)",
+            "hsl": "hsl(255, 20%, 4%)",
+            "cssVar": "--bg-base"
+          }
+        }
+      },
+      "inset": {
+        "$value": "#0b0a10",
+        "$type": "color",
+        "$description": "Superficie hundida del lienzo SVG del AST.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(11, 10, 16)",
+            "hsl": "hsl(250, 23%, 5%)",
+            "cssVar": "--bg-inset"
+          }
+        }
+      },
+      "gutter": {
+        "$value": "#0d0b12",
+        "$type": "color",
+        "$description": "Fondo de la franja de numeración de líneas del editor.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(13, 11, 18)",
+            "hsl": "hsl(257, 24%, 6%)",
+            "cssVar": "--gutter-bg"
+          }
+        }
+      },
+      "panel": {
+        "$value": "#110f17",
+        "$type": "color",
+        "$description": "Fondo estructural de paneles, topbar, footer y bloques de salida.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(17, 15, 23)",
+            "hsl": "hsl(255, 21%, 7%)",
+            "cssVar": "--bg-panel"
+          }
+        }
+      },
+      "scale-dark": {
+        "$value": "#151220",
+        "$type": "color",
+        "$description": "Escama oscura del isologo pixel art SVG de Wyrm.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(21, 18, 32)",
+            "hsl": "hsl(253, 28%, 10%)",
+            "cssVar": "--wyrm-scale-dark"
+          }
+        }
+      },
+      "elevated": {
+        "$value": "#181522",
+        "$type": "color",
+        "$description": "Superficie elevada para cabeceras de panel, tabs y grips de divisor.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(24, 21, 34)",
+            "hsl": "hsl(254, 24%, 11%)",
+            "cssVar": "--bg-surface"
+          }
+        }
+      },
+      "scrollbar-thumb": {
+        "$value": "#2c2640",
+        "$type": "color",
+        "$description": "Indicador deslizable en reposo de las barras de desplazamiento.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(44, 38, 64)",
+            "hsl": "hsl(254, 25%, 20%)",
+            "cssVar": "--scrollbar-thumb"
+          }
+        }
+      },
+      "scale-mid": {
+        "$value": "#2e2742",
+        "$type": "color",
+        "$description": "Escama intermedia del isologo pixel art SVG de Wyrm.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(46, 39, 66)",
+            "hsl": "hsl(256, 26%, 21%)",
+            "cssVar": "--wyrm-scale-mid"
+          }
+        }
+      },
+      "scale-light": {
+        "$value": "#5b4f7d",
+        "$type": "color",
+        "$description": "Escama iluminada del isologo pixel art SVG de Wyrm.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(91, 79, 125)",
+            "hsl": "hsl(256, 23%, 40%)",
+            "cssVar": "--wyrm-scale-light"
+          }
+        }
+      },
+      "backdrop": {
+        "$value": "rgba(5, 4, 8, 0.82)",
+        "$type": "color",
+        "$description": "Velo oscuro semitransparente detrás del modal Códice de Wyrm.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(5, 4, 8, 0.82)",
+            "hsl": "hsla(255, 33%, 2%, 0.82)",
+            "cssVar": "--backdrop-bg"
+          }
+        }
+      },
+      "shortcut-bg": {
+        "$value": "rgba(0, 0, 0, 0.14)",
+        "$type": "color",
+        "$description": "Fondo translúcido de la etiqueta de atajo Ctrl+Enter sobre botón primario.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(0, 0, 0, 0.14)",
+            "hsl": "hsla(0, 0%, 0%, 0.14)",
+            "cssSelector": ".shortcut-hint"
+          }
+        }
+      }
+    },
+    "border": {
+      "$type": "color",
+      "structural": {
+        "$value": "#272235",
+        "$type": "color",
+        "$description": "Trazo estructural de 1px entre paneles, divisores en reposo y grilla punteada AST.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(39, 34, 53)",
+            "hsl": "hsl(256, 22%, 17%)",
+            "cssVar": "--border-struct"
+          }
+        }
+      },
+      "active": {
+        "$value": "#453b5e",
+        "$type": "color",
+        "$description": "Borde enfatizado, nodos resueltos y hover de scrollbar.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(69, 59, 94)",
+            "hsl": "hsl(257, 23%, 30%)",
+            "cssVar": "--border-active"
+          }
+        }
+      },
+      "scrollbar-hover": {
+        "$value": "#453b5e",
+        "$type": "color",
+        "$description": "Indicador de scrollbar al pasar el puntero.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(69, 59, 94)",
+            "hsl": "hsl(257, 23%, 30%)",
+            "cssVar": "--scrollbar-thumb-hover",
+            "aliasOf": "--border-active"
+          }
+        }
+      },
+      "gold": {
+        "$value": "rgba(216, 168, 72, 0.45)",
+        "$type": "color",
+        "$description": "Borde translúcido dorado para badges ENTER y estados destacados.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(216, 168, 72, 0.45)",
+            "hsl": "hsla(40, 65%, 56%, 0.45)",
+            "cssVar": "--accent-gold-border"
+          }
+        }
+      },
+      "violet": {
+        "$value": "rgba(163, 112, 255, 0.45)",
+        "$type": "color",
+        "$description": "Borde translúcido violeta para badges, enfoque, grips y cajón stdin abierto.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.45)",
+            "hsl": "hsla(261, 100%, 72%, 0.45)",
+            "cssVar": "--accent-violet-border"
+          }
+        }
+      },
+      "crimson": {
+        "$value": "rgba(224, 82, 99, 0.48)",
+        "$type": "color",
+        "$description": "Borde translúcido carmesí para bloques de error y badge truncado.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(224, 82, 99, 0.48)",
+            "hsl": "hsla(353, 70%, 60%, 0.48)",
+            "cssVar": "--accent-crimson-border"
+          }
+        }
+      },
+      "shortcut": {
+        "$value": "rgba(0, 0, 0, 0.25)",
+        "$type": "color",
+        "$description": "Borde sutil de la etiqueta de atajo sobre el botón dorado.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(0, 0, 0, 0.25)",
+            "hsl": "hsla(0, 0%, 0%, 0.25)",
+            "cssSelector": ".shortcut-hint"
+          }
+        }
+      }
+    },
+    "ink": {
+      "$type": "color",
+      "primary": {
+        "$value": "#edeae2",
+        "$type": "color",
+        "$description": "Tinta pergamino principal de alto contraste sobre obsidiana.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(237, 234, 226)",
+            "hsl": "hsl(44, 23%, 91%)",
+            "cssVar": "--ink-primary"
+          }
+        }
+      },
+      "secondary": {
+        "$value": "#9a93a8",
+        "$type": "color",
+        "$description": "Tinta gris-violácea secundaria para etiquetas y controles inactivos.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(154, 147, 168)",
+            "hsl": "hsl(260, 11%, 62%)",
+            "cssVar": "--ink-secondary"
+          }
+        }
+      },
+      "muted": {
+        "$value": "#625b73",
+        "$type": "color",
+        "$description": "Tinta tenue para metadatos, contadores y estados vacíos.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(98, 91, 115)",
+            "hsl": "hsl(258, 12%, 40%)",
+            "cssVar": "--ink-muted"
+          }
+        }
+      },
+      "on-primary": {
+        "$value": "#09080c",
+        "$type": "color",
+        "$description": "Tinta oscura sobre el botón sólido dorado EJECUTAR.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(9, 8, 12)",
+            "hsl": "hsl(255, 20%, 4%)",
+            "cssVar": "--accent-primary-ink",
+            "aliasOf": "--bg-base"
+          }
+        }
+      },
+      "gutter-active": {
+        "$value": "#ebd08b",
+        "$type": "color",
+        "$description": "Número de línea activo en el gutter del editor.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(235, 208, 139)",
+            "hsl": "hsl(43, 71%, 73%)",
+            "cssVar": "--gutter-active-ink"
+          }
+        }
+      },
+      "inspector": {
+        "$value": "#e0c482",
+        "$type": "color",
+        "$description": "Tinta dorada cálida para el registro verbose del Inspector.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(224, 196, 130)",
+            "hsl": "hsl(42, 60%, 69%)",
+            "cssVar": "--inspector-ink"
+          }
+        }
+      },
+      "error": {
+        "$value": "#f495a1",
+        "$type": "color",
+        "$description": "Tinta rosada legible para mensajes de error en terminal.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(244, 149, 161)",
+            "hsl": "hsl(352, 81%, 77%)",
+            "cssVar": "--error-ink"
+          }
+        }
+      }
+    },
+    "accent": {
+      "$type": "color",
+      "gold": {
+        "$value": "#d8a848",
+        "$type": "color",
+        "$description": "Oro bruñido principal de identidad Wyrm y acción EJECUTAR.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(216, 168, 72)",
+            "hsl": "hsl(40, 65%, 56%)",
+            "cssVar": "--accent-gold"
+          }
+        }
+      },
+      "gold-hover": {
+        "$value": "#eab958",
+        "$type": "color",
+        "$description": "Oro iluminado en estado hover sobre acción principal.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(234, 185, 88)",
+            "hsl": "hsl(40, 78%, 63%)",
+            "cssVar": "--accent-gold-hover"
+          }
+        }
+      },
+      "gold-dim": {
+        "$value": "rgba(216, 168, 72, 0.12)",
+        "$type": "color",
+        "$description": "Fondo tenue dorado para línea Tutor, fila activa y badge ENTER.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(216, 168, 72, 0.12)",
+            "hsl": "hsla(40, 65%, 56%, 0.12)",
+            "cssVar": "--accent-gold-dim"
+          }
+        }
+      },
+      "gold-highlight": {
+        "$value": "#f3d27a",
+        "$type": "color",
+        "$description": "Reflejo dorado claro en el extremo inicial del degradado ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(243, 210, 122)",
+            "hsl": "hsl(44, 83%, 72%)",
+            "cssVar": "--ascii-gradient"
+          }
+        }
+      },
+      "gold-bronze": {
+        "$value": "#946c2b",
+        "$type": "color",
+        "$description": "Bronce envejecido en la transición media del degradado ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(148, 108, 43)",
+            "hsl": "hsl(37, 55%, 37%)",
+            "cssVar": "--ascii-gradient"
+          }
+        }
+      },
+      "primary": {
+        "$value": "#d8a848",
+        "$type": "color",
+        "$description": "Alias semántico del acento principal activo.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(216, 168, 72)",
+            "hsl": "hsl(40, 65%, 56%)",
+            "cssVar": "--accent-primary",
+            "aliasOf": "--accent-gold"
+          }
+        }
+      },
+      "primary-hover": {
+        "$value": "#eab958",
+        "$type": "color",
+        "$description": "Alias semántico hover del acento principal.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(234, 185, 88)",
+            "hsl": "hsl(40, 78%, 63%)",
+            "cssVar": "--accent-primary-hover",
+            "aliasOf": "--accent-gold-hover"
+          }
+        }
+      },
+      "violet": {
+        "$value": "#a370ff",
+        "$type": "color",
+        "$description": "Luz violeta arcana para foco, cursor, pestañas activas y energía.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(163, 112, 255)",
+            "hsl": "hsl(261, 100%, 72%)",
+            "cssVar": "--accent-violet"
+          }
+        }
+      },
+      "violet-bright": {
+        "$value": "#be97ff",
+        "$type": "color",
+        "$description": "Violeta brillante para pulso de corrida y valores evaluados del AST.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(190, 151, 255)",
+            "hsl": "hsl(262, 100%, 80%)",
+            "cssVar": "--accent-violet-bright"
+          }
+        }
+      },
+      "violet-tail": {
+        "$value": "#8d5cf6",
+        "$type": "color",
+        "$description": "Violeta profundo en el cierre del degradado metálico ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(141, 92, 246)",
+            "hsl": "hsl(259, 90%, 66%)",
+            "cssVar": "--ascii-gradient"
+          }
+        }
+      },
+      "arcane": {
+        "$value": "#a370ff",
+        "$type": "color",
+        "$description": "Alias semántico del acento arcano.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(163, 112, 255)",
+            "hsl": "hsl(261, 100%, 72%)",
+            "cssVar": "--accent-arcane",
+            "aliasOf": "--accent-violet"
+          }
+        }
+      },
+      "violet-dim": {
+        "$value": "rgba(163, 112, 255, 0.12)",
+        "$type": "color",
+        "$description": "Relleno tenue violeta para badges, píldoras activas y banners.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.12)",
+            "hsl": "hsla(261, 100%, 72%, 0.12)",
+            "cssVar": "--accent-violet-dim"
+          }
+        }
+      },
+      "violet-hover": {
+        "$value": "rgba(163, 112, 255, 0.08)",
+        "$type": "color",
+        "$description": "Realce sutil violeta al pasar el puntero sobre controles planos.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.08)",
+            "hsl": "hsla(261, 100%, 72%, 0.08)",
+            "cssVar": "--accent-violet-hover"
+          }
+        }
+      },
+      "glow": {
+        "$value": "rgba(163, 112, 255, 0.22)",
+        "$type": "color",
+        "$description": "Resplandor ambiental violeta en nodos activos, pulsos y divisores.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.22)",
+            "hsl": "hsla(261, 100%, 72%, 0.22)",
+            "cssVar": "--accent-glow"
+          }
+        }
+      },
+      "return-glow": {
+        "$value": "rgba(163, 112, 255, 0.35)",
+        "$type": "color",
+        "$description": "Halo lateral del bloque de valor de retorno del programa.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.35)",
+            "hsl": "hsla(261, 100%, 72%, 0.35)",
+            "cssVar": "--return-glow"
+          }
+        }
+      },
+      "selection": {
+        "$value": "rgba(163, 112, 255, 0.25)",
+        "$type": "color",
+        "$description": "Selección de texto dentro del editor de código.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.25)",
+            "hsl": "hsla(261, 100%, 72%, 0.25)",
+            "cssVar": "--selection-bg"
+          }
+        }
+      },
+      "gutter-active-bg": {
+        "$value": "rgba(163, 112, 255, 0.09)",
+        "$type": "color",
+        "$description": "Tinte violeta de la línea activa en el gutter.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.09)",
+            "hsl": "hsla(261, 100%, 72%, 0.09)",
+            "cssVar": "--gutter-active-bg"
+          }
+        }
+      },
+      "ascii-drop-shadow": {
+        "$value": "rgba(163, 112, 255, 0.16)",
+        "$type": "color",
+        "$description": "Sombra proyectada violeta del arte ASCII del wyrm.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.16)",
+            "hsl": "hsla(261, 100%, 72%, 0.16)",
+            "cssVar": "--ascii-drop-shadow"
+          }
+        }
+      },
+      "ascii-eye-halo": {
+        "$value": "rgba(163, 112, 255, 0.6)",
+        "$type": "color",
+        "$description": "Halo luminoso exterior del ojo ◈ en el arte ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.6)",
+            "hsl": "hsla(261, 100%, 72%, 0.6)",
+            "cssVar": "--ascii-eye-shadow"
+          }
+        }
+      },
+      "empty-glow-gold": {
+        "$value": "rgba(216, 168, 72, 0.03)",
+        "$type": "color",
+        "$description": "Aureola radial dorada muy tenue del estado vacío de consola.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(216, 168, 72, 0.03)",
+            "hsl": "hsla(40, 65%, 56%, 0.03)",
+            "cssVar": "--empty-radial-glow"
+          }
+        }
+      },
+      "pulse-start": {
+        "$value": "#be97ff",
+        "$type": "color",
+        "$description": "Color inicial del destello táctil de ejecución.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(190, 151, 255)",
+            "hsl": "hsl(262, 100%, 80%)",
+            "cssVar": "--pulse-start",
+            "aliasOf": "--accent-violet-bright"
+          }
+        }
+      },
+      "pulse-end": {
+        "$value": "#d8a848",
+        "$type": "color",
+        "$description": "Color intermedio del destello táctil de ejecución.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(216, 168, 72)",
+            "hsl": "hsl(40, 65%, 56%)",
+            "cssVar": "--pulse-end",
+            "aliasOf": "--accent-gold"
+          }
+        }
+      }
+    },
+    "status": {
+      "$type": "color",
+      "error": {
+        "$value": "#e05263",
+        "$type": "color",
+        "$description": "Carmesí de error, detención del Worker y traza truncada.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(224, 82, 99)",
+            "hsl": "hsl(353, 70%, 60%)",
+            "cssVar": "--accent-crimson"
+          }
+        }
+      },
+      "error-dim": {
+        "$value": "rgba(224, 82, 99, 0.14)",
+        "$type": "color",
+        "$description": "Fondo translúcido para badges de error y límite alcanzado.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(224, 82, 99, 0.14)",
+            "hsl": "hsla(353, 70%, 60%, 0.14)",
+            "cssVar": "--accent-crimson-dim"
+          }
+        }
+      },
+      "error-border": {
+        "$value": "rgba(224, 82, 99, 0.48)",
+        "$type": "color",
+        "$description": "Borde de bloques de error y avisos de truncado.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(224, 82, 99, 0.48)",
+            "hsl": "hsla(353, 70%, 60%, 0.48)",
+            "cssVar": "--accent-crimson-border"
+          }
+        }
+      },
+      "error-ink": {
+        "$value": "#f495a1",
+        "$type": "color",
+        "$description": "Texto legible de error sobre fondo obsidiana.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(244, 149, 161)",
+            "hsl": "hsl(352, 81%, 77%)",
+            "cssVar": "--error-ink"
+          }
+        }
+      },
+      "ok-active": {
+        "$value": "#d8a848",
+        "$type": "color",
+        "$description": "Telemetría OK, fase ENTER y camino activo en el grafo AST.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(216, 168, 72)",
+            "hsl": "hsl(40, 65%, 56%)",
+            "cssVar": "--accent-gold",
+            "aliasOf": "--accent-gold"
+          }
+        }
+      },
+      "ok-active-dim": {
+        "$value": "rgba(216, 168, 72, 0.12)",
+        "$type": "color",
+        "$description": "Fondo de fila activa de bytecode y badge ENTER.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(216, 168, 72, 0.12)",
+            "hsl": "hsla(40, 65%, 56%, 0.12)",
+            "cssVar": "--accent-gold-dim",
+            "aliasOf": "--accent-gold-dim"
+          }
+        }
+      },
+      "tutor-diff": {
+        "$value": "#a370ff",
+        "$type": "color",
+        "$description": "Cambios NEW/UPD en scopes, slots modificados, fase EVAL y ejecución activa.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(163, 112, 255)",
+            "hsl": "hsl(261, 100%, 72%)",
+            "cssVar": "--accent-violet",
+            "aliasOf": "--accent-violet"
+          }
+        }
+      },
+      "tutor-diff-bg": {
+        "$value": "rgba(163, 112, 255, 0.12)",
+        "$type": "color",
+        "$description": "Resaltado de filas modificadas en scopes, celdas heap y banner activo.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.12)",
+            "hsl": "hsla(261, 100%, 72%, 0.12)",
+            "cssVar": "--accent-violet-dim",
+            "aliasOf": "--accent-violet-dim"
+          }
+        }
+      },
+      "tutor-diff-border": {
+        "$value": "rgba(163, 112, 255, 0.45)",
+        "$type": "color",
+        "$description": "Borde de etiquetas NEW/UPD y bloques modificados en Tutor.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(163, 112, 255, 0.45)",
+            "hsl": "hsla(261, 100%, 72%, 0.45)",
+            "cssVar": "--accent-violet-border",
+            "aliasOf": "--accent-violet-border"
+          }
+        }
+      },
+      "idle": {
+        "$value": "#625b73",
+        "$type": "color",
+        "$description": "Estado en espera / inactivo en telemetría y nodos sin visitar.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(98, 91, 115)",
+            "hsl": "hsl(258, 12%, 40%)",
+            "cssVar": "--ink-muted",
+            "aliasOf": "--ink-muted"
+          }
+        }
+      }
+    },
+    "syntax": {
+      "$type": "color",
+      "keyword": {
+        "$value": "#f92672",
+        "$type": "color",
+        "$description": "Palabras reservadas de control y declaración (Monokai Classic).",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(249, 38, 114)",
+            "hsl": "hsl(338, 95%, 56%)",
+            "cssSelector": ".tok-keyword"
+          }
+        }
+      },
+      "logical": {
+        "$value": "#f92672",
+        "$type": "color",
+        "$description": "Conectivos lógicos and, or, not, xor (Monokai Classic).",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(249, 38, 114)",
+            "hsl": "hsl(338, 95%, 56%)",
+            "cssSelector": ".tok-logical"
+          }
+        }
+      },
+      "type": {
+        "$value": "#66d9ef",
+        "$type": "color",
+        "$description": "Tipos primitivos y compuestos: int32, nat8, bool, vec.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(102, 217, 239)",
+            "hsl": "hsl(190, 81%, 67%)",
+            "cssSelector": ".tok-type"
+          }
+        }
+      },
+      "builtin": {
+        "$value": "#a6e22e",
+        "$type": "color",
+        "$description": "Primitivas nativas de E/S como read y write.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(166, 226, 46)",
+            "hsl": "hsl(80, 76%, 53%)",
+            "cssSelector": ".tok-builtin"
+          }
+        }
+      },
+      "fn": {
+        "$value": "#a6e22e",
+        "$type": "color",
+        "$description": "Invocaciones y nombres de función.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(166, 226, 46)",
+            "hsl": "hsl(80, 76%, 53%)",
+            "cssSelector": ".tok-fn"
+          }
+        }
+      },
+      "string": {
+        "$value": "#e6db74",
+        "$type": "color",
+        "$description": "Literales de cadena entre comillas dobles.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(230, 219, 116)",
+            "hsl": "hsl(54, 70%, 68%)",
+            "cssSelector": ".tok-string"
+          }
+        }
+      },
+      "char": {
+        "$value": "#e6db74",
+        "$type": "color",
+        "$description": "Literales de carácter ASCII entre comillas simples.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(230, 219, 116)",
+            "hsl": "hsl(54, 70%, 68%)",
+            "cssSelector": ".tok-char"
+          }
+        }
+      },
+      "escape": {
+        "$value": "#ae81ff",
+        "$type": "color",
+        "$description": "Secuencias de escape dentro de cadenas y caracteres.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(174, 129, 255)",
+            "hsl": "hsl(261, 100%, 75%)",
+            "cssSelector": ".tok-escape"
+          }
+        }
+      },
+      "number": {
+        "$value": "#ae81ff",
+        "$type": "color",
+        "$description": "Literales numéricos enteros y flotantes.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(174, 129, 255)",
+            "hsl": "hsl(261, 100%, 75%)",
+            "cssSelector": ".tok-number"
+          }
+        }
+      },
+      "boolean": {
+        "$value": "#ae81ff",
+        "$type": "color",
+        "$description": "Literales booleanos true y false.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(174, 129, 255)",
+            "hsl": "hsl(261, 100%, 75%)",
+            "cssSelector": ".tok-boolean"
+          }
+        }
+      },
+      "operator": {
+        "$value": "#fd971f",
+        "$type": "color",
+        "$description": "Operadores aritméticos, relacionales y flechas <- / ->.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(253, 151, 31)",
+            "hsl": "hsl(32, 98%, 56%)",
+            "cssSelector": ".tok-operator"
+          }
+        }
+      },
+      "comment": {
+        "$value": "#75715e",
+        "$type": "color",
+        "$description": "Comentarios de línea única // (en cursiva).",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(117, 113, 94)",
+            "hsl": "hsl(50, 11%, 41%)",
+            "cssSelector": ".tok-comment"
+          }
+        }
+      },
+      "punct": {
+        "$value": "#9a93a8",
+        "$type": "color",
+        "$description": "Delimitadores y puntuación estructural.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(154, 147, 168)",
+            "hsl": "hsl(260, 11%, 62%)",
+            "cssSelector": ".tok-punct"
+          }
+        }
+      },
+      "ident": {
+        "$value": "#f8f8f2",
+        "$type": "color",
+        "$description": "Identificadores de variables y parámetros.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(248, 248, 242)",
+            "hsl": "hsl(60, 30%, 96%)",
+            "cssSelector": ".tok-ident"
+          }
+        }
+      },
+      "plain": {
+        "$value": "#f8f8f2",
+        "$type": "color",
+        "$description": "Texto plano y espacios sin clasificación especial.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(248, 248, 242)",
+            "hsl": "hsl(60, 30%, 96%)",
+            "cssSelector": ".tok-plain"
+          }
+        }
+      }
+    },
+    "gradients": {
+      "topbar-hairline": {
+        "$value": [
+          {
+            "color": "#a370ff",
+            "position": 0.0
+          },
+          {
+            "color": "#d8a848",
+            "position": 0.38
+          },
+          {
+            "color": "rgba(216, 168, 72, 0)",
+            "position": 0.85
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Línea superior de 1px en la barra principal.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(90deg, #a370ff 0%, #d8a848 38%, transparent 85%)",
+            "kind": "linear",
+            "cssVar": "--topbar-top-gradient"
+          }
+        }
+      },
+      "tab-active": {
+        "$value": [
+          {
+            "color": "#a370ff",
+            "position": 0.0
+          },
+          {
+            "color": "#d8a848",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Subrayado de 2px en pestañas y submodos activos.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(90deg, #a370ff, #d8a848)",
+            "kind": "linear",
+            "cssVar": "--tab-active-gradient"
+          }
+        }
+      },
+      "resizer-vertical": {
+        "$value": [
+          {
+            "color": "#a370ff",
+            "position": 0.0
+          },
+          {
+            "color": "#d8a848",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Brillo de 2px del divisor horizontal principal entre Editor y Salida.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(180deg, #a370ff, #d8a848)",
+            "kind": "linear",
+            "cssSelector": ".split-resizer::after"
+          }
+        }
+      },
+      "resizer-horizontal": {
+        "$value": [
+          {
+            "color": "#a370ff",
+            "position": 0.0
+          },
+          {
+            "color": "#d8a848",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Brillo de 2px del divisor vertical entre grafo AST y SCOPES.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(90deg, #a370ff, #d8a848)",
+            "kind": "linear",
+            "cssSelector": ".ast-v-resizer::after"
+          }
+        }
+      },
+      "running-scanline": {
+        "$value": [
+          {
+            "color": "rgba(163, 112, 255, 0)",
+            "position": 0.0
+          },
+          {
+            "color": "#a370ff",
+            "position": 0.33
+          },
+          {
+            "color": "#d8a848",
+            "position": 0.67
+          },
+          {
+            "color": "rgba(216, 168, 72, 0)",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Barrido animado inferior en el banner de ejecución del Web Worker.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(90deg, transparent, #a370ff, #d8a848, transparent)",
+            "kind": "linear",
+            "cssSelector": ".running-banner::after"
+          }
+        }
+      },
+      "ascii-metallic": {
+        "$value": [
+          {
+            "color": "#f3d27a",
+            "position": 0.0
+          },
+          {
+            "color": "#d8a848",
+            "position": 0.36
+          },
+          {
+            "color": "#946c2b",
+            "position": 0.66
+          },
+          {
+            "color": "#8d5cf6",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Degradado metálico oro -> bronce -> violeta del arte ASCII del wyrm.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(150deg, #f3d27a 0%, #d8a848 36%, #946c2b 66%, #8d5cf6 100%)",
+            "kind": "linear",
+            "cssVar": "--ascii-gradient"
+          }
+        }
+      },
+      "empty-radial-glow": {
+        "$value": [
+          {
+            "color": "rgba(163, 112, 255, 0.08)",
+            "position": 0.0
+          },
+          {
+            "color": "rgba(216, 168, 72, 0.03)",
+            "position": 0.35
+          },
+          {
+            "color": "rgba(9, 8, 12, 0)",
+            "position": 0.68
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Reflejo radial ambiental detrás del estado vacío de la consola.",
+        "$extensions": {
+          "wyrm": {
+            "css": "radial-gradient(circle at 50% 45%, rgba(163, 112, 255, 0.08) 0%, rgba(216, 168, 72, 0.03) 35%, transparent 68%)",
+            "kind": "radial",
+            "cssVar": "--empty-radial-glow"
+          }
+        }
+      },
+      "ast-dot-grid": {
+        "$value": [
+          {
+            "color": "#272235",
+            "position": 0.0
+          },
+          {
+            "color": "rgba(39, 34, 53, 0)",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Patrón de retícula punteada de 20px en el lienzo interactivo del AST.",
+        "$extensions": {
+          "wyrm": {
+            "css": "radial-gradient(circle, #272235 1px, transparent 1px)",
+            "kind": "radial",
+            "cssSelector": ".ast-canvas-stage"
+          }
+        }
+      }
+    }
+  },
+  "silver": {
+    "$description": "Wyrm Silver (Plata y Luz / Dragón Blanco) — Alabastro, plata cepillada, azul hielo y sintaxis de alto contraste.",
+    "surface": {
+      "$type": "color",
+      "base": {
+        "$value": "#f2f4f8",
+        "$type": "color",
+        "$description": "Fondo raíz alabastro frío del viewport y la consola.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(242, 244, 248)",
+            "hsl": "hsl(220, 30%, 96%)",
+            "cssVar": "--bg-base"
+          }
+        }
+      },
+      "inset": {
+        "$value": "#edf0f6",
+        "$type": "color",
+        "$description": "Superficie hundida del lienzo SVG del AST.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(237, 240, 246)",
+            "hsl": "hsl(220, 33%, 95%)",
+            "cssVar": "--bg-inset"
+          }
+        }
+      },
+      "panel": {
+        "$value": "#e8ecf4",
+        "$type": "color",
+        "$description": "Fondo estructural de paneles, topbar, footer y bloques de salida.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(232, 236, 244)",
+            "hsl": "hsl(220, 35%, 93%)",
+            "cssVar": "--bg-panel"
+          }
+        }
+      },
+      "gutter": {
+        "$value": "#e1e6f0",
+        "$type": "color",
+        "$description": "Fondo de la franja de numeración de líneas del editor.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(225, 230, 240)",
+            "hsl": "hsl(220, 33%, 91%)",
+            "cssVar": "--gutter-bg"
+          }
+        }
+      },
+      "elevated": {
+        "$value": "#dde3ee",
+        "$type": "color",
+        "$description": "Superficie elevada plata cepillada para cabeceras y tabs.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(221, 227, 238)",
+            "hsl": "hsl(219, 33%, 90%)",
+            "cssVar": "--bg-surface"
+          }
+        }
+      },
+      "scale-mid": {
+        "$value": "#c5cfe0",
+        "$type": "color",
+        "$description": "Escama intermedia plateada del isologo pixel art SVG.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(197, 207, 224)",
+            "hsl": "hsl(218, 30%, 83%)",
+            "cssVar": "--wyrm-scale-mid"
+          }
+        }
+      },
+      "scrollbar-thumb": {
+        "$value": "#b2bdd2",
+        "$type": "color",
+        "$description": "Indicador deslizable en reposo de las barras de desplazamiento.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(178, 189, 210)",
+            "hsl": "hsl(219, 26%, 76%)",
+            "cssVar": "--scrollbar-thumb"
+          }
+        }
+      },
+      "scale-dark": {
+        "$value": "#4f5d75",
+        "$type": "color",
+        "$description": "Escama sombreada acero del isologo pixel art SVG.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(79, 93, 117)",
+            "hsl": "hsl(218, 19%, 38%)",
+            "cssVar": "--wyrm-scale-dark"
+          }
+        }
+      },
+      "scale-light": {
+        "$value": "#f8fafd",
+        "$type": "color",
+        "$description": "Escama blanca hielo del isologo pixel art SVG.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(248, 250, 253)",
+            "hsl": "hsl(216, 56%, 98%)",
+            "cssVar": "--wyrm-scale-light"
+          }
+        }
+      },
+      "backdrop": {
+        "$value": "rgba(20, 24, 36, 0.56)",
+        "$type": "color",
+        "$description": "Velo oscuro semitransparente detrás del modal Códice de Wyrm.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(20, 24, 36, 0.56)",
+            "hsl": "hsla(225, 29%, 11%, 0.56)",
+            "cssVar": "--backdrop-bg"
+          }
+        }
+      },
+      "shortcut-bg": {
+        "$value": "rgba(255, 255, 255, 0.16)",
+        "$type": "color",
+        "$description": "Fondo translúcido claro de la etiqueta Ctrl+Enter sobre azul hielo.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(255, 255, 255, 0.16)",
+            "hsl": "hsla(0, 0%, 100%, 0.16)",
+            "cssSelector": "[data-theme=\"silver\"] .shortcut-hint"
+          }
+        }
+      }
+    },
+    "border": {
+      "$type": "color",
+      "structural": {
+        "$value": "#bcc5d8",
+        "$type": "color",
+        "$description": "Trazo estructural de 1px entre paneles, divisores en reposo y grilla AST.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(188, 197, 216)",
+            "hsl": "hsl(221, 26%, 79%)",
+            "cssVar": "--border-struct"
+          }
+        }
+      },
+      "active": {
+        "$value": "#8f9db8",
+        "$type": "color",
+        "$description": "Borde enfatizado, nodos resueltos y hover de scrollbar.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(143, 157, 184)",
+            "hsl": "hsl(220, 22%, 64%)",
+            "cssVar": "--border-active"
+          }
+        }
+      },
+      "scrollbar-hover": {
+        "$value": "#8f9db8",
+        "$type": "color",
+        "$description": "Indicador de scrollbar al pasar el puntero.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(143, 157, 184)",
+            "hsl": "hsl(220, 22%, 64%)",
+            "cssVar": "--scrollbar-thumb-hover",
+            "aliasOf": "--border-active"
+          }
+        }
+      },
+      "steel": {
+        "$value": "rgba(92, 107, 130, 0.48)",
+        "$type": "color",
+        "$description": "Borde translúcido acero para badges ENTER y estados destacados.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(92, 107, 130, 0.48)",
+            "hsl": "hsla(216, 17%, 44%, 0.48)",
+            "cssVar": "--accent-gold-border"
+          }
+        }
+      },
+      "ice-blue": {
+        "$value": "rgba(30, 115, 232, 0.45)",
+        "$type": "color",
+        "$description": "Borde translúcido azul hielo para badges, enfoque, grips y cajón stdin.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.45)",
+            "hsl": "hsla(215, 81%, 51%, 0.45)",
+            "cssVar": "--accent-violet-border"
+          }
+        }
+      },
+      "crimson": {
+        "$value": "rgba(198, 40, 57, 0.44)",
+        "$type": "color",
+        "$description": "Borde translúcido carmesí para bloques de error y badge truncado.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(198, 40, 57, 0.44)",
+            "hsl": "hsla(354, 66%, 47%, 0.44)",
+            "cssVar": "--accent-crimson-border"
+          }
+        }
+      },
+      "shortcut": {
+        "$value": "rgba(255, 255, 255, 0.35)",
+        "$type": "color",
+        "$description": "Borde claro de la etiqueta de atajo sobre el botón azul hielo.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(255, 255, 255, 0.35)",
+            "hsl": "hsla(0, 0%, 100%, 0.35)",
+            "cssSelector": "[data-theme=\"silver\"] .shortcut-hint"
+          }
+        }
+      }
+    },
+    "ink": {
+      "$type": "color",
+      "primary": {
+        "$value": "#141824",
+        "$type": "color",
+        "$description": "Tinta azul-obsidiana principal de alto contraste sobre alabastro.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(20, 24, 36)",
+            "hsl": "hsl(225, 29%, 11%)",
+            "cssVar": "--ink-primary"
+          }
+        }
+      },
+      "secondary": {
+        "$value": "#4a556e",
+        "$type": "color",
+        "$description": "Tinta pizarra secundaria para etiquetas y controles inactivos.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(74, 85, 110)",
+            "hsl": "hsl(222, 20%, 36%)",
+            "cssVar": "--ink-secondary"
+          }
+        }
+      },
+      "muted": {
+        "$value": "#748099",
+        "$type": "color",
+        "$description": "Tinta acero tenue para metadatos, contadores y estados vacíos.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(116, 128, 153)",
+            "hsl": "hsl(221, 15%, 53%)",
+            "cssVar": "--ink-muted"
+          }
+        }
+      },
+      "on-primary": {
+        "$value": "#f8fafd",
+        "$type": "color",
+        "$description": "Tinta blanca hielo sobre el botón sólido azul EJECUTAR.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(248, 250, 253)",
+            "hsl": "hsl(216, 56%, 98%)",
+            "cssVar": "--accent-primary-ink",
+            "aliasOf": "--wyrm-scale-light"
+          }
+        }
+      },
+      "gutter-active": {
+        "$value": "#141824",
+        "$type": "color",
+        "$description": "Número de línea activo en el gutter del editor.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(20, 24, 36)",
+            "hsl": "hsl(225, 29%, 11%)",
+            "cssVar": "--gutter-active-ink",
+            "aliasOf": "--ink-primary"
+          }
+        }
+      },
+      "inspector": {
+        "$value": "#34435c",
+        "$type": "color",
+        "$description": "Tinta acero profundo para el registro verbose del Inspector.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(52, 67, 92)",
+            "hsl": "hsl(218, 28%, 28%)",
+            "cssVar": "--inspector-ink"
+          }
+        }
+      },
+      "error": {
+        "$value": "#a81c2c",
+        "$type": "color",
+        "$description": "Tinta carmesí oscura de alto contraste para errores en terminal.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(168, 28, 44)",
+            "hsl": "hsl(353, 71%, 38%)",
+            "cssVar": "--error-ink"
+          }
+        }
+      }
+    },
+    "accent": {
+      "$type": "color",
+      "steel": {
+        "$value": "#5c6b82",
+        "$type": "color",
+        "$description": "Acero bruñido secundario que reemplaza al oro en la paleta clara.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(92, 107, 130)",
+            "hsl": "hsl(216, 17%, 44%)",
+            "cssVar": "--accent-gold"
+          }
+        }
+      },
+      "steel-hover": {
+        "$value": "#465469",
+        "$type": "color",
+        "$description": "Acero oscuro en estado hover.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(70, 84, 105)",
+            "hsl": "hsl(216, 20%, 34%)",
+            "cssVar": "--accent-gold-hover"
+          }
+        }
+      },
+      "steel-dim": {
+        "$value": "rgba(92, 107, 130, 0.12)",
+        "$type": "color",
+        "$description": "Fondo tenue acero para línea Tutor, fila activa y badge ENTER.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(92, 107, 130, 0.12)",
+            "hsl": "hsla(216, 17%, 44%, 0.12)",
+            "cssVar": "--accent-gold-dim"
+          }
+        }
+      },
+      "steel-deep": {
+        "$value": "#273248",
+        "$type": "color",
+        "$description": "Acero profundo en el inicio del degradado metálico ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(39, 50, 72)",
+            "hsl": "hsl(220, 30%, 22%)",
+            "cssVar": "--ascii-gradient"
+          }
+        }
+      },
+      "steel-mid": {
+        "$value": "#4b5d7a",
+        "$type": "color",
+        "$description": "Acero intermedio en el punto medio del degradado ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(75, 93, 122)",
+            "hsl": "hsl(217, 24%, 39%)",
+            "cssVar": "--ascii-gradient"
+          }
+        }
+      },
+      "ice-blue": {
+        "$value": "#1e73e8",
+        "$type": "color",
+        "$description": "Azul hielo eléctrico para acción EJECUTAR, foco, cursor y energía.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(30, 115, 232)",
+            "hsl": "hsl(215, 81%, 51%)",
+            "cssVar": "--accent-violet"
+          }
+        }
+      },
+      "ice-blue-bright": {
+        "$value": "#3b88f5",
+        "$type": "color",
+        "$description": "Azul hielo brillante para pulso de corrida y reflejos.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(59, 136, 245)",
+            "hsl": "hsl(215, 90%, 60%)",
+            "cssVar": "--accent-violet-bright"
+          }
+        }
+      },
+      "primary": {
+        "$value": "#1e73e8",
+        "$type": "color",
+        "$description": "Alias semántico del acento principal en Plata y Luz.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(30, 115, 232)",
+            "hsl": "hsl(215, 81%, 51%)",
+            "cssVar": "--accent-primary",
+            "aliasOf": "--accent-violet"
+          }
+        }
+      },
+      "primary-hover": {
+        "$value": "#155cc0",
+        "$type": "color",
+        "$description": "Azul hielo profundo en hover del botón primario EJECUTAR.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(21, 92, 192)",
+            "hsl": "hsl(215, 80%, 42%)",
+            "cssVar": "--accent-primary-hover"
+          }
+        }
+      },
+      "arcane": {
+        "$value": "#5c6b82",
+        "$type": "color",
+        "$description": "Alias semántico del acento metálico complementario.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(92, 107, 130)",
+            "hsl": "hsl(216, 17%, 44%)",
+            "cssVar": "--accent-arcane",
+            "aliasOf": "--accent-gold"
+          }
+        }
+      },
+      "ice-blue-dim": {
+        "$value": "rgba(30, 115, 232, 0.1)",
+        "$type": "color",
+        "$description": "Relleno tenue azul hielo para badges, píldoras activas y banners.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.1)",
+            "hsl": "hsla(215, 81%, 51%, 0.1)",
+            "cssVar": "--accent-violet-dim"
+          }
+        }
+      },
+      "ice-blue-hover": {
+        "$value": "rgba(30, 115, 232, 0.07)",
+        "$type": "color",
+        "$description": "Realce sutil azul hielo al pasar el puntero sobre controles planos.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.07)",
+            "hsl": "hsla(215, 81%, 51%, 0.07)",
+            "cssVar": "--accent-violet-hover"
+          }
+        }
+      },
+      "glow": {
+        "$value": "rgba(30, 115, 232, 0.16)",
+        "$type": "color",
+        "$description": "Resplandor azul hielo en nodos activos, pulsos y divisores.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.16)",
+            "hsl": "hsla(215, 81%, 51%, 0.16)",
+            "cssVar": "--accent-glow"
+          }
+        }
+      },
+      "return-glow": {
+        "$value": "rgba(30, 115, 232, 0.28)",
+        "$type": "color",
+        "$description": "Halo lateral del bloque de valor de retorno del programa.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.28)",
+            "hsl": "hsla(215, 81%, 51%, 0.28)",
+            "cssVar": "--return-glow"
+          }
+        }
+      },
+      "selection": {
+        "$value": "rgba(30, 115, 232, 0.2)",
+        "$type": "color",
+        "$description": "Selección de texto dentro del editor de código.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.2)",
+            "hsl": "hsla(215, 81%, 51%, 0.2)",
+            "cssVar": "--selection-bg"
+          }
+        }
+      },
+      "gutter-active-bg": {
+        "$value": "rgba(30, 115, 232, 0.1)",
+        "$type": "color",
+        "$description": "Tinte azul hielo de la línea activa en el gutter.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.1)",
+            "hsl": "hsla(215, 81%, 51%, 0.1)",
+            "cssVar": "--gutter-active-bg"
+          }
+        }
+      },
+      "ascii-drop-shadow": {
+        "$value": "rgba(30, 115, 232, 0.14)",
+        "$type": "color",
+        "$description": "Sombra proyectada azul hielo del arte ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.14)",
+            "hsl": "hsla(215, 81%, 51%, 0.14)",
+            "cssVar": "--ascii-drop-shadow"
+          }
+        }
+      },
+      "ascii-eye-halo": {
+        "$value": "rgba(30, 115, 232, 0.55)",
+        "$type": "color",
+        "$description": "Halo luminoso exterior del ojo ◈ en el arte ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.55)",
+            "hsl": "hsla(215, 81%, 51%, 0.55)",
+            "cssVar": "--ascii-eye-shadow"
+          }
+        }
+      },
+      "empty-glow-ice": {
+        "$value": "rgba(30, 115, 232, 0.08)",
+        "$type": "color",
+        "$description": "Centro radial azul hielo del estado vacío de consola.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.08)",
+            "hsl": "hsla(215, 81%, 51%, 0.08)",
+            "cssVar": "--empty-radial-glow"
+          }
+        }
+      },
+      "empty-glow-steel": {
+        "$value": "rgba(92, 107, 130, 0.03)",
+        "$type": "color",
+        "$description": "Aureola radial acero muy tenue del estado vacío de consola.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(92, 107, 130, 0.03)",
+            "hsl": "hsla(216, 17%, 44%, 0.03)",
+            "cssVar": "--empty-radial-glow"
+          }
+        }
+      },
+      "pulse-start": {
+        "$value": "#3b88f5",
+        "$type": "color",
+        "$description": "Color inicial del destello táctil de ejecución.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(59, 136, 245)",
+            "hsl": "hsl(215, 90%, 60%)",
+            "cssVar": "--pulse-start",
+            "aliasOf": "--accent-violet-bright"
+          }
+        }
+      },
+      "pulse-end": {
+        "$value": "#5c6b82",
+        "$type": "color",
+        "$description": "Color intermedio del destello táctil de ejecución.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(92, 107, 130)",
+            "hsl": "hsl(216, 17%, 44%)",
+            "cssVar": "--pulse-end",
+            "aliasOf": "--accent-gold"
+          }
+        }
+      }
+    },
+    "status": {
+      "$type": "color",
+      "error": {
+        "$value": "#c62839",
+        "$type": "color",
+        "$description": "Carmesí de error, detención del Worker y traza truncada.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(198, 40, 57)",
+            "hsl": "hsl(354, 66%, 47%)",
+            "cssVar": "--accent-crimson"
+          }
+        }
+      },
+      "error-dim": {
+        "$value": "rgba(198, 40, 57, 0.1)",
+        "$type": "color",
+        "$description": "Fondo translúcido para badges de error y límite alcanzado.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(198, 40, 57, 0.1)",
+            "hsl": "hsla(354, 66%, 47%, 0.1)",
+            "cssVar": "--accent-crimson-dim"
+          }
+        }
+      },
+      "error-border": {
+        "$value": "rgba(198, 40, 57, 0.44)",
+        "$type": "color",
+        "$description": "Borde de bloques de error y avisos de truncado.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(198, 40, 57, 0.44)",
+            "hsl": "hsla(354, 66%, 47%, 0.44)",
+            "cssVar": "--accent-crimson-border"
+          }
+        }
+      },
+      "error-ink": {
+        "$value": "#a81c2c",
+        "$type": "color",
+        "$description": "Texto carmesí legible sobre superficie clara.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(168, 28, 44)",
+            "hsl": "hsl(353, 71%, 38%)",
+            "cssVar": "--error-ink"
+          }
+        }
+      },
+      "ok-active": {
+        "$value": "#5c6b82",
+        "$type": "color",
+        "$description": "Telemetría OK, fase ENTER y camino activo en el grafo AST.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(92, 107, 130)",
+            "hsl": "hsl(216, 17%, 44%)",
+            "cssVar": "--accent-gold",
+            "aliasOf": "--accent-gold"
+          }
+        }
+      },
+      "ok-active-dim": {
+        "$value": "rgba(92, 107, 130, 0.12)",
+        "$type": "color",
+        "$description": "Fondo de fila activa de bytecode y badge ENTER.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(92, 107, 130, 0.12)",
+            "hsl": "hsla(216, 17%, 44%, 0.12)",
+            "cssVar": "--accent-gold-dim",
+            "aliasOf": "--accent-gold-dim"
+          }
+        }
+      },
+      "tutor-diff": {
+        "$value": "#1e73e8",
+        "$type": "color",
+        "$description": "Cambios NEW/UPD en scopes, slots modificados, fase EVAL y ejecución activa.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(30, 115, 232)",
+            "hsl": "hsl(215, 81%, 51%)",
+            "cssVar": "--accent-violet",
+            "aliasOf": "--accent-violet"
+          }
+        }
+      },
+      "tutor-diff-bg": {
+        "$value": "rgba(30, 115, 232, 0.1)",
+        "$type": "color",
+        "$description": "Resaltado de filas modificadas en scopes, celdas heap y banner activo.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.1)",
+            "hsl": "hsla(215, 81%, 51%, 0.1)",
+            "cssVar": "--accent-violet-dim",
+            "aliasOf": "--accent-violet-dim"
+          }
+        }
+      },
+      "tutor-diff-border": {
+        "$value": "rgba(30, 115, 232, 0.45)",
+        "$type": "color",
+        "$description": "Borde de etiquetas NEW/UPD y bloques modificados en Tutor.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgba(30, 115, 232, 0.45)",
+            "hsl": "hsla(215, 81%, 51%, 0.45)",
+            "cssVar": "--accent-violet-border",
+            "aliasOf": "--accent-violet-border"
+          }
+        }
+      },
+      "idle": {
+        "$value": "#748099",
+        "$type": "color",
+        "$description": "Estado en espera / inactivo en telemetría y nodos sin visitar.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(116, 128, 153)",
+            "hsl": "hsl(221, 15%, 53%)",
+            "cssVar": "--ink-muted",
+            "aliasOf": "--ink-muted"
+          }
+        }
+      }
+    },
+    "syntax": {
+      "$type": "color",
+      "keyword": {
+        "$value": "#c41456",
+        "$type": "color",
+        "$description": "Palabras reservadas de control y declaración (alto contraste).",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(196, 20, 86)",
+            "hsl": "hsl(338, 81%, 42%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-keyword"
+          }
+        }
+      },
+      "logical": {
+        "$value": "#c41456",
+        "$type": "color",
+        "$description": "Conectivos lógicos and, or, not, xor (alto contraste).",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(196, 20, 86)",
+            "hsl": "hsl(338, 81%, 42%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-logical"
+          }
+        }
+      },
+      "type": {
+        "$value": "#0b6b8a",
+        "$type": "color",
+        "$description": "Tipos primitivos y compuestos: int32, nat8, bool, vec.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(11, 107, 138)",
+            "hsl": "hsl(195, 85%, 29%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-type"
+          }
+        }
+      },
+      "builtin": {
+        "$value": "#2c7a1f",
+        "$type": "color",
+        "$description": "Primitivas nativas de E/S como read y write.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(44, 122, 31)",
+            "hsl": "hsl(111, 59%, 30%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-builtin"
+          }
+        }
+      },
+      "fn": {
+        "$value": "#2c7a1f",
+        "$type": "color",
+        "$description": "Invocaciones y nombres de función.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(44, 122, 31)",
+            "hsl": "hsl(111, 59%, 30%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-fn"
+          }
+        }
+      },
+      "string": {
+        "$value": "#8a6100",
+        "$type": "color",
+        "$description": "Literales de cadena entre comillas dobles.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(138, 97, 0)",
+            "hsl": "hsl(42, 100%, 27%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-string"
+          }
+        }
+      },
+      "char": {
+        "$value": "#8a6100",
+        "$type": "color",
+        "$description": "Literales de carácter ASCII entre comillas simples.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(138, 97, 0)",
+            "hsl": "hsl(42, 100%, 27%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-char"
+          }
+        }
+      },
+      "escape": {
+        "$value": "#6b32d6",
+        "$type": "color",
+        "$description": "Secuencias de escape dentro de cadenas y caracteres.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(107, 50, 214)",
+            "hsl": "hsl(261, 67%, 52%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-escape"
+          }
+        }
+      },
+      "number": {
+        "$value": "#6b32d6",
+        "$type": "color",
+        "$description": "Literales numéricos enteros y flotantes.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(107, 50, 214)",
+            "hsl": "hsl(261, 67%, 52%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-number"
+          }
+        }
+      },
+      "boolean": {
+        "$value": "#6b32d6",
+        "$type": "color",
+        "$description": "Literales booleanos true y false.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(107, 50, 214)",
+            "hsl": "hsl(261, 67%, 52%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-boolean"
+          }
+        }
+      },
+      "operator": {
+        "$value": "#b84b00",
+        "$type": "color",
+        "$description": "Operadores aritméticos, relacionales y flechas <- / ->.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(184, 75, 0)",
+            "hsl": "hsl(24, 100%, 36%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-operator"
+          }
+        }
+      },
+      "comment": {
+        "$value": "#68738a",
+        "$type": "color",
+        "$description": "Comentarios de línea única // (en cursiva).",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(104, 115, 138)",
+            "hsl": "hsl(221, 14%, 47%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-comment"
+          }
+        }
+      },
+      "punct": {
+        "$value": "#4a556e",
+        "$type": "color",
+        "$description": "Delimitadores y puntuación estructural.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(74, 85, 110)",
+            "hsl": "hsl(222, 20%, 36%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-punct"
+          }
+        }
+      },
+      "ident": {
+        "$value": "#141824",
+        "$type": "color",
+        "$description": "Identificadores de variables y parámetros.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(20, 24, 36)",
+            "hsl": "hsl(225, 29%, 11%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-ident"
+          }
+        }
+      },
+      "plain": {
+        "$value": "#141824",
+        "$type": "color",
+        "$description": "Texto plano y espacios sin clasificación especial.",
+        "$extensions": {
+          "wyrm": {
+            "rgb": "rgb(20, 24, 36)",
+            "hsl": "hsl(225, 29%, 11%)",
+            "cssSelector": "[data-theme=\"silver\"] .tok-plain"
+          }
+        }
+      }
+    },
+    "gradients": {
+      "topbar-hairline": {
+        "$value": [
+          {
+            "color": "#1e73e8",
+            "position": 0.0
+          },
+          {
+            "color": "#5c6b82",
+            "position": 0.38
+          },
+          {
+            "color": "rgba(92, 107, 130, 0)",
+            "position": 0.85
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Línea superior de 1px en la barra principal.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(90deg, #1e73e8 0%, #5c6b82 38%, transparent 85%)",
+            "kind": "linear",
+            "cssVar": "--topbar-top-gradient"
+          }
+        }
+      },
+      "tab-active": {
+        "$value": [
+          {
+            "color": "#1e73e8",
+            "position": 0.0
+          },
+          {
+            "color": "#5c6b82",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Subrayado de 2px en pestañas y submodos activos.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(90deg, #1e73e8, #5c6b82)",
+            "kind": "linear",
+            "cssVar": "--tab-active-gradient"
+          }
+        }
+      },
+      "resizer-vertical": {
+        "$value": [
+          {
+            "color": "#1e73e8",
+            "position": 0.0
+          },
+          {
+            "color": "#5c6b82",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Brillo de 2px del divisor horizontal principal entre Editor y Salida.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(180deg, #1e73e8, #5c6b82)",
+            "kind": "linear",
+            "cssSelector": ".split-resizer::after"
+          }
+        }
+      },
+      "resizer-horizontal": {
+        "$value": [
+          {
+            "color": "#1e73e8",
+            "position": 0.0
+          },
+          {
+            "color": "#5c6b82",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Brillo de 2px del divisor vertical entre grafo AST y SCOPES.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(90deg, #1e73e8, #5c6b82)",
+            "kind": "linear",
+            "cssSelector": ".ast-v-resizer::after"
+          }
+        }
+      },
+      "running-scanline": {
+        "$value": [
+          {
+            "color": "rgba(30, 115, 232, 0)",
+            "position": 0.0
+          },
+          {
+            "color": "#1e73e8",
+            "position": 0.33
+          },
+          {
+            "color": "#5c6b82",
+            "position": 0.67
+          },
+          {
+            "color": "rgba(92, 107, 130, 0)",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Barrido animado inferior en el banner de ejecución del Web Worker.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(90deg, transparent, #1e73e8, #5c6b82, transparent)",
+            "kind": "linear",
+            "cssSelector": ".running-banner::after"
+          }
+        }
+      },
+      "ascii-metallic": {
+        "$value": [
+          {
+            "color": "#273248",
+            "position": 0.0
+          },
+          {
+            "color": "#4b5d7a",
+            "position": 0.48
+          },
+          {
+            "color": "#1e73e8",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Degradado metálico acero profundo -> plata azulada -> azul hielo del arte ASCII.",
+        "$extensions": {
+          "wyrm": {
+            "css": "linear-gradient(150deg, #273248 0%, #4b5d7a 48%, #1e73e8 100%)",
+            "kind": "linear",
+            "cssVar": "--ascii-gradient"
+          }
+        }
+      },
+      "empty-radial-glow": {
+        "$value": [
+          {
+            "color": "rgba(30, 115, 232, 0.08)",
+            "position": 0.0
+          },
+          {
+            "color": "rgba(92, 107, 130, 0.03)",
+            "position": 0.35
+          },
+          {
+            "color": "rgba(242, 244, 248, 0)",
+            "position": 0.68
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Reflejo radial ambiental detrás del estado vacío de la consola.",
+        "$extensions": {
+          "wyrm": {
+            "css": "radial-gradient(circle at 50% 45%, rgba(30, 115, 232, 0.08) 0%, rgba(92, 107, 130, 0.03) 35%, transparent 68%)",
+            "kind": "radial",
+            "cssVar": "--empty-radial-glow"
+          }
+        }
+      },
+      "ast-dot-grid": {
+        "$value": [
+          {
+            "color": "#bcc5d8",
+            "position": 0.0
+          },
+          {
+            "color": "rgba(188, 197, 216, 0)",
+            "position": 1.0
+          }
+        ],
+        "$type": "gradient",
+        "$description": "Patrón de retícula punteada de 20px en el lienzo interactivo del AST.",
+        "$extensions": {
+          "wyrm": {
+            "css": "radial-gradient(circle, #bcc5d8 1px, transparent 1px)",
+            "kind": "radial",
+            "cssSelector": ".ast-canvas-stage"
+          }
+        }
+      }
+    }
+  }
+}
