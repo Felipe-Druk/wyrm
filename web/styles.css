@@ -699,11 +699,107 @@ input {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  grid-template-columns: minmax(0, var(--editor-pct, 44%)) 1px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
   padding: 0;
   overflow: hidden;
+}
+
+.workspace-split--expanded {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace-split--expanded .editor-panel,
+.workspace-split--expanded .split-resizer {
+  display: none;
+}
+
+.workspace--resizing,
+.workspace--resizing * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: col-resize !important;
+}
+
+.workspace--resizing .editor-panel,
+.workspace--resizing .output-panel {
+  pointer-events: none;
+}
+
+/* Divisor vertical fino de 1px con zona interactiva invisible de 9px */
+.split-resizer {
+  position: relative;
+  width: 1px;
+  height: 100%;
+  background-color: var(--border-struct);
+  cursor: col-resize;
+  z-index: 20;
+  touch-action: none;
+}
+
+.split-resizer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+  cursor: col-resize;
+}
+
+.split-resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--accent-violet), var(--accent-gold));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.split-resizer:hover::after,
+.split-resizer--dragging::after {
+  opacity: 1;
+}
+
+.split-resizer--dragging::after {
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.split-resizer-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 1px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--accent-violet-border);
+  color: var(--accent-gold);
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+  transition: opacity 0.12s ease;
+}
+
+.split-resizer:hover .split-resizer-grip,
+.split-resizer--dragging .split-resizer-grip {
+  opacity: 1;
+}
+
+.split-resizer--dragging .split-resizer-grip {
+  border-color: var(--accent-violet);
+  color: var(--accent-violet);
 }
 
 .panel {
@@ -713,10 +809,6 @@ input {
   min-width: 0;
   background-color: var(--bg-panel);
   overflow: hidden;
-}
-
-.editor-panel {
-  border-right: 1px solid var(--border-struct);
 }
 
 .panel-header {
@@ -1119,7 +1211,8 @@ input {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 4px 10px;
   margin-left: auto;
   min-width: 0;
   max-width: 100%;
@@ -1178,6 +1271,48 @@ input {
 .telemetry-glyph {
   font-size: 10.5px;
   line-height: 1;
+}
+
+/* Acción discreta de texto para expandir o restaurar el panel derecho */
+.output-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 2px 0 10px;
+  border: 0;
+  border-left: 1px solid var(--border-struct);
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.12s ease, text-shadow 0.12s ease;
+}
+
+.output-expand-btn:hover {
+  color: var(--accent-violet);
+}
+
+.output-expand-glyph {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.output-expand-btn.active {
+  color: var(--accent-gold);
+  border-left-color: var(--accent-violet-border);
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+
+.output-expand-btn.active .output-expand-glyph {
+  color: var(--accent-violet);
+}
+
+.output-expand-btn.active:hover {
+  color: var(--accent-violet);
 }
 
 /* Acción discreta de texto LIMPIAR a la derecha de la telemetría */
@@ -1255,6 +1390,8 @@ input {
 .output-viewport {
   flex: 1 1 auto;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow: auto;
   padding: 12px;
   background-color: var(--bg-base);
@@ -1268,6 +1405,7 @@ input {
   justify-content: center;
   gap: 16px;
   text-align: center;
+  flex: 1 0 auto;
   min-height: 100%;
   height: auto;
   padding: 16px;
@@ -1337,6 +1475,7 @@ input {
 .console-stack {
   display: flex;
   flex-direction: column;
+  flex: 0 0 auto;
   gap: 12px;
   min-width: 0;
 }
@@ -1351,6 +1490,10 @@ input {
   --block-border-rest: var(--border-struct);
   --block-border-left-rest: var(--border-active);
   --block-shadow-rest: none;
+}
+
+.inspector-block {
+  flex: 0 0 auto;
 }
 
 .console-block.error {
@@ -2652,9 +2795,28 @@ input {
 .tutor-shell {
   display: flex;
   flex-direction: column;
+  flex: 1 0 auto;
   gap: 10px;
   min-height: 100%;
   min-width: 0;
+}
+
+.tutor-shell--ast-active {
+  flex: 1 1 100%;
+  min-height: 480px;
+}
+
+.tutor-shell--ast-active .ast-tutor-root,
+.tutor-shell--ast-active .ast-workspace {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+}
+
+.ast-workspace > .tutor-controls-bar,
+.ast-workspace > .tutor-scrubber-row,
+.ast-workspace > .ast-summary-strip {
+  flex-shrink: 0;
 }
 
 /* Selector plano de 2 segmentos (AST :: INTÉRPRETE | VM :: BYTECODE) sin cajas flotantes */
@@ -2754,8 +2916,188 @@ input {
   outline: none;
 }
 
-.ast-tutor-root:focus-visible .ast-graph-section {
+.ast-tutor-root:focus-visible .ast-split-pane {
   border-color: var(--accent-violet-border);
+}
+
+.ast-workspace--resizing,
+.ast-workspace--resizing * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: row-resize !important;
+}
+
+.ast-workspace--resizing .ast-graph-section,
+.ast-workspace--resizing .ast-scopes-section {
+  pointer-events: none;
+}
+
+/* División vertical arrastrable entre 01 :: AST y 02 :: SCOPES */
+.ast-split-pane {
+  flex: 1 1 0;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-struct);
+  background-color: var(--bg-panel);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ast-split-pane .ast-graph-section {
+  flex: 0 0 var(--ast-graph-pct, 62%);
+  min-height: 150px;
+  border: 0;
+  overflow: hidden;
+}
+
+.ast-split-pane--scopes-collapsed .ast-graph-section {
+  flex: 1 1 0;
+  min-height: 220px;
+}
+
+.ast-split-pane .ast-canvas-stage {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+}
+
+/* Divisor horizontal fino de 1px con zona interactiva invisible de 9px */
+.ast-v-resizer {
+  position: relative;
+  flex: 0 0 1px;
+  height: 1px;
+  width: 100%;
+  background-color: var(--border-struct);
+  cursor: row-resize;
+  z-index: 15;
+  touch-action: none;
+}
+
+.ast-v-resizer::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  bottom: -4px;
+  cursor: row-resize;
+}
+
+.ast-v-resizer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, var(--accent-violet), var(--accent-gold));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.ast-v-resizer:hover::after,
+.ast-v-resizer--dragging::after {
+  opacity: 1;
+}
+
+.ast-v-resizer--dragging::after {
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.ast-v-resizer-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--accent-violet-border);
+  color: var(--accent-gold);
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+  transition: opacity 0.12s ease;
+}
+
+.ast-v-resizer:hover .ast-v-resizer-grip,
+.ast-v-resizer--dragging .ast-v-resizer-grip {
+  opacity: 1;
+}
+
+.ast-v-resizer--dragging .ast-v-resizer-grip {
+  border-color: var(--accent-violet);
+  color: var(--accent-violet);
+}
+
+.ast-split-pane--scopes-collapsed .ast-v-resizer {
+  display: none;
+}
+
+.ast-split-pane .ast-scopes-section {
+  flex: 1 1 0;
+  min-height: 0;
+  border: 0;
+  overflow: hidden;
+}
+
+.ast-split-pane--scopes-collapsed .ast-scopes-section {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--border-struct);
+}
+
+.ast-scopes-header-btn {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border-struct);
+  text-align: left;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.ast-scopes-header-btn:hover {
+  background-color: var(--accent-violet-hover);
+}
+
+.ast-scopes-header-btn:hover .ast-scopes-chevron {
+  color: var(--accent-violet);
+}
+
+.ast-scopes-section--collapsed .ast-scopes-header-btn {
+  border-bottom: 0;
+}
+
+.ast-scopes-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ast-scopes-chevron {
+  display: inline-block;
+  width: 11px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--accent-gold);
+  flex-shrink: 0;
+  transition: color 0.12s ease;
+}
+
+.ast-scopes-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Tira de resumen del paso AST (ENTER oro / EVAL violeta) */
@@ -3336,6 +3678,15 @@ input {
     overflow: visible;
   }
 
+  .split-resizer {
+    display: none;
+  }
+
+  .workspace-split--expanded {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(360px, auto);
+  }
+
   .editor-panel {
     border-right: 0;
     border-bottom: 1px solid var(--border-struct);
@@ -3345,8 +3696,48 @@ input {
     grid-template-columns: 1fr;
   }
 
-  .ast-canvas-stage {
+  .tutor-shell--ast-active,
+  .tutor-shell--ast-active .ast-tutor-root,
+  .tutor-shell--ast-active .ast-workspace {
+    flex: none;
+    height: auto;
+    min-height: 0;
+  }
+
+  .ast-split-pane {
+    flex: none;
+    min-height: 0;
+  }
+
+  .ast-split-pane .ast-graph-section,
+  .ast-split-pane--scopes-collapsed .ast-graph-section {
+    flex: none;
+    min-height: 0;
+  }
+
+  .ast-v-resizer {
+    display: none;
+  }
+
+  .ast-split-pane .ast-scopes-section {
+    flex: none;
+    border-top: 1px solid var(--border-struct);
+  }
+
+  .ast-scopes-body {
+    flex: none;
+    overflow-y: visible;
+  }
+
+  .ast-canvas-stage,
+  .ast-split-pane .ast-canvas-stage {
+    flex: none;
     height: 310px;
+  }
+
+  .ast-split-pane--scopes-collapsed .ast-canvas-stage {
+    flex: none;
+    height: 440px;
   }
 }
 

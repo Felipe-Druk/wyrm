@@ -1,10 +1,12 @@
 //! Interfaz interactiva de visualización paso a paso del AST (Intérprete Tree-Walk).
 
+use crate::app::WindowDragListeners;
 use crate::ast_layout::{compute_ast_layout, AstLayout, LayoutNode};
 use crate::ast_trace::{AstNodeInfo, AstScopeDiff, AstTraceSession, AstTraceStep, ScopeVarChange};
 use leptos::html::Div;
 use leptos::leptos_dom::helpers::{set_timeout_with_handle, TimeoutHandle};
 use leptos::prelude::*;
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
@@ -17,6 +19,49 @@ const ZOOM_STEP_FACTOR: f64 = 1.22;
 const WHEEL_ZOOM_FACTOR: f64 = 1.12;
 const DEFAULT_STAGE_W: f64 = 640.0;
 const DEFAULT_STAGE_H: f64 = 360.0;
+const AST_SPLIT_STORAGE_KEY: &str = "wyrm-ast-split-pct";
+const DEFAULT_AST_GRAPH_PCT: f64 = 62.0;
+const MIN_AST_GRAPH_PCT: f64 = 35.0;
+const MAX_AST_GRAPH_PCT: f64 = 85.0;
+
+thread_local! {
+    static AST_V_DRAG_LISTENERS: RefCell<Option<WindowDragListeners>> = const { RefCell::new(None) };
+}
+
+fn clear_ast_v_drag_listeners() {
+    let existing = AST_V_DRAG_LISTENERS.with(|cell| cell.borrow_mut().take());
+    if let Some(listeners) = existing {
+        listeners.detach();
+    }
+}
+
+/// Acota el porcentaje de altura del lienzo AST dentro del rango permitido.
+fn clamp_ast_graph_pct(pct: f64) -> f64 {
+    if pct.is_finite() {
+        pct.clamp(MIN_AST_GRAPH_PCT, MAX_AST_GRAPH_PCT)
+    } else {
+        DEFAULT_AST_GRAPH_PCT
+    }
+}
+
+/// Recupera la altura porcentual del lienzo AST persistida en `window.localStorage`.
+fn load_saved_ast_graph_pct() -> f64 {
+    web_sys::window()
+        .and_then(|window| window.local_storage().ok().flatten())
+        .and_then(|storage| storage.get_item(AST_SPLIT_STORAGE_KEY).ok().flatten())
+        .and_then(|raw| raw.parse::<f64>().ok())
+        .map(clamp_ast_graph_pct)
+        .unwrap_or(DEFAULT_AST_GRAPH_PCT)
+}
+
+/// Persiste la altura porcentual del lienzo AST en `window.localStorage`.
+fn save_ast_graph_pct(pct: f64) {
+    let clamped = clamp_ast_graph_pct(pct);
+    if let Some(storage) = web_sys::window().and_then(|window| window.local_storage().ok().flatten())
+    {
+        let _ = storage.set_item(AST_SPLIT_STORAGE_KEY, &format!("{clamped:.2}"));
+    }
+}
 
 /// Velocidad de reproducción automática del Tutor AST.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,6 +107,8 @@ pub fn AstTutorPanel(
     ast_error: RwSignal<Option<String>>,
     step_idx: RwSignal<usize>,
     is_running: RwSignal<bool>,
+    editor_width_pct: RwSignal<f64>,
+    right_expanded: RwSignal<bool>,
     on_ast_trace: Callback<()>,
 ) -> impl IntoView {
     let is_playing = RwSignal::new(false);
@@ -72,8 +119,13 @@ pub fn AstTutorPanel(
     let zoom = RwSignal::new(DEFAULT_ZOOM);
     let is_dragging_ui = RwSignal::new(false);
     let hovered_node = RwSignal::new(None::<usize>);
+    let ast_graph_pct = RwSignal::new(load_saved_ast_graph_pct());
+    let is_resizing_ast = RwSignal::new(false);
+    let scopes_collapsed = RwSignal::new(false);
+    let stage_resize_tick = RwSignal::new(0u64);
 
     let canvas_ref = NodeRef::<Div>::new();
+    let ast_split_ref = NodeRef::<Div>::new();
     let drag_state = StoredValue::new(DragState::default());
     let suppress_next_click = StoredValue::new(false);
     let play_timer = StoredValue::new(None::<TimeoutHandle>);
@@ -89,6 +141,7 @@ pub fn AstTutorPanel(
 
     on_cleanup(move || {
         clear_play_timer();
+        clear_ast_v_drag_listeners();
     });
 
     // Layout geométrico top-down memorizado una sola vez por sesión AST
@@ -123,6 +176,28 @@ pub fn AstTutorPanel(
             is_playing.set(false);
             clear_play_timer();
         }
+    });
+
+    // Desconecta los listeners globales de ajuste vertical fuera del stack de `mouseup` / `blur`
+    Effect::new(move |_| {
+        if scopes_collapsed.get() && is_resizing_ast.get_untracked() {
+            is_resizing_ast.set(false);
+        }
+        if !is_resizing_ast.get() {
+            clear_ast_v_drag_listeners();
+        }
+    });
+
+    // Recalcula el viewBox del SVG tras cambios de ancho, expansión, altura o colapso de scopes
+    Effect::new(move |_| {
+        let _ = editor_width_pct.get();
+        let _ = right_expanded.get();
+        let _ = ast_graph_pct.get();
+        let _ = scopes_collapsed.get();
+        let _ = cached_layout.get();
+        request_animation_frame(move || {
+            let _ = stage_resize_tick.try_update(|n| *n = n.wrapping_add(1));
+        });
     });
 
     // Restablece cámara y activa auto-focus al cargarse una nueva sesión AST
@@ -406,7 +481,48 @@ pub fn AstTutorPanel(
         }
     });
 
+    let on_ast_v_mousedown = move |ev: MouseEvent| {
+        if ev.button() != 0 || scopes_collapsed.get_untracked() {
+            return;
+        }
+        ev.prevent_default();
+        clear_ast_v_drag_listeners();
+
+        let on_move = move |move_ev: MouseEvent| {
+            if let Some(split_el) = ast_split_ref.get_untracked() {
+                let rect = split_el.get_bounding_client_rect();
+                let height = rect.height();
+                if height > 1.0 {
+                    let pct = (((move_ev.client_y() as f64) - rect.top()) / height) * 100.0;
+                    ast_graph_pct.set(clamp_ast_graph_pct(pct));
+                }
+            }
+        };
+
+        let on_up = move || {
+            if !is_resizing_ast.get_untracked() {
+                return;
+            }
+            save_ast_graph_pct(ast_graph_pct.get_untracked());
+            is_resizing_ast.set(false);
+        };
+
+        if let Some(listeners) = WindowDragListeners::attach(on_move, on_up) {
+            AST_V_DRAG_LISTENERS.with(|cell| {
+                *cell.borrow_mut() = Some(listeners);
+            });
+            is_resizing_ast.set(true);
+        }
+    };
+
+    let on_ast_v_dblclick = move |ev: MouseEvent| {
+        ev.prevent_default();
+        ast_graph_pct.set(DEFAULT_AST_GRAPH_PCT);
+        save_ast_graph_pct(DEFAULT_AST_GRAPH_PCT);
+    };
+
     let view_box = move || {
+        let _ = stage_resize_tick.get();
         let (stage_w, stage_h) = read_stage_size(&canvas_ref);
         let cur_zoom = zoom.get().max(MIN_ZOOM);
         let vb_w = stage_w / cur_zoom;
@@ -489,6 +605,7 @@ pub fn AstTutorPanel(
                 let session_for_summary = session.clone();
                 let session_for_svg = session.clone();
                 let session_for_hint = session.clone();
+                let session_for_scopes_count = session.clone();
                 let session_for_scopes = session;
                 let layout_for_svg = Arc::clone(&layout_arc);
                 let exec_for_svg = Arc::clone(&exec_set_arc);
@@ -539,18 +656,40 @@ pub fn AstTutorPanel(
                         .to_string()
                 };
 
-                let scopes_view = move || {
+                let scopes_count_view = move || {
                     let clamped_idx = step_idx.get().min(total_steps);
-                    let Some(step) = session_for_scopes.steps.get(clamped_idx) else {
-                        return view! { <div class="tutor-empty-msg">"∅ sin entornos activos"</div> }
-                            .into_any();
+                    match session_for_scopes_count.steps.get(clamped_idx) {
+                        Some(step) => {
+                            let scope_count = step.scopes.len();
+                            let total_vars: usize =
+                                step.scopes.iter().map(|frame| frame.vars.len()).sum();
+                            format!("{scope_count} ámbito(s) · {total_vars} var(s)")
+                        }
+                        None => "0 ámbito(s) · 0 var(s)".to_string(),
+                    }
+                };
+
+                let scopes_body_view = move || {
+                    if scopes_collapsed.get() {
+                        return None;
+                    }
+                    let clamped_idx = step_idx.get().min(total_steps);
+                    let body = match session_for_scopes.steps.get(clamped_idx) {
+                        Some(step) => {
+                            let diff = session_for_scopes.scope_diff_at(clamped_idx);
+                            render_scopes_body(step, &diff).into_any()
+                        }
+                        None => view! { <div class="tutor-empty-msg">"∅ sin entornos activos"</div> }
+                            .into_any(),
                     };
-                    let diff = session_for_scopes.scope_diff_at(clamped_idx);
-                    render_scopes_section(step, &diff).into_any()
+                    Some(view! { <div class="ast-scopes-body">{body}</div> })
                 };
 
                 view! {
-                    <div class="tutor-workspace ast-workspace">
+                    <div
+                        class="tutor-workspace ast-workspace"
+                        class:ast-workspace--resizing=move || is_resizing_ast.get()
+                    >
                         <div class="tutor-controls-bar">
                             <div class="tutor-transport" role="group" aria-label="Controles de paso a paso AST">
                                 <button
@@ -658,84 +797,135 @@ pub fn AstTutorPanel(
 
                         {summary_view}
 
-                        <section class="tutor-section ast-graph-section">
-                            <div class="tutor-section-header ast-graph-header">
-                                <div class="ast-graph-title-wrap">
-                                    <span class="tutor-section-title">"01 :: ÁRBOL SINTÁCTICO ABSTRACTO (AST)"</span>
-                                    <span class="tutor-section-count">
-                                        {format!("{node_count} nodos · {step_total_count} eventos")}
-                                    </span>
+                        <div
+                            class="ast-split-pane"
+                            class:ast-split-pane--scopes-collapsed=move || scopes_collapsed.get()
+                            node_ref=ast_split_ref
+                            style=move || format!("--ast-graph-pct: {:.2}%;", ast_graph_pct.get())
+                        >
+                            <section class="tutor-section ast-graph-section">
+                                <div class="tutor-section-header ast-graph-header">
+                                    <div class="ast-graph-title-wrap">
+                                        <span class="tutor-section-title">"01 :: ÁRBOL SINTÁCTICO ABSTRACTO (AST)"</span>
+                                        <span class="tutor-section-count">
+                                            {format!("{node_count} nodos · {step_total_count} eventos")}
+                                        </span>
+                                    </div>
+
+                                    <div class="ast-view-controls" role="group" aria-label="Controles de cámara del grafo AST">
+                                        <button
+                                            type="button"
+                                            class="ast-cam-btn"
+                                            title="Alejar zoom"
+                                            on:click=on_zoom_out
+                                        >
+                                            "−"
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="ast-cam-btn ast-cam-btn--pct"
+                                            title="Restablecer zoom a 100%"
+                                            on:click=on_zoom_reset
+                                        >
+                                            {move || format!("{}%", (zoom.get() * 100.0).round() as i32)}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="ast-cam-btn"
+                                            title="Acercar zoom"
+                                            on:click=on_zoom_in
+                                        >
+                                            "+"
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="ast-cam-btn"
+                                            title="Encuadrar todo el AST"
+                                            on:click=on_fit_all
+                                        >
+                                            "⊞"
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="ast-cam-btn ast-cam-btn--focus"
+                                            class:active=move || auto_focus.get()
+                                            title="Centrar automáticamente el nodo en evaluación"
+                                            on:click=on_toggle_auto_focus
+                                        >
+                                            "◎ CENTRAR"
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div class="ast-view-controls" role="group" aria-label="Controles de cámara del grafo AST">
-                                    <button
-                                        type="button"
-                                        class="ast-cam-btn"
-                                        title="Alejar zoom"
-                                        on:click=on_zoom_out
+                                <div
+                                    class="ast-canvas-stage"
+                                    class:dragging=move || is_dragging_ui.get()
+                                    node_ref=canvas_ref
+                                    on:mousedown=on_canvas_mousedown
+                                    on:mousemove=on_canvas_mousemove
+                                    on:mouseup=on_canvas_mouseup
+                                    on:mouseleave=on_canvas_mouseleave
+                                    on:wheel=on_canvas_wheel
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox=view_box
+                                        class="ast-svg"
                                     >
-                                        "−"
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="ast-cam-btn ast-cam-btn--pct"
-                                        title="Restablecer zoom a 100%"
-                                        on:click=on_zoom_reset
-                                    >
-                                        {move || format!("{}%", (zoom.get() * 100.0).round() as i32)}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="ast-cam-btn"
-                                        title="Acercar zoom"
-                                        on:click=on_zoom_in
-                                    >
-                                        "+"
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="ast-cam-btn"
-                                        title="Encuadrar todo el AST"
-                                        on:click=on_fit_all
-                                    >
-                                        "⊞"
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="ast-cam-btn ast-cam-btn--focus"
-                                        class:active=move || auto_focus.get()
-                                        title="Centrar automáticamente el nodo en evaluación"
-                                        on:click=on_toggle_auto_focus
-                                    >
-                                        "◎ CENTRAR"
-                                    </button>
+                                        {svg_contents_view}
+                                    </svg>
+                                    <div class="ast-canvas-hint">
+                                        {canvas_hint_view}
+                                    </div>
                                 </div>
-                            </div>
+                            </section>
 
                             <div
-                                class="ast-canvas-stage"
-                                class:dragging=move || is_dragging_ui.get()
-                                node_ref=canvas_ref
-                                on:mousedown=on_canvas_mousedown
-                                on:mousemove=on_canvas_mousemove
-                                on:mouseup=on_canvas_mouseup
-                                on:mouseleave=on_canvas_mouseleave
-                                on:wheel=on_canvas_wheel
+                                class="ast-v-resizer"
+                                class:ast-v-resizer--dragging=move || is_resizing_ast.get()
+                                role="separator"
+                                aria-orientation="horizontal"
+                                title="Arrastrar para ajustar altura del AST · Doble clic para restablecer"
+                                on:mousedown=on_ast_v_mousedown
+                                on:dblclick=on_ast_v_dblclick
                             >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox=view_box
-                                    class="ast-svg"
-                                >
-                                    {svg_contents_view}
-                                </svg>
-                                <div class="ast-canvas-hint">
-                                    {canvas_hint_view}
-                                </div>
+                                <span class="ast-v-resizer-grip" aria-hidden="true">"⋯"</span>
                             </div>
-                        </section>
 
-                        {scopes_view}
+                            <section
+                                class="tutor-section ast-scopes-section"
+                                class:ast-scopes-section--collapsed=move || scopes_collapsed.get()
+                            >
+                                <button
+                                    type="button"
+                                    class="tutor-section-header ast-scopes-header-btn"
+                                    aria-expanded=move || {
+                                        if scopes_collapsed.get() { "false" } else { "true" }
+                                    }
+                                    title=move || {
+                                        if scopes_collapsed.get() {
+                                            "Expandir bloque de scopes"
+                                        } else {
+                                            "Colapsar scopes para ampliar el grafo AST"
+                                        }
+                                    }
+                                    on:click=move |_| {
+                                        scopes_collapsed.update(|collapsed| *collapsed = !*collapsed)
+                                    }
+                                >
+                                    <span class="ast-scopes-title-wrap">
+                                        <span class="ast-scopes-chevron" aria-hidden="true">
+                                            {move || if scopes_collapsed.get() { "▸" } else { "▾" }}
+                                        </span>
+                                        <span class="tutor-section-title">
+                                            "02 :: SCOPES (environment_t)"
+                                        </span>
+                                    </span>
+                                    <span class="tutor-section-count">{scopes_count_view}</span>
+                                </button>
+                                {scopes_body_view}
+                            </section>
+                        </div>
                     </div>
                 }
                 .into_any()
@@ -1102,12 +1292,11 @@ fn render_ast_node_svg(
     }
 }
 
-/// Sección inferior 02: cadena activa de ámbitos léxicos (`environment_t`) con diff en violeta.
-fn render_scopes_section(step: &AstTraceStep, diff: &AstScopeDiff) -> impl IntoView {
+/// Contenido interno de la sección 02: cadena activa de ámbitos léxicos (`environment_t`).
+fn render_scopes_body(step: &AstTraceStep, diff: &AstScopeDiff) -> impl IntoView {
     let scope_count = step.scopes.len();
-    let total_vars: usize = step.scopes.iter().map(|frame| frame.vars.len()).sum();
 
-    let body = if step.scopes.is_empty() {
+    if step.scopes.is_empty() {
         view! { <div class="tutor-empty-msg">"∅ sin ámbitos activos"</div> }.into_any()
     } else {
         view! {
@@ -1199,17 +1388,5 @@ fn render_scopes_section(step: &AstTraceStep, diff: &AstScopeDiff) -> impl IntoV
             </div>
         }
         .into_any()
-    };
-
-    view! {
-        <section class="tutor-section">
-            <div class="tutor-section-header">
-                <span class="tutor-section-title">"02 :: SCOPES (environment_t)"</span>
-                <span class="tutor-section-count">
-                    {format!("{scope_count} ámbito(s) · {total_vars} var(s)")}
-                </span>
-            </div>
-            {body}
-        </section>
     }
 }

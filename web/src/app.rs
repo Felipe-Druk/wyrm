@@ -10,16 +10,23 @@ use crate::highlight;
 use crate::trace::TraceSession;
 use crate::tutor::TutorPanel;
 use crate::wyrm_art;
-use leptos::html::{Div, Pre, Textarea};
+use leptos::html::{Div, Main, Pre, Textarea};
 use leptos::leptos_dom::helpers::{set_timeout_with_handle, TimeoutHandle};
 use leptos::prelude::*;
+use std::cell::RefCell;
 use std::time::Duration;
-use web_sys::{KeyboardEvent, MouseEvent};
+use wasm_bindgen::closure::Closure;
+use wasm_bindgen::JsCast;
+use web_sys::{Event, KeyboardEvent, MouseEvent};
 
 const PLAYGROUND_VERSION: &str = "v0.2.0";
 const REPO_URL: &str = "https://github.com/Felipe-Druk/wyrm";
 const TAB_SPACES: &str = "    ";
 const THEME_STORAGE_KEY: &str = "wyrm-theme";
+const SPLIT_STORAGE_KEY: &str = "wyrm-split-pct";
+const DEFAULT_EDITOR_WIDTH_PCT: f64 = 44.0;
+const MIN_EDITOR_WIDTH_PCT: f64 = 20.0;
+const MAX_EDITOR_WIDTH_PCT: f64 = 80.0;
 const RUNNING_INDICATOR_DELAY_MS: u64 = 150;
 const RUN_PULSE_DURATION_MS: u64 = 300;
 const TUTOR_MAX_STEPS: u32 = 1500;
@@ -115,6 +122,116 @@ fn save_theme(theme: Theme) {
     }
 }
 
+/// Acota el porcentaje de ancho del editor dentro del rango permitido.
+fn clamp_split_pct(pct: f64) -> f64 {
+    if pct.is_finite() {
+        pct.clamp(MIN_EDITOR_WIDTH_PCT, MAX_EDITOR_WIDTH_PCT)
+    } else {
+        DEFAULT_EDITOR_WIDTH_PCT
+    }
+}
+
+/// Recupera el porcentaje de división persistido en `window.localStorage`.
+fn load_saved_split_pct() -> f64 {
+    web_sys::window()
+        .and_then(|window| window.local_storage().ok().flatten())
+        .and_then(|storage| storage.get_item(SPLIT_STORAGE_KEY).ok().flatten())
+        .and_then(|raw| raw.parse::<f64>().ok())
+        .map(clamp_split_pct)
+        .unwrap_or(DEFAULT_EDITOR_WIDTH_PCT)
+}
+
+/// Persiste el porcentaje de división del editor en `window.localStorage`.
+fn save_split_pct(pct: f64) {
+    let clamped = clamp_split_pct(pct);
+    if let Some(storage) = web_sys::window().and_then(|window| window.local_storage().ok().flatten())
+    {
+        let _ = storage.set_item(SPLIT_STORAGE_KEY, &format!("{clamped:.2}"));
+    }
+}
+
+/// Listeners globales de arrastre sobre `window` con desconexión segura.
+pub(crate) struct WindowDragListeners {
+    on_move: Closure<dyn FnMut(MouseEvent)>,
+    on_up: Closure<dyn FnMut(MouseEvent)>,
+    on_blur: Closure<dyn FnMut(Event)>,
+}
+
+impl WindowDragListeners {
+    /// Registra `mousemove`, `mouseup` y `blur` sobre `window`.
+    pub(crate) fn attach<FM, FU>(mut on_move_cb: FM, on_up_cb: FU) -> Option<Self>
+    where
+        FM: FnMut(MouseEvent) + 'static,
+        FU: Fn() + Clone + 'static,
+    {
+        let window = web_sys::window()?;
+        let on_move = Closure::<dyn FnMut(MouseEvent)>::new(move |ev: MouseEvent| {
+            on_move_cb(ev);
+        });
+
+        let finish_on_up = on_up_cb.clone();
+        let on_up = Closure::<dyn FnMut(MouseEvent)>::new(move |_ev: MouseEvent| {
+            finish_on_up();
+        });
+
+        let on_blur = Closure::<dyn FnMut(Event)>::new(move |_ev: Event| {
+            on_up_cb();
+        });
+
+        let move_ok = window
+            .add_event_listener_with_callback("mousemove", on_move.as_ref().unchecked_ref())
+            .is_ok();
+        let up_ok = window
+            .add_event_listener_with_callback("mouseup", on_up.as_ref().unchecked_ref())
+            .is_ok();
+        let blur_ok = window
+            .add_event_listener_with_callback("blur", on_blur.as_ref().unchecked_ref())
+            .is_ok();
+
+        let listeners = Self {
+            on_move,
+            on_up,
+            on_blur,
+        };
+
+        if move_ok && up_ok && blur_ok {
+            Some(listeners)
+        } else {
+            listeners.detach();
+            None
+        }
+    }
+
+    /// Quita los listeners registrados de `window` y libera los closures.
+    pub(crate) fn detach(self) {
+        if let Some(window) = web_sys::window() {
+            let _ = window.remove_event_listener_with_callback(
+                "mousemove",
+                self.on_move.as_ref().unchecked_ref(),
+            );
+            let _ = window.remove_event_listener_with_callback(
+                "mouseup",
+                self.on_up.as_ref().unchecked_ref(),
+            );
+            let _ = window.remove_event_listener_with_callback(
+                "blur",
+                self.on_blur.as_ref().unchecked_ref(),
+            );
+        }
+    }
+}
+
+thread_local! {
+    static SPLIT_DRAG_LISTENERS: RefCell<Option<WindowDragListeners>> = const { RefCell::new(None) };
+}
+
+fn clear_split_drag_listeners() {
+    let existing = SPLIT_DRAG_LISTENERS.with(|cell| cell.borrow_mut().take());
+    if let Some(listeners) = existing {
+        listeners.detach();
+    }
+}
+
 /// Sincroniza `data-theme` en `<html>` para cubrir fondo raíz y barras de desplazamiento.
 fn apply_document_theme(theme: Theme) {
     if let Some(root) = web_sys::window()
@@ -195,6 +312,10 @@ pub fn App() -> impl IntoView {
     let ast_trace_error = RwSignal::new(None::<String>);
     let ast_step_idx = RwSignal::new(0usize);
     let show_codex_modal = RwSignal::new(false);
+    let editor_width_pct = RwSignal::new(load_saved_split_pct());
+    let right_expanded = RwSignal::new(false);
+    let is_resizing_split = RwSignal::new(false);
+    let workspace_ref = NodeRef::<Main>::new();
 
     let tutor_highlight_line = Memo::new(move |_| {
         if active_tab.get() != OutputTab::Tutor || tutor_mode.get() != TutorMode::Vm {
@@ -235,7 +356,18 @@ pub fn App() -> impl IntoView {
         }
     });
 
+    // Desconecta los listeners globales de arrastre fuera del stack de `mouseup` / `blur`
+    Effect::new(move |_| {
+        if right_expanded.get() && is_resizing_split.get_untracked() {
+            is_resizing_split.set(false);
+        }
+        if !is_resizing_split.get() {
+            clear_split_drag_listeners();
+        }
+    });
+
     on_cleanup(move || {
+        clear_split_drag_listeners();
         running_timer.update_value(|slot| {
             if let Some(handle) = slot.take() {
                 handle.clear();
@@ -567,6 +699,46 @@ pub fn App() -> impl IntoView {
         }
     };
 
+    let on_split_mousedown = move |ev: MouseEvent| {
+        if ev.button() != 0 || right_expanded.get_untracked() {
+            return;
+        }
+        ev.prevent_default();
+        clear_split_drag_listeners();
+
+        let on_move = move |move_ev: MouseEvent| {
+            if let Some(workspace_el) = workspace_ref.get_untracked() {
+                let rect = workspace_el.get_bounding_client_rect();
+                let width = rect.width();
+                if width > 1.0 {
+                    let pct = (((move_ev.client_x() as f64) - rect.left()) / width) * 100.0;
+                    editor_width_pct.set(clamp_split_pct(pct));
+                }
+            }
+        };
+
+        let on_up = move || {
+            if !is_resizing_split.get_untracked() {
+                return;
+            }
+            save_split_pct(editor_width_pct.get_untracked());
+            is_resizing_split.set(false);
+        };
+
+        if let Some(listeners) = WindowDragListeners::attach(on_move, on_up) {
+            SPLIT_DRAG_LISTENERS.with(|cell| {
+                *cell.borrow_mut() = Some(listeners);
+            });
+            is_resizing_split.set(true);
+        }
+    };
+
+    let on_split_dblclick = move |ev: MouseEvent| {
+        ev.prevent_default();
+        editor_width_pct.set(DEFAULT_EDITOR_WIDTH_PCT);
+        save_split_pct(DEFAULT_EDITOR_WIDTH_PCT);
+    };
+
     view! {
         <div
             class="playground-shell"
@@ -587,14 +759,34 @@ pub fn App() -> impl IntoView {
                 on_stop=on_stop
             />
 
-            <main class="workspace-split">
+            <main
+                class="workspace-split"
+                class:workspace--resizing=move || is_resizing_split.get()
+                class:workspace-split--expanded=move || right_expanded.get()
+                node_ref=workspace_ref
+                style=move || format!("--editor-pct: {:.2}%;", editor_width_pct.get())
+            >
                 <EditorPanel
                     code=code
                     selected_example_id=selected_example_id
                     tutor_highlight_line=tutor_highlight_line
+                    editor_width_pct=editor_width_pct
+                    right_expanded=right_expanded
                     on_run=on_run
                     on_trace=on_step_action
                 />
+
+                <div
+                    class="split-resizer"
+                    class:split-resizer--dragging=move || is_resizing_split.get()
+                    role="separator"
+                    aria-orientation="vertical"
+                    title="Arrastrar para ajustar ancho · Doble clic para restablecer"
+                    on:mousedown=on_split_mousedown
+                    on:dblclick=on_split_dblclick
+                >
+                    <span class="split-resizer-grip" aria-hidden="true">"⋮"</span>
+                </div>
 
                 <OutputPanel
                     mode=mode
@@ -615,6 +807,8 @@ pub fn App() -> impl IntoView {
                     ast_step_idx=ast_step_idx
                     stdin_text=stdin_text
                     stdin_open=stdin_open
+                    editor_width_pct=editor_width_pct
+                    right_expanded=right_expanded
                     on_clear=on_clear
                     on_vm_trace=on_vm_trace
                     on_ast_trace=on_ast_trace
@@ -894,6 +1088,8 @@ fn EditorPanel(
     code: RwSignal<String>,
     selected_example_id: RwSignal<String>,
     tutor_highlight_line: Memo<Option<usize>>,
+    editor_width_pct: RwSignal<f64>,
+    right_expanded: RwSignal<bool>,
     on_run: Callback<()>,
     on_trace: Callback<()>,
 ) -> impl IntoView {
@@ -965,6 +1161,16 @@ fn EditorPanel(
             if let Some(gutter) = gutter_ref.get_untracked() {
                 gutter.set_scroll_top(0);
             }
+        }
+    });
+
+    // Mantiene sincronizados overlay, gutter y textarea al cambiar el ancho o restaurar el editor
+    Effect::new(move |_| {
+        let _ = editor_width_pct.get();
+        if !right_expanded.get() {
+            request_animation_frame(move || {
+                sync_editor_scroll();
+            });
         }
     });
 
@@ -1148,6 +1354,8 @@ fn OutputPanel(
     ast_step_idx: RwSignal<usize>,
     stdin_text: RwSignal<String>,
     stdin_open: RwSignal<bool>,
+    editor_width_pct: RwSignal<f64>,
+    right_expanded: RwSignal<bool>,
     on_clear: Callback<()>,
     on_vm_trace: Callback<()>,
     on_ast_trace: Callback<()>,
@@ -1279,6 +1487,28 @@ fn OutputPanel(
 
                     <button
                         type="button"
+                        class="output-expand-btn"
+                        class:active=move || right_expanded.get()
+                        aria-pressed=move || if right_expanded.get() { "true" } else { "false" }
+                        title=move || {
+                            if right_expanded.get() {
+                                "Volver a vista dividida"
+                            } else {
+                                "Expandir panel al 100%"
+                            }
+                        }
+                        on:click=move |_| right_expanded.update(|expanded| *expanded = !*expanded)
+                    >
+                        <span class="output-expand-glyph" aria-hidden="true">
+                            {move || if right_expanded.get() { "⤡" } else { "⤢" }}
+                        </span>
+                        <span>
+                            {move || if right_expanded.get() { "RESTAURAR" } else { "EXPANDIR" }}
+                        </span>
+                    </button>
+
+                    <button
+                        type="button"
                         class="output-clear-btn"
                         title="Limpiar el editor y la salida actual"
                         on:click=move |_| on_clear.run(())
@@ -1304,7 +1534,12 @@ fn OutputPanel(
                 {move || {
                     if active_tab.get() == OutputTab::Tutor {
                         return view! {
-                            <div class="tutor-shell">
+                            <div
+                                class="tutor-shell"
+                                class:tutor-shell--ast-active=move || {
+                                    tutor_mode.get() == TutorMode::Ast && has_ast_session.get()
+                                }
+                            >
                                 <div
                                     class="tutor-mode-bar"
                                     role="tablist"
@@ -1378,6 +1613,8 @@ fn OutputPanel(
                                             ast_error=ast_trace_error
                                             step_idx=ast_step_idx
                                             is_running=is_running
+                                            editor_width_pct=editor_width_pct
+                                            right_expanded=right_expanded
                                             on_ast_trace=on_ast_trace
                                         />
                                     }
