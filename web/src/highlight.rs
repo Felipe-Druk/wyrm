@@ -232,6 +232,43 @@ pub fn tokenize(source: &str) -> Vec<(TokenKind, String)> {
     tokens
 }
 
+/// Divide la salida de [`tokenize`] en una fila por cada línea lógica (`'\n'`).
+///
+/// Preserva siempre todas las líneas vacías (iniciales, intermedias o finales), de modo
+/// que `tokenize_lines(source).len() == source.split('\n').count()` para toda entrada.
+pub fn tokenize_lines(source: &str) -> Vec<Vec<(TokenKind, String)>> {
+    let mut lines: Vec<Vec<(TokenKind, String)>> = vec![Vec::new()];
+
+    for (kind, text) in tokenize(source) {
+        if !text.contains('\n') {
+            if !text.is_empty() {
+                if let Some(current) = lines.last_mut() {
+                    current.push((kind, text));
+                }
+            }
+            continue;
+        }
+
+        let mut parts = text.split('\n');
+        if let Some(first) = parts.next() {
+            if !first.is_empty() {
+                if let Some(current) = lines.last_mut() {
+                    current.push((kind, first.to_string()));
+                }
+            }
+        }
+        for part in parts {
+            let mut next_line = Vec::new();
+            if !part.is_empty() {
+                next_line.push((kind, part.to_string()));
+            }
+            lines.push(next_line);
+        }
+    }
+
+    lines
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -239,6 +276,14 @@ mod tests {
 
     fn reconstruct(tokens: &[(TokenKind, String)]) -> String {
         tokens.iter().map(|(_, text)| text.as_str()).collect()
+    }
+
+    fn reconstruct_lines(lines: &[Vec<(TokenKind, String)>]) -> String {
+        lines
+            .iter()
+            .map(|line| reconstruct(line))
+            .collect::<Vec<_>>()
+            .join("\n")
     }
 
     #[test]
@@ -314,5 +359,65 @@ mod tests {
         assert!(tokens.contains(&(TokenKind::FunctionCall, "sumar".to_string())));
         assert!(!tokens.contains(&(TokenKind::FunctionCall, "if".to_string())));
         assert!(!tokens.contains(&(TokenKind::FunctionCall, "write".to_string())));
+    }
+
+    #[test]
+    fn tokenize_lines_handles_empty_string() {
+        let lines = tokenize_lines("");
+        assert_eq!(lines.len(), 1);
+        assert!(lines[0].is_empty());
+        assert_eq!(reconstruct_lines(&lines), "");
+    }
+
+    #[test]
+    fn tokenize_lines_preserves_trailing_newline() {
+        let src = "int32 x = 1\n";
+        let lines = tokenize_lines(src);
+        assert_eq!(lines.len(), src.split('\n').count());
+        assert_eq!(lines.len(), 2);
+        assert!(!lines[0].is_empty());
+        assert!(lines[1].is_empty());
+        assert_eq!(reconstruct_lines(&lines), src);
+    }
+
+    #[test]
+    fn tokenize_lines_preserves_consecutive_empty_lines() {
+        let cases = ["\n", "\n\n", "int32 a = 1\n\n\nint32 b = 2", "\n  \n\n// fin\n"];
+
+        for src in cases {
+            let lines = tokenize_lines(src);
+            assert_eq!(lines.len(), src.split('\n').count());
+            assert_eq!(reconstruct_lines(&lines), src);
+            assert!(
+                lines
+                    .iter()
+                    .flat_map(|line| line.iter())
+                    .all(|(_, text)| !text.contains('\n')),
+                "ningún token por línea debe contener '\\n'"
+            );
+        }
+    }
+
+    #[test]
+    fn tokenize_lines_reconstructs_all_examples() {
+        for example in EXAMPLES {
+            let lines = tokenize_lines(example.code);
+            assert_eq!(
+                lines.len(),
+                example.code.split('\n').count(),
+                "cantidad de líneas distinta en el ejemplo '{}'",
+                example.id
+            );
+            assert_eq!(
+                reconstruct_lines(&lines),
+                example.code,
+                "falló la reconstrucción por líneas en el ejemplo '{}'",
+                example.id
+            );
+            assert!(lines
+                .iter()
+                .flat_map(|line| line.iter())
+                .all(|(_, text)| !text.contains('\n')));
+        }
     }
 }

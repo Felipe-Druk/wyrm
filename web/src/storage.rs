@@ -3,6 +3,7 @@
 const PALETTE_STORAGE_KEY: &str = "wyrm-theme";
 const SPLIT_STORAGE_KEY: &str = "wyrm-split-pct";
 const AST_SPLIT_STORAGE_KEY: &str = "wyrm-ast-split-pct";
+const WORD_WRAP_STORAGE_KEY: &str = "wyrm-word-wrap";
 
 pub const DEFAULT_EDITOR_WIDTH_PCT: f64 = 44.0;
 pub const MIN_EDITOR_WIDTH_PCT: f64 = 20.0;
@@ -158,4 +159,17 @@ pub fn save_ast_split_pct(pct: f64) {
         DEFAULT_AST_GRAPH_PCT,
     );
     write_item(AST_SPLIT_STORAGE_KEY, &format!("{clamped:.2}"));
+}
+
+/// Recupera la preferencia de ajuste de línea (soft-wrap) en el editor (`true` por defecto).
+pub fn load_word_wrap() -> bool {
+    !matches!(
+        read_item(WORD_WRAP_STORAGE_KEY).as_deref(),
+        Some("false" | "0")
+    )
+}
+
+/// Persiste la preferencia de ajuste de línea (soft-wrap) en `window.localStorage`.
+pub fn save_word_wrap(enabled: bool) {
+    write_item(WORD_WRAP_STORAGE_KEY, if enabled { "true" } else { "false" });
 }

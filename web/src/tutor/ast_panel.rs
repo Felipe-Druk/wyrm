@@ -9,6 +9,7 @@ use crate::storage::{
     clamp_pct, load_ast_split_pct, save_ast_split_pct, DEFAULT_AST_GRAPH_PCT, MAX_AST_GRAPH_PCT,
     MIN_AST_GRAPH_PCT,
 };
+use leptos::ev::PointerEvent;
 use leptos::html::Div;
 use leptos::prelude::*;
 use std::cell::RefCell;
@@ -35,11 +36,12 @@ fn clear_ast_v_drag_listeners() {
     }
 }
 
-/// Estado interno de arrastre del lienzo SVG (pan con mouse).
+/// Estado interno de arrastre del lienzo SVG (pan con puntero: mouse o táctil).
 #[derive(Debug, Clone, Copy, Default)]
 struct DragState {
     active: bool,
     moved: bool,
+    pointer_id: Option<i32>,
     start_client_x: i32,
     start_client_y: i32,
     origin_cx: f64,
@@ -470,13 +472,17 @@ fn AstGraphSection(
         }
     };
 
-    let on_canvas_mousedown = move |ev: MouseEvent| {
-        if ev.button() != 0 {
+    let on_canvas_pointerdown = move |ev: PointerEvent| {
+        if !ev.is_primary() {
+            return;
+        }
+        if ev.pointer_type() == "mouse" && ev.button() != 0 {
             return;
         }
         drag_state.set_value(DragState {
             active: true,
             moved: false,
+            pointer_id: Some(ev.pointer_id()),
             start_client_x: ev.client_x(),
             start_client_y: ev.client_y(),
             origin_cx: cam_cx.get_untracked(),
@@ -485,9 +491,9 @@ fn AstGraphSection(
         is_dragging_ui.set(true);
     };
 
-    let on_canvas_mousemove = move |ev: MouseEvent| {
+    let on_canvas_pointermove = move |ev: PointerEvent| {
         let st = drag_state.get_value();
-        if !st.active {
+        if !st.active || st.pointer_id != Some(ev.pointer_id()) {
             return;
         }
         let dx = ev.client_x() - st.start_client_x;
@@ -497,27 +503,48 @@ fn AstGraphSection(
             updated.moved = true;
             drag_state.set_value(updated);
             auto_focus.set(false);
+            if let Some(el) = canvas_ref.get_untracked() {
+                let _ = el.set_pointer_capture(ev.pointer_id());
+            }
         }
         let cur_zoom = zoom.get_untracked().max(MIN_ZOOM);
         cam_cx.set(st.origin_cx - (dx as f64) / cur_zoom);
         cam_cy.set(st.origin_cy - (dy as f64) / cur_zoom);
     };
 
-    let finish_drag = move || {
+    let finish_drag = move |pointer_id: i32| {
         let st = drag_state.get_value();
-        if st.active {
-            suppress_next_click.set_value(st.moved);
-            drag_state.set_value(DragState::default());
-            is_dragging_ui.set(false);
+        if !st.active || st.pointer_id != Some(pointer_id) {
+            return;
         }
+        if st.moved {
+            if let Some(el) = canvas_ref.get_untracked() {
+                let _ = el.release_pointer_capture(pointer_id);
+            }
+            suppress_next_click.set_value(true);
+            request_animation_frame(move || {
+                suppress_next_click.set_value(false);
+            });
+        } else {
+            suppress_next_click.set_value(false);
+        }
+        drag_state.set_value(DragState::default());
+        is_dragging_ui.set(false);
     };
 
-    let on_canvas_mouseup = move |_: MouseEvent| {
-        finish_drag();
+    let on_canvas_pointerup = move |ev: PointerEvent| {
+        finish_drag(ev.pointer_id());
     };
 
-    let on_canvas_mouseleave = move |_: MouseEvent| {
-        finish_drag();
+    let on_canvas_pointercancel = move |ev: PointerEvent| {
+        finish_drag(ev.pointer_id());
+    };
+
+    let on_canvas_pointerleave = move |ev: PointerEvent| {
+        let st = drag_state.get_value();
+        if st.active && !st.moved && st.pointer_id == Some(ev.pointer_id()) {
+            finish_drag(ev.pointer_id());
+        }
     };
 
     let on_canvas_wheel = move |ev: WheelEvent| {
@@ -639,10 +666,11 @@ fn AstGraphSection(
                 class="ast-canvas-stage"
                 class:dragging=move || is_dragging_ui.get()
                 node_ref=canvas_ref
-                on:mousedown=on_canvas_mousedown
-                on:mousemove=on_canvas_mousemove
-                on:mouseup=on_canvas_mouseup
-                on:mouseleave=on_canvas_mouseleave
+                on:pointerdown=on_canvas_pointerdown
+                on:pointermove=on_canvas_pointermove
+                on:pointerup=on_canvas_pointerup
+                on:pointercancel=on_canvas_pointercancel
+                on:pointerleave=on_canvas_pointerleave
                 on:wheel=on_canvas_wheel
             >
                 <svg

@@ -4,6 +4,8 @@
 
 .output-panel {
   background-color: var(--bg-base);
+  container-type: inline-size;
+  container-name: output-pane;
 }
 
 .output-header {
@@ -661,6 +663,7 @@
   width: 100%;
   max-width: 920px;
   max-height: 88vh;
+  max-height: 88dvh;
   background-color: var(--bg-panel);
   border: 1px solid var(--border-active);
   --corner-color: var(--accent-gold);
@@ -675,6 +678,7 @@
   padding: 14px 20px;
   background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-struct);
+  flex-shrink: 0;
 }
 
 .modal-header-main {
@@ -746,9 +750,13 @@
 .modal-body {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 16px;
   padding: 16px 20px 20px 20px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   background-color: var(--bg-base);
 }
 
@@ -835,7 +843,7 @@
 }
 
 /* ==========================================================================
-   Responsive (Output, Arte ASCII y Modal Códice)
+   Responsive (Viewport + Container Queries del panel derecho)
    ========================================================================== */
 
 @media (max-width: 1380px) {
@@ -844,9 +852,94 @@
   }
 }
 
-@media (max-width: 960px) {
+@container output-pane (max-width: 580px) {
+  .output-header {
+    padding: 0;
+    row-gap: 0;
+    column-gap: 0;
+  }
+
+  .tab-bar {
+    width: 100%;
+    border-bottom: 1px solid var(--border-struct);
+  }
+
+  .tab-btn {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 0 8px;
+  }
+
+  .tab-btn:last-child {
+    border-right: 0;
+  }
+
+  .output-header-right {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+    padding: 5px 10px;
+    gap: 4px 8px;
+  }
+
+  .result-telemetry {
+    margin-right: auto;
+  }
+
+  .wyrm-ascii {
+    font-size: clamp(5.5px, 1.45cqi, 9.5px);
+  }
+}
+
+@container output-pane (max-width: 440px) {
+  .tab-btn {
+    font-size: 10px;
+    gap: 4px;
+    padding: 0 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .output-header-right {
+    padding: 5px 8px;
+    gap: 4px 6px;
+  }
+
+  .output-expand-btn,
+  .output-clear-btn {
+    padding: 0 2px 0 8px;
+    font-size: 10px;
+  }
+
+  .output-viewport {
+    padding: 8px;
+  }
+
+  .return-header {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 860px) {
+  .output-panel {
+    flex: 1 0 auto;
+    min-height: 48vh;
+  }
+
+  .output-expand-btn {
+    display: none;
+  }
+
   .codex-dual-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal-card {
+    width: calc(100vw - 24px);
+    max-height: 88dvh;
   }
 }
 
@@ -855,17 +948,13 @@
     display: none;
   }
 
-  .modal-backdrop {
-    padding: 10px;
-  }
-
   .modal-header,
   .modal-body {
     padding: 12px 14px;
   }
 
-  .wyrm-ascii {
-    font-size: clamp(7px, 2.1vw, 9px);
+  .modal-title {
+    font-size: 18px;
   }
 
   .empty-status-line {

@@ -354,6 +354,7 @@
   min-height: 0;
   overflow: hidden;
   user-select: none;
+  touch-action: none;
   cursor: grab;
   background-color: var(--bg-inset);
   background-image: var(--ast-dot-grid);
@@ -680,10 +681,89 @@
 }
 
 /* ==========================================================================
-   Responsive (Tutor AST)
+   Container Queries (Adaptación dinámica del AST y panel SCOPES)
    ========================================================================== */
 
-@media (max-width: 960px) {
+@container output-pane (max-width: 580px) {
+  .ast-graph-header {
+    padding: 0;
+    gap: 0;
+  }
+
+  .ast-graph-title-wrap {
+    padding: 5px 10px;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  .ast-view-controls {
+    width: 100%;
+    margin-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--border-struct);
+  }
+
+  .ast-cam-btn--focus {
+    margin-left: auto;
+    border-left: 1px solid var(--border-struct);
+  }
+}
+
+@container output-pane (max-width: 440px) {
+  .ast-graph-title-wrap {
+    padding: 5px 8px;
+  }
+
+  .ast-scopes-list {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .ast-scope-header {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+
+  .ast-scope-head {
+    display: none;
+  }
+
+  .ast-scope-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+    padding: 5px 8px;
+  }
+
+  .ast-scope-row > span {
+    padding: 0;
+    border-right: 0;
+  }
+
+  .ast-scope-var-type {
+    text-align: right;
+    max-width: 100%;
+  }
+
+  .ast-scope-var-val {
+    grid-column: 1 / -1;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding-top: 3px;
+    margin-top: 2px;
+    border-top: 1px solid var(--border-struct);
+  }
+
+  .ast-summary-label,
+  .ast-summary-result {
+    max-width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Responsive (Viewport tablet / móvil)
+   ========================================================================== */
+
+@media (max-width: 860px) {
   .tutor-shell--ast-active,
   .tutor-shell--ast-active .ast-tutor-root,
   .tutor-shell--ast-active .ast-workspace {
@@ -719,33 +799,11 @@
 
   .ast-canvas-stage {
     flex: none;
-    height: 310px;
+    height: 320px;
   }
 
   .ast-split-pane--scopes-collapsed .ast-canvas-stage {
     flex: none;
     height: 440px;
-  }
-}
-
-@media (max-width: 640px) {
-  .ast-graph-header {
-    padding-left: 8px;
-  }
-
-  .ast-view-controls {
-    width: 100%;
-    border-left: 0;
-    border-top: 1px solid var(--border-struct);
-  }
-
-  .ast-cam-btn--focus {
-    margin-left: auto;
-    border-left: 1px solid var(--border-struct);
-  }
-
-  .ast-scope-head,
-  .ast-scope-row {
-    grid-template-columns: minmax(84px, 1fr) minmax(72px, 0.85fr) minmax(90px, 1.3fr);
   }
 }

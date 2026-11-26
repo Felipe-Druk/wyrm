@@ -122,6 +122,7 @@ alternar = "alternar"
 visuales = "visuales"
 coordinador = "coordinador"
 inmutable = "inmutable"
+discreto = "discreto"
 
 # Jerga técnica de Wyrm
 wyrm = "wyrm"

@@ -421,3 +421,92 @@
   color: var(--ink-muted);
   font-style: italic;
 }
+
+/* ==========================================================================
+   Container Queries (Adaptación de TutorTransport y cabecera de modos)
+   ========================================================================== */
+
+@container output-pane (max-width: 580px) {
+  .tutor-mode-seg {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0 9px;
+  }
+
+  .tutor-controls-bar {
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    padding: 6px;
+  }
+
+  .tutor-transport,
+  .tutor-speed-group {
+    flex-shrink: 0;
+  }
+
+  .tutor-ctrl-btn {
+    min-width: 28px;
+    padding: 0 6px;
+  }
+
+  .tutor-speed-btn {
+    padding: 0 6px;
+  }
+
+  .tutor-counter {
+    font-size: 10.5px;
+  }
+
+  .tutor-summary-strip {
+    padding: 6px 8px;
+  }
+
+  .tutor-summary-meta {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+}
+
+@container output-pane (max-width: 440px) {
+  .tutor-mode-seg {
+    font-size: 10px;
+    padding: 0 7px;
+    letter-spacing: 0.05em;
+  }
+
+  .tutor-mode-seg:nth-of-type(2) {
+    border-right: 0;
+  }
+
+  .tutor-mode-retrace {
+    width: 100%;
+    margin-left: 0;
+    justify-content: center;
+    border-left: 0;
+    border-top: 1px solid var(--border-struct);
+  }
+
+  .tutor-speed-group {
+    margin-left: auto;
+  }
+
+  .tutor-counter {
+    margin-left: 0;
+    flex: 1 0 auto;
+    text-align: right;
+  }
+
+  .tutor-section-header {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 5px 8px;
+  }
+
+  .tutor-cta-btn {
+    height: auto;
+    min-height: 34px;
+    padding: 6px 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}

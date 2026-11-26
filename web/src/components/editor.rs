@@ -1,17 +1,13 @@
-//! Editor de código fuente de Wyrm con resaltado en overlay, gutter y cursor sincronizado.
+//! Editor de código fuente de Wyrm con soft-wrap, gutter auto-alineado y cursor sincronizado.
 
 use crate::examples;
 use crate::highlight;
-use leptos::html::{Div, Pre, Textarea};
+use crate::storage;
+use leptos::html::{Div, Textarea};
 use leptos::prelude::*;
 use web_sys::KeyboardEvent;
 
 const TAB_SPACES: &str = "    ";
-
-/// Cuenta la cantidad de líneas de un buffer de código.
-fn count_lines(text: &str) -> usize {
-    text.split('\n').count().max(1)
-}
 
 /// Traduce un desplazamiento UTF-16 (DOM `selectionStart`/`selectionEnd`)
 /// al índice de byte UTF-8 correspondiente dentro de un `&str` de Rust.
@@ -35,7 +31,7 @@ fn cursor_line_col(text: &str, utf16_offset: usize) -> (usize, usize) {
     (line, col)
 }
 
-/// Panel izquierdo con cabecera `main.wyrm`, numeración sincronizada y editor de código.
+/// Panel izquierdo con cabecera `main.wyrm`, toggle `WRAP`, numeración auto-alineada y editor.
 #[component]
 pub fn EditorPanel(
     code: RwSignal<String>,
@@ -47,35 +43,38 @@ pub fn EditorPanel(
     on_trace: Callback<()>,
 ) -> impl IntoView {
     let textarea_ref = NodeRef::<Textarea>::new();
-    let highlight_ref = NodeRef::<Pre>::new();
-    let gutter_ref = NodeRef::<Div>::new();
+    let scroll_ref = NodeRef::<Div>::new();
 
+    let word_wrap = RwSignal::new(storage::load_word_wrap());
     let cursor_line = RwSignal::new(1usize);
     let cursor_col = RwSignal::new(1usize);
 
-    let line_count = Memo::new(move |_| count_lines(&code.get()));
+    let tokenized_lines = Memo::new(move |_| highlight::tokenize_lines(&code.get()));
+    let line_count = Memo::new(move |_| tokenized_lines.with(|lines| lines.len().max(1)));
     let char_count = Memo::new(move |_| code.get().chars().count());
-    let tokens = Memo::new(move |_| highlight::tokenize(&code.get()));
-    let needs_trailing_space = Memo::new(move |_| {
-        let current = code.get();
-        current.is_empty() || current.ends_with('\n')
-    });
 
     let example_description = move || {
         let current_id = selected_example_id.get();
         examples::find_by_id(&current_id).map(|example| example.description)
     };
 
-    let sync_editor_scroll = move || {
+    // Transfiere cualquier scroll interno residual del <textarea> al contenedor unificado
+    // `.editor-scroll` para garantizar alineación 1:1 en soft-wrap y en modo sin ajuste.
+    let absorb_textarea_scroll = move || {
         if let Some(textarea) = textarea_ref.get_untracked() {
-            let scroll_top = textarea.scroll_top();
-            let scroll_left = textarea.scroll_left();
-            if let Some(gutter) = gutter_ref.get_untracked() {
-                gutter.set_scroll_top(scroll_top);
-            }
-            if let Some(pre) = highlight_ref.get_untracked() {
-                pre.set_scroll_top(scroll_top);
-                pre.set_scroll_left(scroll_left);
+            let dx = textarea.scroll_left();
+            let dy = textarea.scroll_top();
+            if dx != 0 || dy != 0 {
+                if let Some(scroller) = scroll_ref.get_untracked() {
+                    if dy != 0 {
+                        scroller.set_scroll_top(scroller.scroll_top() + dy);
+                    }
+                    if dx != 0 {
+                        scroller.set_scroll_left(scroller.scroll_left() + dx);
+                    }
+                }
+                textarea.set_scroll_top(0);
+                textarea.set_scroll_left(0);
             }
         }
     };
@@ -97,32 +96,43 @@ pub fn EditorPanel(
         }
     });
 
-    // Al cambiar de ejemplo, reinicia scroll en todas las capas y el cursor en Ln 1, Col 1
+    // Persiste la preferencia de soft-wrap y limpia scroll horizontal al activarlo
+    Effect::new(move |_| {
+        let wrap_enabled = word_wrap.get();
+        storage::save_word_wrap(wrap_enabled);
+        if wrap_enabled {
+            if let Some(scroller) = scroll_ref.get_untracked() {
+                scroller.set_scroll_left(0);
+            }
+        }
+        request_animation_frame(move || {
+            absorb_textarea_scroll();
+        });
+    });
+
+    // Al cambiar de ejemplo, reinicia el scroll unificado y posiciona el cursor en Ln 1, Col 1
     Effect::new(move |_| {
         let current_id = selected_example_id.get();
         if !current_id.is_empty() {
             cursor_line.set(1);
             cursor_col.set(1);
+            if let Some(scroller) = scroll_ref.get_untracked() {
+                scroller.set_scroll_top(0);
+                scroller.set_scroll_left(0);
+            }
             if let Some(textarea) = textarea_ref.get_untracked() {
                 textarea.set_scroll_top(0);
                 textarea.set_scroll_left(0);
             }
-            if let Some(pre) = highlight_ref.get_untracked() {
-                pre.set_scroll_top(0);
-                pre.set_scroll_left(0);
-            }
-            if let Some(gutter) = gutter_ref.get_untracked() {
-                gutter.set_scroll_top(0);
-            }
         }
     });
 
-    // Mantiene sincronizados overlay, gutter y textarea al cambiar el ancho o restaurar el editor
+    // Mantiene el <textarea> sin desplazamiento interno al redimensionar o restaurar el panel
     Effect::new(move |_| {
         let _ = editor_width_pct.get();
         if !right_expanded.get() {
             request_animation_frame(move || {
-                sync_editor_scroll();
+                absorb_textarea_scroll();
             });
         }
     });
@@ -175,7 +185,7 @@ pub fn EditorPanel(
 
                 request_animation_frame(move || {
                     let _ = textarea.set_selection_range(next_cursor_utf16, next_cursor_utf16);
-                    sync_editor_scroll();
+                    absorb_textarea_scroll();
                 });
             }
         }
@@ -197,68 +207,103 @@ pub fn EditorPanel(
                         </span>
                     </Show>
                 </div>
-                <div class="editor-stats" aria-live="polite">
-                    <span class="cursor-pos">
-                        {move || format!("Ln {}, Col {}", cursor_line.get(), cursor_col.get())}
-                    </span>
-                    <span class="stats-sep" aria-hidden="true">"::"</span>
-                    <span>
-                        {move || {
-                            let lines = line_count.get();
-                            if lines == 1 {
-                                "1 L".to_string()
+
+                <div class="editor-header-right">
+                    <div class="editor-stats" aria-live="polite">
+                        <span class="cursor-pos">
+                            {move || format!("Ln {}, Col {}", cursor_line.get(), cursor_col.get())}
+                        </span>
+                        <span class="stats-sep editor-stat-extra" aria-hidden="true">"::"</span>
+                        <span class="editor-stat-extra">
+                            {move || {
+                                let lines = line_count.get();
+                                if lines == 1 {
+                                    "1 L".to_string()
+                                } else {
+                                    format!("{lines} L")
+                                }
+                            }}
+                        </span>
+                        <span class="stats-sep editor-stat-extra" aria-hidden="true">"·"</span>
+                        <span class="editor-stat-extra">{move || format!("{} ch", char_count.get())}</span>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="editor-wrap-btn"
+                        class:active=move || word_wrap.get()
+                        aria-pressed=move || if word_wrap.get() { "true" } else { "false" }
+                        title=move || {
+                            if word_wrap.get() {
+                                "Desactivar ajuste automático de líneas (soft-wrap)"
                             } else {
-                                format!("{lines} L")
+                                "Activar ajuste automático de líneas (soft-wrap)"
                             }
-                        }}
-                    </span>
-                    <span class="stats-sep" aria-hidden="true">"·"</span>
-                    <span>{move || format!("{} ch", char_count.get())}</span>
+                        }
+                        on:click=move |_| word_wrap.update(|enabled| *enabled = !*enabled)
+                    >
+                        <span class="editor-wrap-flag" aria-hidden="true">
+                            {move || if word_wrap.get() { "[◈]" } else { "[ ]" }}
+                        </span>
+                        <span>"WRAP"</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="editor-body">
-                <div class="line-gutter" node_ref=gutter_ref aria-hidden="true">
-                    {move || {
-                        (1..=line_count.get())
-                            .map(|line_number| {
-                                let line_class = move || {
-                                    let is_cursor = cursor_line.get() == line_number;
-                                    let is_tutor = tutor_highlight_line.get() == Some(line_number);
-                                    match (is_cursor, is_tutor) {
-                                        (true, true) => {
-                                            "gutter-number line-number--active line-number--tutor"
-                                        }
-                                        (true, false) => "gutter-number line-number--active",
-                                        (false, true) => "gutter-number line-number--tutor",
-                                        (false, false) => "gutter-number",
-                                    }
-                                };
-                                view! { <span class=line_class>{line_number}</span> }
-                            })
-                            .collect_view()
-                    }}
-                </div>
-
+            <div
+                class="editor-scroll"
+                class:editor-scroll--wrap=move || word_wrap.get()
+                class:editor-scroll--nowrap=move || !word_wrap.get()
+                node_ref=scroll_ref
+            >
                 <div class="editor-stage">
-                    <pre
-                        node_ref=highlight_ref
-                        class="code-highlight"
-                        aria-hidden="true"
-                    >
-                        <code>
-                            {move || {
-                                tokens
-                                    .get()
-                                    .into_iter()
-                                    .map(|(kind, text)| {
-                                        view! { <span class=kind.css_class()>{text}</span> }
-                                    })
-                                    .collect_view()
-                            }}
-                            {move || if needs_trailing_space.get() { " " } else { "" }}
-                        </code>
-                    </pre>
+                    <div class="code-lines-layer" aria-hidden="true">
+                        {move || {
+                            tokenized_lines
+                                .get()
+                                .into_iter()
+                                .enumerate()
+                                .map(|(idx, line_tokens)| {
+                                    let line_number = idx + 1;
+                                    let num_class = move || {
+                                        let is_cursor = cursor_line.get() == line_number;
+                                        let is_tutor =
+                                            tutor_highlight_line.get() == Some(line_number);
+                                        match (is_cursor, is_tutor) {
+                                            (true, true) => {
+                                                "code-line-num code-line-num--active code-line-num--tutor"
+                                            }
+                                            (true, false) => "code-line-num code-line-num--active",
+                                            (false, true) => "code-line-num code-line-num--tutor",
+                                            (false, false) => "code-line-num",
+                                        }
+                                    };
+                                    let is_empty_line = line_tokens.is_empty();
+
+                                    view! {
+                                        <div class="code-line-row">
+                                            <span class=num_class>{line_number}</span>
+                                            <div class="code-line-text">
+                                                {if is_empty_line {
+                                                    Some("\u{200B}")
+                                                } else {
+                                                    None
+                                                }}
+                                                {line_tokens
+                                                    .into_iter()
+                                                    .map(|(kind, text)| {
+                                                        view! {
+                                                            <span class=kind.css_class()>{text}</span>
+                                                        }
+                                                    })
+                                                    .collect_view()}
+                                            </div>
+                                        </div>
+                                    }
+                                })
+                                .collect_view()
+                        }}
+                    </div>
 
                     <textarea
                         node_ref=textarea_ref
@@ -268,17 +313,18 @@ pub fn EditorPanel(
                         spellcheck="false"
                         autocomplete="off"
                         autocapitalize="off"
+                        wrap=move || if word_wrap.get() { "soft" } else { "off" }
                         prop:value=move || code.get()
                         on:input=move |ev| {
                             code.set(event_target_value(&ev));
                             selected_example_id.set(String::new());
                             update_cursor();
-                            sync_editor_scroll();
+                            absorb_textarea_scroll();
                         }
                         on:keydown=on_editor_keydown
                         on:keyup=move |_| update_cursor()
                         on:click=move |_| update_cursor()
-                        on:scroll=move |_| sync_editor_scroll()
+                        on:scroll=move |_| absorb_textarea_scroll()
                     />
                 </div>
             </div>

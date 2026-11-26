@@ -1,15 +1,24 @@
 /* ==========================================================================
-   WYRM Playground — Editor, Gutter, Overlay Sincronizado y Sintaxis (.tok-*)
+   WYRM Playground — Editor, Soft-Wrap, Gutter Auto-Alineado y Sintaxis (.tok-*)
    ========================================================================== */
 
 :root {
   --editor-line-height: 22px;
   --editor-font-size: 13.5px;
+  --gutter-w: 50px;
+  --editor-pad-x: 16px;
+  --editor-pad-top: 14px;
+  --editor-pad-bottom: 28px;
 }
 
 /* ==========================================================================
-   Editor Panel (Izquierda — limpio, máxima altura vertical, sin 3ra barra)
+   Editor Panel (Izquierda — contenedor con Container Queries)
    ========================================================================== */
+
+.editor-panel {
+  container-type: inline-size;
+  container-name: editor-pane;
+}
 
 .editor-header {
   min-width: 0;
@@ -54,6 +63,14 @@
   min-width: 0;
 }
 
+.editor-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
 .editor-stats {
   display: inline-flex;
   align-items: center;
@@ -74,39 +91,138 @@
   color: var(--border-active);
 }
 
-.editor-body {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  background-color: var(--bg-panel);
-  overflow: hidden;
+/* Toggle discreto y plano en cabecera: [◈] WRAP / [ ] WRAP */
+.editor-wrap-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 2px 0 10px;
+  border: 0;
+  border-left: 1px solid var(--border-struct);
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.12s ease, text-shadow 0.12s ease;
 }
 
-.line-gutter {
-  width: 50px;
-  padding: 14px 8px 28px 6px;
+.editor-wrap-btn:hover {
+  color: var(--accent-violet);
+}
+
+.editor-wrap-flag {
+  font-size: 11px;
+  line-height: 1;
+  white-space: pre;
+  color: var(--ink-muted);
+  transition: color 0.12s ease, text-shadow 0.12s ease;
+}
+
+.editor-wrap-btn:hover .editor-wrap-flag {
+  color: var(--accent-violet);
+}
+
+.editor-wrap-btn.active {
+  color: var(--ink-secondary);
+}
+
+.editor-wrap-btn.active .editor-wrap-flag {
+  color: var(--accent-violet);
+  text-shadow: 0 0 8px var(--accent-glow);
+}
+
+.editor-wrap-btn.active:hover {
+  color: var(--accent-violet);
+}
+
+/* ==========================================================================
+   Scroll unificado + Gutter auto-alineado por fila lógica
+   ========================================================================== */
+
+.editor-scroll {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  background-color: var(--bg-panel);
+  overflow-y: auto;
+}
+
+.editor-scroll--wrap {
+  overflow-x: hidden;
+}
+
+.editor-scroll--nowrap {
+  overflow-x: auto;
+}
+
+.editor-stage {
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--bg-panel);
+}
+
+.editor-scroll--nowrap .editor-stage {
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Fondo y línea divisoria vertical continua del gutter en toda la altura */
+.editor-stage::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--gutter-w);
   background-color: var(--gutter-bg);
   border-right: 1px solid var(--border-struct);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.code-lines-layer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: var(--editor-pad-top) 0 var(--editor-pad-bottom) 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.code-line-row {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--editor-line-height);
+}
+
+.code-line-num {
+  width: var(--gutter-w);
+  flex: 0 0 var(--gutter-w);
+  padding: 0 10px 0 6px;
+  border-right: 1px solid var(--border-struct);
+  background-color: var(--gutter-bg);
   color: var(--ink-muted);
   font-family: var(--font-mono);
   font-size: var(--editor-font-size);
+  font-weight: 400;
   line-height: var(--editor-line-height);
   font-variant-numeric: tabular-nums;
   text-align: right;
   user-select: none;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.gutter-number {
-  display: block;
-  height: var(--editor-line-height);
-  padding: 0 4px;
+  box-sizing: border-box;
 }
 
 /* Línea activa en el gutter: borde izquierdo violeta + texto dorado claro + tinte violeta */
-.gutter-number.line-number--active {
+.code-line-num--active {
   color: var(--gutter-active-ink);
   font-weight: 600;
   background-color: var(--gutter-active-bg);
@@ -114,82 +230,81 @@
 }
 
 /* Resaltado suave de línea fuente sincronizada con Wyrm Tutor */
-.gutter-number.line-number--tutor {
+.code-line-num--tutor {
   color: var(--accent-gold);
   font-weight: 600;
   background-color: var(--accent-gold-dim);
   box-shadow: inset 2px 0 0 0 var(--accent-gold);
 }
 
-.editor-stage {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  background-color: var(--bg-panel);
-}
-
-/* Alineación milimétrica entre overlay resaltado y textarea */
-.code-highlight,
+/* Métricas tipográficas 100% idénticas entre capa de flujo y <textarea> */
+.code-line-text,
 .code-input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
   margin: 0;
-  padding: 14px 16px 28px 16px;
   border: 0;
   font-family: var(--font-mono);
   font-size: var(--editor-font-size);
   font-weight: 400;
   line-height: var(--editor-line-height);
   letter-spacing: 0;
+  word-spacing: 0;
   tab-size: 4;
   -moz-tab-size: 4;
-  white-space: pre;
-  overflow-wrap: normal;
-  word-break: normal;
   font-variant-ligatures: none;
   font-feature-settings: "liga" 0, "calt" 0;
+  font-kerning: none;
   box-sizing: border-box;
 }
 
-.code-highlight {
-  z-index: 1;
-  pointer-events: none;
-  overflow: hidden;
+.code-line-text {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 var(--editor-pad-x);
   background: transparent;
   color: var(--ink-primary);
 }
 
-.code-highlight code {
-  display: block;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: 400;
-  line-height: inherit;
-  letter-spacing: inherit;
-  tab-size: inherit;
-  white-space: inherit;
-  overflow-wrap: inherit;
-  word-break: inherit;
-  font-variant-ligatures: none;
-  font-feature-settings: "liga" 0, "calt" 0;
-}
-
 .code-input {
+  position: absolute;
+  top: 0;
+  left: var(--gutter-w);
+  right: 0;
+  bottom: 0;
+  width: calc(100% - var(--gutter-w));
+  height: 100%;
+  padding: var(--editor-pad-top) var(--editor-pad-x) var(--editor-pad-bottom)
+    var(--editor-pad-x);
   z-index: 2;
   resize: none;
   outline: none;
-  overflow: auto;
+  overflow: hidden;
   background: transparent;
   color: transparent;
   -webkit-text-fill-color: transparent;
   caret-color: var(--accent-violet);
+}
+
+/* Modo soft-wrap activado (defecto) */
+.editor-scroll--wrap .code-line-text,
+.editor-scroll--wrap .code-input {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Modo sin ajuste: expansión horizontal sincronizada en .editor-stage */
+.editor-scroll--nowrap .code-line-text {
+  flex: 1 0 auto;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.editor-scroll--nowrap .code-input {
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+  min-width: calc(100% - var(--gutter-w));
 }
 
 .code-input::placeholder {
@@ -288,18 +403,57 @@
 }
 
 /* ==========================================================================
-   Responsive (Editor)
+   Container Queries (Adaptación al arrastre dinámico del divisor)
    ========================================================================== */
 
-@media (max-width: 960px) {
-  .editor-panel {
-    border-bottom: 1px solid var(--border-struct);
-  }
-}
-
-@media (max-width: 640px) {
+@container editor-pane (max-width: 520px) {
   .file-meta-sep,
   .file-example-hint {
     display: none;
+  }
+}
+
+@container editor-pane (max-width: 400px) {
+  .editor-header {
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .editor-header-right {
+    gap: 6px;
+  }
+
+  .editor-stat-extra {
+    display: none;
+  }
+
+  .editor-wrap-btn {
+    padding: 0 2px 0 7px;
+    gap: 4px;
+    font-size: 10px;
+  }
+
+  .editor-scroll {
+    --editor-font-size: 12px;
+    --editor-line-height: 20px;
+    --gutter-w: 38px;
+    --editor-pad-x: 10px;
+  }
+
+  .code-line-num {
+    padding: 0 5px 0 3px;
+  }
+}
+
+/* ==========================================================================
+   Responsive (Viewport tablet / móvil)
+   ========================================================================== */
+
+@media (max-width: 860px) {
+  .editor-panel {
+    flex: 0 0 auto;
+    min-height: 42vh;
+    max-height: 56vh;
+    border-bottom: 1px solid var(--border-struct);
   }
 }
